@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<entry>
+    <id>{{baseUrl}}/feeds/api/videos/{{videoId}}</id>
+    <yt:videoid>{{videoId}}</yt:videoid>
+    <title type='text'>{{title}}</title>
+    <content type='text'>{{description}}</content>
+    <author>
+        <name>{{author}}</name>
+        <uri>{{baseUrl}}/feeds/api/users/{{channelId}}</uri>
+    </author>
+    <media:group>
+        <media:content url='{{baseUrl}}/video/{{videoId}}' type='video/mp4' medium='video' expression='full' duration='{{lengthSeconds}}'/>
+        <media:title type='plain'>{{title}}</media:title>
+        <yt:duration seconds='{{lengthSeconds}}'/>
+    </media:group>
+    <yt:statistics viewCount='{{viewCount}}'/>
+</entry>

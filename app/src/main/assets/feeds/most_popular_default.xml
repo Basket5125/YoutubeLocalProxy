@@ -1,0 +1,1741 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<feed
+    xmlns='http://www.w3.org/2005/Atom'
+    xmlns:gd='http://schemas.google.com/g/2005'
+    xmlns:yt='http://127.0.0.1//schemas/2007'
+    xmlns:openSearch='http://a9.com/-/spec/opensearch/1.1/'
+    xmlns:media='http://search.yahoo.com/mrss/' gd:etag='W/&quot;CEIMR384cSp7I2A9XRdUE0Q.&quot;'>
+    <id>tag:youtube.com,2008:user:19cachicha:uploads</id>
+    <updated>2014-12-01T00:09:46.139Z</updated>
+    <category scheme='http://schemas.google.com/g/2005#kind' term='http://127.0.0.1//schemas/2007#video'/>
+    <title>Search results</title>
+    <logo>http://www.gstatic.com/youtube/img/logo.png</logo>
+    <link rel='alternate' type='text/html' href='http://www.youtube.com/channel/UC9yMWgQf2_xMhbdKPo7Ljrw/videos'/>
+    <link rel='hub' href='http://pubsubhubbub.appspot.com'/>
+    <author>
+        <name>Youtube</name>
+        <uri>http://127.0.0.1//feeds/api/users/Youtube</uri>
+        <yt:userId>null</yt:userId>
+    </author>
+    <generator version='2.1' uri='http://127.0.0.1/'>YouTube data API</generator>
+    <openSearch:totalResults>9955</openSearch:totalResults>
+    <openSearch:startIndex>1</openSearch:startIndex>
+    <openSearch:itemsPerPage>20</openSearch:itemsPerPage>
+    <entry gd:etag='W/&quot;CUYDQ347eCp7I2A9XRdVGEs.&quot;'>
+        <id>tag:youtube.com,2008:video:pfNEgn5Y4bU</id>
+        <published>2025-08-07T15:22:51</published>
+        <updated>2025-08-07T15:22:51</updated>
+        <category scheme='http://schemas.google.com/g/2005#kind' term='http://127.0.0.1/schemas/2007#video'/>
+        <category scheme='http://127.0.0.1/schemas/2007/categories.cat' term='News' label='News &amp; Politics'/>
+        <title>Alice Theme - Summertide Drift (Fan-Made) | Zenless Zone Zero</title>
+        <content type='application/x-shockwave-flash' src='http://www.youtube.com/v/pfNEgn5Y4bU?version=3&amp;f=user_uploads&amp;app=youtube_gdata'/>
+        <link rel='alternate' type='text/html' href='http://www.youtube.com/watch?v=pfNEgn5Y4bU&amp;feature=youtube_gdata'/>
+        <link rel='http://127.0.0.1/schemas/2007#video.related' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/videos/pfNEgn5Y4bU/related?v=2'/>
+        <link rel='http://127.0.0.1/schemas/2007#mobile' type='text/html' href='http://m.youtube.com/details?v=pfNEgn5Y4bU'/>
+        <link rel='http://127.0.0.1/schemas/2007#uploader' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw?v=2'/>
+        <link rel='self' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw/uploads/pfNEgn5Y4bU?v=2'/>
+        <author>
+            <name>Sumes Music</name>
+            <uri>http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw</uri>
+            <yt:userId>EEUCmyppRGkG0KvQ7sDuN0U9iw</yt:userId>
+        </author>
+        <yt:accessControl action='comment' permission='allowed'/>
+        <yt:accessControl action='commentVote' permission='allowed'/>
+        <yt:accessControl action='videoRespond' permission='moderated'/>
+        <yt:accessControl action='rate' permission='allowed'/>
+        <yt:accessControl action='embed' permission='allowed'/>
+        <yt:accessControl action='list' permission='allowed'/>
+        <yt:accessControl action='autoPlay' permission='allowed'/>
+        <yt:accessControl action='syndicate' permission='allowed'/>
+        <gd:comments>
+            <gd:feedLink rel='http://127.0.0.1/schemas/2007#comments' href='http://127.0.0.1/feeds/api/videos/pfNEgn5Y4bU/comments?v=2' countHint='24'/>
+        </gd:comments>
+        <media:group>
+            <media:category label='News &amp; Politics' scheme='http://127.0.0.1/schemas/2007/categories.cat'>News</media:category>
+            <media:content url='http://www.youtube.com/v/pfNEgn5Y4bU?version=3&amp;f=user_uploads&amp;app=youtube_gdata' type='application/x-shockwave-flash' medium='video' isDefault='true' expression='full' duration='2506' yt:format='5'/>
+            <media:content url='http://127.0.0.1/channel_fh264_getvideo?v=pfNEgn5Y4bU' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='3'/><media:content url='http://127.0.0.1/get_480?video_id=pfNEgn5Y4bU' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='14'/><media:content url='http://127.0.0.1/exp_hd?video_id=pfNEgn5Y4bU' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='8'/>
+            <media:credit role='uploader' scheme='urn:youtube' yt:display='Sumes Music' yt:type='partner'>UCmyppRGkG0KvQ7sDuN0U9iw</media:credit>
+            <media:description type='plain'>After playing through the latest story quest and summer event, I&apos;ve grown really fond of Alice and Yuzuha. It got me inspired to create a relaxing summer-themed track for ZZZ. So, I&apos;m dedicating this original piece to our lovely Lady Alice!
+
+                I&apos;ll be honest, I&apos;m also trying to manifest an early pull with this one... I need all the luck I can get! T-T
+                Hope you like the laid-back summery groove!!
+
+                If you enjoy the music and want to support me, consider becoming a member! ❤️
+                https://www.youtube.com/channel/UCmyppRGkG0KvQ7sDuN0U9iw/join
+
+                __________________________
+
+                Credits:
+
+                ▶ Music composed, arranged &amp; produced by Sumes
+
+                © All rights reserved by miHoYo. Other properties belong to their respective owners.
+                ℗ 2025 Sumes Music
+
+                __________________________
+
+                ✨Stream my music:
+                ►Spotify: https://open.spotify.com/artist/1i8sjiBLOe3WXnRJ8TFLdC?si=ERrzq16AQXuN5EgyVRo6fA
+                ►Apple Music: https://music.apple.com/us/artist/sumes-music/1679839729
+                ►Youtube Music: https://music.youtube.com/channel/UCrLw774GBUGAI_n6MQTox_w
+                ►Soundcloud: https://soundcloud.com/sumes_music
+                ►Tidal: https://tidal.com/browse/artist/38419898
+                ►Deezer: https://www.deezer.com/en/artist/207599887
+
+                ✨Connect with me:
+                ◆Bluesky: https://bsky.app/profile/sumes.bsky.social
+                ◆Hoyoverse Fan-Server (Music, Animation): https://discord.gg/ntZPTU66xd
+
+                ✨Commissions:
+                https://vgen.co/Sumes
+
+                ✨Other inquiries:
+                sumes.music@gmail.com
+
+                __________________________
+
+                Usage Guidelines for My Music
+
+                1. 🚫 Prohibited Uses:
+                - Do not reupload or remix my content without explicit permission.
+                - My music is not permitted for use in podcasts.
+                - Commercial use (e.g., advertisements, corporate videos) requires a separate license agreement. Please contact me for details.
+
+                2. ✔️ Permitted Uses for Content Creators:
+                You are welcome to use my music for your videos and streams on platforms such as YouTube, Twitch, and other social media, provided that you credit me in the video description and include a link to my channel.
+
+                3. 🎤 Downloading Instrumentals:
+                If you want to download the raw audio file of an instrumental for a cover (non-commercial use only), please contact me directly. Proper credit is required.
+
+                4. ❌ No Endorsement:
+                Using my music does not imply endorsement or sponsorship of your content. Please do not suggest otherwise.
+
+                By using my music, you agree to adhere to these guidelines. For any questions or special requests, please contact me directly.
+
+                __________________________
+
+                #AliceThymefield #ZenlessSummer
+                #Hoyoverse #Hoyocreators
+                #ZenlessZoneZero #zzzero #zzzcreators #zzzeromusic</media:description>
+            <media:keywords/>
+            <media:license type='text/html' href='http://www.youtube.com/t/terms'>youtube</media:license>
+            <media:player url='http://www.youtube.com/watch?v=pfNEgn5Y4bU&amp;feature=youtube_gdata_player'/>
+            <media:thumbnail url='http://i.ytimg.com/vi/pfNEgn5Y4bU/default.jpg' height='90' width='120' time='00:20:53' yt:name='default'/>
+            <media:thumbnail url='http://i.ytimg.com/vi/pfNEgn5Y4bU/mqdefault.jpg' height='180' width='320' yt:name='mqdefault'/>
+            <media:thumbnail url='http://i.ytimg.com/vi/pfNEgn5Y4bU/hqdefault.jpg' height='360' width='480' yt:name='hqdefault'/>
+            <media:thumbnail url='http://i.ytimg.com/vi/pfNEgn5Y4bU/sddefault.jpg' height='480' width='640' yt:name='sddefault'/>
+            <media:thumbnail url='http://i.ytimg.com/vi/pfNEgn5Y4bU/1.jpg' height='90' width='120' time='00:10:26.500' yt:name='start'/>
+            <media:thumbnail url='http://i.ytimg.com/vi/pfNEgn5Y4bU/2.jpg' height='90' width='120' time='00:20:53' yt:name='middle'/>
+            <media:thumbnail url='http://i.ytimg.com/vi/pfNEgn5Y4bU/3.jpg' height='90' width='120' time='00:31:19.500' yt:name='end'/>
+            <media:title type='plain'>Alice Theme - Summertide Drift (Fan-Made) | Zenless Zone Zero</media:title>
+            <yt:duration seconds='186'/>
+            <yt:uploaded>2025-08-07T15:22:51</yt:uploaded>
+            <yt:uploaderId>EEUCmyppRGkG0KvQ7sDuN0U9iw</yt:uploaderId>
+            <yt:videoid>pfNEgn5Y4bU</yt:videoid>
+        </media:group>
+        <gd:rating average='4.151515' max='5' min='1' numRaters='99' rel='http://schemas.google.com/g/2005#overall'/>
+        <yt:statistics favoriteCount='0' viewCount='857'/>
+        <yt:rating numDislikes='0' numLikes='0'/>
+    </entry><entry gd:etag='W/&quot;CUYDQ347eCp7I2A9XRdVGEs.&quot;'>
+    <id>tag:youtube.com,2008:video:mPieZIXoVrg</id>
+    <published>2025-08-07T15:22:51</published>
+    <updated>2025-08-07T15:22:51</updated>
+    <category scheme='http://schemas.google.com/g/2005#kind' term='http://127.0.0.1/schemas/2007#video'/>
+    <category scheme='http://127.0.0.1/schemas/2007/categories.cat' term='News' label='News &amp; Politics'/>
+    <title>Columbina Theme Music - Veil of a New Moon (Fan-Made) | Genshin Impact</title>
+    <content type='application/x-shockwave-flash' src='http://www.youtube.com/v/mPieZIXoVrg?version=3&amp;f=user_uploads&amp;app=youtube_gdata'/>
+    <link rel='alternate' type='text/html' href='http://www.youtube.com/watch?v=mPieZIXoVrg&amp;feature=youtube_gdata'/>
+    <link rel='http://127.0.0.1/schemas/2007#video.related' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/videos/mPieZIXoVrg/related?v=2'/>
+    <link rel='http://127.0.0.1/schemas/2007#mobile' type='text/html' href='http://m.youtube.com/details?v=mPieZIXoVrg'/>
+    <link rel='http://127.0.0.1/schemas/2007#uploader' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw?v=2'/>
+    <link rel='self' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw/uploads/mPieZIXoVrg?v=2'/>
+    <author>
+        <name>Sumes Music</name>
+        <uri>http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw</uri>
+        <yt:userId>EEUCmyppRGkG0KvQ7sDuN0U9iw</yt:userId>
+    </author>
+    <yt:accessControl action='comment' permission='allowed'/>
+    <yt:accessControl action='commentVote' permission='allowed'/>
+    <yt:accessControl action='videoRespond' permission='moderated'/>
+    <yt:accessControl action='rate' permission='allowed'/>
+    <yt:accessControl action='embed' permission='allowed'/>
+    <yt:accessControl action='list' permission='allowed'/>
+    <yt:accessControl action='autoPlay' permission='allowed'/>
+    <yt:accessControl action='syndicate' permission='allowed'/>
+    <gd:comments>
+        <gd:feedLink rel='http://127.0.0.1/schemas/2007#comments' href='http://127.0.0.1/feeds/api/videos/mPieZIXoVrg/comments?v=2' countHint='24'/>
+    </gd:comments>
+    <media:group>
+        <media:category label='News &amp; Politics' scheme='http://127.0.0.1/schemas/2007/categories.cat'>News</media:category>
+        <media:content url='http://www.youtube.com/v/mPieZIXoVrg?version=3&amp;f=user_uploads&amp;app=youtube_gdata' type='application/x-shockwave-flash' medium='video' isDefault='true' expression='full' duration='2506' yt:format='5'/>
+        <media:content url='http://127.0.0.1/channel_fh264_getvideo?v=mPieZIXoVrg' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='3'/><media:content url='http://127.0.0.1/get_480?video_id=mPieZIXoVrg' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='14'/><media:content url='http://127.0.0.1/exp_hd?video_id=mPieZIXoVrg' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='8'/>
+        <media:credit role='uploader' scheme='urn:youtube' yt:display='Sumes Music' yt:type='partner'>UCmyppRGkG0KvQ7sDuN0U9iw</media:credit>
+        <media:description type='plain'>Here&apos;s a little fantheme I composed for Columbina, aka the &quot;Moon Maiden&quot;.
+            I&apos;m super excited for her story to unfold in Nod-Krai, and I hope I managed to capture here ethereal presence with this one! :)
+
+            If you enjoy the music and want to support me, consider becoming a member! ❤️
+            https://www.youtube.com/channel/UCmyppRGkG0KvQ7sDuN0U9iw/join
+
+            __________________________
+
+            Credits:
+
+            ▶ OST composed, arranged &amp; produced by Sumes
+
+            ▶ Vocals: Mai SV
+
+            © All rights reserved by miHoYo. Other properties belong to their respective owners.
+            ℗ 2025 Sumes Music
+
+            __________________________
+
+            ✨Stream my music:
+            ►Spotify: https://open.spotify.com/artist/1i8sjiBLOe3WXnRJ8TFLdC?si=ERrzq16AQXuN5EgyVRo6fA
+            ►Apple Music: https://music.apple.com/us/artist/sumes-music/1679839729
+            ►Youtube Music: https://music.youtube.com/channel/UCrLw774GBUGAI_n6MQTox_w
+            ►Soundcloud: https://soundcloud.com/sumes_music
+            ►Tidal: https://tidal.com/browse/artist/38419898
+            ►Deezer: https://www.deezer.com/en/artist/207599887
+
+            ✨Connect with me:
+            ◆Bluesky: https://bsky.app/profile/sumes.bsky.social
+            ◆Hoyoverse Fan-Server (Music, Animation): https://discord.gg/ntZPTU66xd
+
+            ✨Commissions:
+            https://vgen.co/Sumes
+
+            ✨Other inquiries:
+            sumes.music@gmail.com
+
+            __________________________
+
+            Usage Guidelines for My Music
+
+            1. 🚫 Prohibited Uses:
+            - Do not reupload or remix my content without explicit permission.
+            - My music is not permitted for use in podcasts.
+            - Commercial use (e.g., advertisements, corporate videos) requires a separate license agreement. Please contact me for details.
+
+            2. ✔️ Permitted Uses for Content Creators:
+            You are welcome to use my music for your videos and streams on platforms such as YouTube, Twitch, and other social media, provided that you credit me in the video description and include a link to my channel.
+
+            3. 🎤 Downloading Instrumentals:
+            If you want to download the raw audio file of an instrumental for a cover (non-commercial use only), please contact me directly. Proper credit is required.
+
+            4. ❌ No Endorsement:
+            Using my music does not imply endorsement or sponsorship of your content. Please do not suggest otherwise.
+
+            By using my music, you agree to adhere to these guidelines. For any questions or special requests, please contact me directly.
+
+            __________________________
+
+            #Columbina #MoonMaiden #NodKrai
+            #Hoyoverse #Hoyocreators
+            #GenshinImpact #原神 #원신</media:description>
+        <media:keywords/>
+        <media:license type='text/html' href='http://www.youtube.com/t/terms'>youtube</media:license>
+        <media:player url='http://www.youtube.com/watch?v=mPieZIXoVrg&amp;feature=youtube_gdata_player'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/mPieZIXoVrg/default.jpg' height='90' width='120' time='00:20:53' yt:name='default'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/mPieZIXoVrg/mqdefault.jpg' height='180' width='320' yt:name='mqdefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/mPieZIXoVrg/hqdefault.jpg' height='360' width='480' yt:name='hqdefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/mPieZIXoVrg/sddefault.jpg' height='480' width='640' yt:name='sddefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/mPieZIXoVrg/1.jpg' height='90' width='120' time='00:10:26.500' yt:name='start'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/mPieZIXoVrg/2.jpg' height='90' width='120' time='00:20:53' yt:name='middle'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/mPieZIXoVrg/3.jpg' height='90' width='120' time='00:31:19.500' yt:name='end'/>
+        <media:title type='plain'>Columbina Theme Music - Veil of a New Moon (Fan-Made) | Genshin Impact</media:title>
+        <yt:duration seconds='218'/>
+        <yt:uploaded>2025-08-07T15:22:51</yt:uploaded>
+        <yt:uploaderId>EEUCmyppRGkG0KvQ7sDuN0U9iw</yt:uploaderId>
+        <yt:videoid>mPieZIXoVrg</yt:videoid>
+    </media:group>
+    <gd:rating average='4.151515' max='5' min='1' numRaters='99' rel='http://schemas.google.com/g/2005#overall'/>
+    <yt:statistics favoriteCount='0' viewCount='16036'/>
+    <yt:rating numDislikes='0' numLikes='0'/>
+</entry><entry gd:etag='W/&quot;CUYDQ347eCp7I2A9XRdVGEs.&quot;'>
+    <id>tag:youtube.com,2008:video:cUfuZzmNdeg</id>
+    <published>2025-08-07T15:22:51</published>
+    <updated>2025-08-07T15:22:51</updated>
+    <category scheme='http://schemas.google.com/g/2005#kind' term='http://127.0.0.1/schemas/2007#video'/>
+    <category scheme='http://127.0.0.1/schemas/2007/categories.cat' term='News' label='News &amp; Politics'/>
+    <title>Yuzuha Theme - Tanuki Twist (ELECTRO SWING) | Zenless Zone Zero</title>
+    <content type='application/x-shockwave-flash' src='http://www.youtube.com/v/cUfuZzmNdeg?version=3&amp;f=user_uploads&amp;app=youtube_gdata'/>
+    <link rel='alternate' type='text/html' href='http://www.youtube.com/watch?v=cUfuZzmNdeg&amp;feature=youtube_gdata'/>
+    <link rel='http://127.0.0.1/schemas/2007#video.related' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/videos/cUfuZzmNdeg/related?v=2'/>
+    <link rel='http://127.0.0.1/schemas/2007#mobile' type='text/html' href='http://m.youtube.com/details?v=cUfuZzmNdeg'/>
+    <link rel='http://127.0.0.1/schemas/2007#uploader' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw?v=2'/>
+    <link rel='self' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw/uploads/cUfuZzmNdeg?v=2'/>
+    <author>
+        <name>Sumes Music</name>
+        <uri>http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw</uri>
+        <yt:userId>EEUCmyppRGkG0KvQ7sDuN0U9iw</yt:userId>
+    </author>
+    <yt:accessControl action='comment' permission='allowed'/>
+    <yt:accessControl action='commentVote' permission='allowed'/>
+    <yt:accessControl action='videoRespond' permission='moderated'/>
+    <yt:accessControl action='rate' permission='allowed'/>
+    <yt:accessControl action='embed' permission='allowed'/>
+    <yt:accessControl action='list' permission='allowed'/>
+    <yt:accessControl action='autoPlay' permission='allowed'/>
+    <yt:accessControl action='syndicate' permission='allowed'/>
+    <gd:comments>
+        <gd:feedLink rel='http://127.0.0.1/schemas/2007#comments' href='http://127.0.0.1/feeds/api/videos/cUfuZzmNdeg/comments?v=2' countHint='24'/>
+    </gd:comments>
+    <media:group>
+        <media:category label='News &amp; Politics' scheme='http://127.0.0.1/schemas/2007/categories.cat'>News</media:category>
+        <media:content url='http://www.youtube.com/v/cUfuZzmNdeg?version=3&amp;f=user_uploads&amp;app=youtube_gdata' type='application/x-shockwave-flash' medium='video' isDefault='true' expression='full' duration='2506' yt:format='5'/>
+        <media:content url='http://127.0.0.1/channel_fh264_getvideo?v=cUfuZzmNdeg' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='3'/><media:content url='http://127.0.0.1/get_480?video_id=cUfuZzmNdeg' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='14'/><media:content url='http://127.0.0.1/exp_hd?video_id=cUfuZzmNdeg' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='8'/>
+        <media:credit role='uploader' scheme='urn:youtube' yt:display='Sumes Music' yt:type='partner'>UCmyppRGkG0KvQ7sDuN0U9iw</media:credit>
+        <media:description type='plain'>Celebrating Yuzuha&apos;s release with this one! You know, our mischievous girl just has that kind of energy. What started as a spark from the musical elements in her character demo quickly took on a life of its own. And with that, I present to you Yuzuha&apos;s very own Electro Swing theme! I hope you like it! (●&apos;◡&apos;●)
+
+            If you enjoy the music and want to support me, consider becoming a member! ❤️
+            https://www.youtube.com/channel/UCmyppRGkG0KvQ7sDuN0U9iw/join
+
+            __________________________
+
+            Credits:
+
+            ▶ Music composed, arranged &amp; produced by Sumes
+
+            © All rights reserved by miHoYo. Other properties belong to their respective owners.
+            ℗ 2025 Sumes Music
+
+            __________________________
+
+            ✨Stream my music:
+            ►Spotify: https://open.spotify.com/artist/1i8sjiBLOe3WXnRJ8TFLdC?si=ERrzq16AQXuN5EgyVRo6fA
+            ►Apple Music: https://music.apple.com/us/artist/sumes-music/1679839729
+            ►Youtube Music: https://music.youtube.com/channel/UCrLw774GBUGAI_n6MQTox_w
+            ►Soundcloud: https://soundcloud.com/sumes_music
+            ►Tidal: https://tidal.com/browse/artist/38419898
+            ►Deezer: https://www.deezer.com/en/artist/207599887
+
+            ✨Connect with me:
+            ◆Bluesky: https://bsky.app/profile/sumes.bsky.social
+            ◆Hoyoverse Fan-Server (Music, Animation): https://discord.gg/ntZPTU66xd
+
+            ✨Commissions:
+            https://vgen.co/Sumes
+
+            ✨Other inquiries:
+            sumes.music@gmail.com
+
+            __________________________
+
+            Usage Guidelines for My Music
+
+            1. 🚫 Prohibited Uses:
+            - Do not reupload or remix my content without explicit permission.
+            - My music is not permitted for use in podcasts.
+            - Commercial use (e.g., advertisements, corporate videos) requires a separate license agreement. Please contact me for details.
+
+            2. ✔️ Permitted Uses for Content Creators:
+            You are welcome to use my music for your videos and streams on platforms such as YouTube, Twitch, and other social media, provided that you credit me in the video description and include a link to my channel.
+
+            3. 🎤 Downloading Instrumentals:
+            If you want to download the raw audio file of an instrumental for a cover (non-commercial use only), please contact me directly. Proper credit is required.
+
+            4. ❌ No Endorsement:
+            Using my music does not imply endorsement or sponsorship of your content. Please do not suggest otherwise.
+
+            By using my music, you agree to adhere to these guidelines. For any questions or special requests, please contact me directly.
+
+            __________________________
+
+            #UkinamiYuzuha #ZenlessSummer
+            #zzzero #Dripfest2025 #zzzS2Music
+            #ZenlessZoneZero #zzzcreators #zzzeromusic
+            #Hoyoverse #Hoyocreators</media:description>
+        <media:keywords/>
+        <media:license type='text/html' href='http://www.youtube.com/t/terms'>youtube</media:license>
+        <media:player url='http://www.youtube.com/watch?v=cUfuZzmNdeg&amp;feature=youtube_gdata_player'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/cUfuZzmNdeg/default.jpg' height='90' width='120' time='00:20:53' yt:name='default'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/cUfuZzmNdeg/mqdefault.jpg' height='180' width='320' yt:name='mqdefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/cUfuZzmNdeg/hqdefault.jpg' height='360' width='480' yt:name='hqdefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/cUfuZzmNdeg/sddefault.jpg' height='480' width='640' yt:name='sddefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/cUfuZzmNdeg/1.jpg' height='90' width='120' time='00:10:26.500' yt:name='start'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/cUfuZzmNdeg/2.jpg' height='90' width='120' time='00:20:53' yt:name='middle'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/cUfuZzmNdeg/3.jpg' height='90' width='120' time='00:31:19.500' yt:name='end'/>
+        <media:title type='plain'>Yuzuha Theme - Tanuki Twist (ELECTRO SWING) | Zenless Zone Zero</media:title>
+        <yt:duration seconds='204'/>
+        <yt:uploaded>2025-08-07T15:22:51</yt:uploaded>
+        <yt:uploaderId>EEUCmyppRGkG0KvQ7sDuN0U9iw</yt:uploaderId>
+        <yt:videoid>cUfuZzmNdeg</yt:videoid>
+    </media:group>
+    <gd:rating average='4.151515' max='5' min='1' numRaters='99' rel='http://schemas.google.com/g/2005#overall'/>
+    <yt:statistics favoriteCount='0' viewCount='3758'/>
+    <yt:rating numDislikes='0' numLikes='0'/>
+</entry><entry gd:etag='W/&quot;CUYDQ347eCp7I2A9XRdVGEs.&quot;'>
+    <id>tag:youtube.com,2008:video:Km6_blhEm10</id>
+    <published>2025-08-07T15:22:51</published>
+    <updated>2025-08-07T15:22:51</updated>
+    <category scheme='http://schemas.google.com/g/2005#kind' term='http://127.0.0.1/schemas/2007#video'/>
+    <category scheme='http://127.0.0.1/schemas/2007/categories.cat' term='News' label='News &amp; Politics'/>
+    <title>The Shades&apos; Lullaby — Teyvat Chapter Interlude Teaser (Sumes Cover) | Genshin Impact</title>
+    <content type='application/x-shockwave-flash' src='http://www.youtube.com/v/Km6_blhEm10?version=3&amp;f=user_uploads&amp;app=youtube_gdata'/>
+    <link rel='alternate' type='text/html' href='http://www.youtube.com/watch?v=Km6_blhEm10&amp;feature=youtube_gdata'/>
+    <link rel='http://127.0.0.1/schemas/2007#video.related' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/videos/Km6_blhEm10/related?v=2'/>
+    <link rel='http://127.0.0.1/schemas/2007#mobile' type='text/html' href='http://m.youtube.com/details?v=Km6_blhEm10'/>
+    <link rel='http://127.0.0.1/schemas/2007#uploader' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw?v=2'/>
+    <link rel='self' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw/uploads/Km6_blhEm10?v=2'/>
+    <author>
+        <name>Sumes Music</name>
+        <uri>http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw</uri>
+        <yt:userId>EEUCmyppRGkG0KvQ7sDuN0U9iw</yt:userId>
+    </author>
+    <yt:accessControl action='comment' permission='allowed'/>
+    <yt:accessControl action='commentVote' permission='allowed'/>
+    <yt:accessControl action='videoRespond' permission='moderated'/>
+    <yt:accessControl action='rate' permission='allowed'/>
+    <yt:accessControl action='embed' permission='allowed'/>
+    <yt:accessControl action='list' permission='allowed'/>
+    <yt:accessControl action='autoPlay' permission='allowed'/>
+    <yt:accessControl action='syndicate' permission='allowed'/>
+    <gd:comments>
+        <gd:feedLink rel='http://127.0.0.1/schemas/2007#comments' href='http://127.0.0.1/feeds/api/videos/Km6_blhEm10/comments?v=2' countHint='24'/>
+    </gd:comments>
+    <media:group>
+        <media:category label='News &amp; Politics' scheme='http://127.0.0.1/schemas/2007/categories.cat'>News</media:category>
+        <media:content url='http://www.youtube.com/v/Km6_blhEm10?version=3&amp;f=user_uploads&amp;app=youtube_gdata' type='application/x-shockwave-flash' medium='video' isDefault='true' expression='full' duration='2506' yt:format='5'/>
+        <media:content url='http://127.0.0.1/channel_fh264_getvideo?v=Km6_blhEm10' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='3'/><media:content url='http://127.0.0.1/get_480?video_id=Km6_blhEm10' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='14'/><media:content url='http://127.0.0.1/exp_hd?video_id=Km6_blhEm10' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='8'/>
+        <media:credit role='uploader' scheme='urn:youtube' yt:display='Sumes Music' yt:type='partner'>UCmyppRGkG0KvQ7sDuN0U9iw</media:credit>
+        <media:description type='plain'>We finally got to see the shades, and it was so hype! What a massive lore drop! I really loved the theme that played during their &quot;meeting&quot;, so I decided to cover it! It&apos;s short, but beautiful. I hope you like this rendition! :)
+
+            If you enjoy the music and want to support me, consider becoming a member! ❤️
+            https://www.youtube.com/channel/UCmyppRGkG0KvQ7sDuN0U9iw/join
+
+            __________________________
+
+            Credits:
+
+            ▶ Music composed by HOYO-MiX
+
+            ▶ Cover arranged &amp; produced by Sumes
+
+            ▶ Vocals: Mai SV
+
+            © All rights reserved by miHoYo. Other properties belong to their respective owners.
+            ℗ 2025 Sumes Music
+
+            __________________________
+
+            ✨Stream my music:
+            ►Spotify: https://open.spotify.com/artist/1i8sjiBLOe3WXnRJ8TFLdC?si=ERrzq16AQXuN5EgyVRo6fA
+            ►Apple Music: https://music.apple.com/us/artist/sumes-music/1679839729
+            ►Youtube Music: https://music.youtube.com/channel/UCrLw774GBUGAI_n6MQTox_w
+            ►Soundcloud: https://soundcloud.com/sumes_music
+            ►Tidal: https://tidal.com/browse/artist/38419898
+            ►Deezer: https://www.deezer.com/en/artist/207599887
+
+            ✨Connect with me:
+            ◆Bluesky: https://bsky.app/profile/sumes.bsky.social
+            ◆Hoyoverse Fan-Server (Music, Animation): https://discord.gg/ntZPTU66xd
+
+            ✨Commissions:
+            https://vgen.co/Sumes
+
+            ✨Other inquiries:
+            sumes.music@gmail.com
+
+            __________________________
+
+            Usage Guidelines for My Music
+
+            1. 🚫 Prohibited Uses:
+            - Do not reupload or remix my content without explicit permission.
+            - My music is not permitted for use in podcasts.
+            - Commercial use (e.g., advertisements, corporate videos) requires a separate license agreement. Please contact me for details.
+
+            2. ✔️ Permitted Uses for Content Creators:
+            You are welcome to use my music for your videos and streams on platforms such as YouTube, Twitch, and other social media, provided that you credit me in the video description and include a link to my channel.
+
+            3. 🎤 Downloading Instrumentals:
+            If you want to download the raw audio file of an instrumental for a cover (non-commercial use only), please contact me directly. Proper credit is required.
+
+            4. ❌ No Endorsement:
+            Using my music does not imply endorsement or sponsorship of your content. Please do not suggest otherwise.
+
+            By using my music, you agree to adhere to these guidelines. For any questions or special requests, please contact me directly.
+
+            __________________________
+
+            #Istaroth #Asmoday #Naberius #Ronova
+            #Hoyoverse #Hoyocreators
+            #GenshinImpact #原神 #원신</media:description>
+        <media:keywords/>
+        <media:license type='text/html' href='http://www.youtube.com/t/terms'>youtube</media:license>
+        <media:player url='http://www.youtube.com/watch?v=Km6_blhEm10&amp;feature=youtube_gdata_player'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/Km6_blhEm10/default.jpg' height='90' width='120' time='00:20:53' yt:name='default'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/Km6_blhEm10/mqdefault.jpg' height='180' width='320' yt:name='mqdefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/Km6_blhEm10/hqdefault.jpg' height='360' width='480' yt:name='hqdefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/Km6_blhEm10/sddefault.jpg' height='480' width='640' yt:name='sddefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/Km6_blhEm10/1.jpg' height='90' width='120' time='00:10:26.500' yt:name='start'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/Km6_blhEm10/2.jpg' height='90' width='120' time='00:20:53' yt:name='middle'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/Km6_blhEm10/3.jpg' height='90' width='120' time='00:31:19.500' yt:name='end'/>
+        <media:title type='plain'>The Shades&apos; Lullaby — Teyvat Chapter Interlude Teaser (Sumes Cover) | Genshin Impact</media:title>
+        <yt:duration seconds='90'/>
+        <yt:uploaded>2025-08-07T15:22:51</yt:uploaded>
+        <yt:uploaderId>EEUCmyppRGkG0KvQ7sDuN0U9iw</yt:uploaderId>
+        <yt:videoid>Km6_blhEm10</yt:videoid>
+    </media:group>
+    <gd:rating average='4.151515' max='5' min='1' numRaters='99' rel='http://schemas.google.com/g/2005#overall'/>
+    <yt:statistics favoriteCount='0' viewCount='6300'/>
+    <yt:rating numDislikes='0' numLikes='0'/>
+</entry><entry gd:etag='W/&quot;CUYDQ347eCp7I2A9XRdVGEs.&quot;'>
+    <id>tag:youtube.com,2008:video:w_vdDAjRKoY</id>
+    <published>2025-08-07T15:22:51</published>
+    <updated>2025-08-07T15:22:51</updated>
+    <category scheme='http://schemas.google.com/g/2005#kind' term='http://127.0.0.1/schemas/2007#video'/>
+    <category scheme='http://127.0.0.1/schemas/2007/categories.cat' term='News' label='News &amp; Politics'/>
+    <title>Drip Fest 2025 - &quot;What I Need&quot; (Original Music) | Zenless Zone Zero</title>
+    <content type='application/x-shockwave-flash' src='http://www.youtube.com/v/w_vdDAjRKoY?version=3&amp;f=user_uploads&amp;app=youtube_gdata'/>
+    <link rel='alternate' type='text/html' href='http://www.youtube.com/watch?v=w_vdDAjRKoY&amp;feature=youtube_gdata'/>
+    <link rel='http://127.0.0.1/schemas/2007#video.related' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/videos/w_vdDAjRKoY/related?v=2'/>
+    <link rel='http://127.0.0.1/schemas/2007#mobile' type='text/html' href='http://m.youtube.com/details?v=w_vdDAjRKoY'/>
+    <link rel='http://127.0.0.1/schemas/2007#uploader' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw?v=2'/>
+    <link rel='self' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw/uploads/w_vdDAjRKoY?v=2'/>
+    <author>
+        <name>Sumes Music</name>
+        <uri>http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw</uri>
+        <yt:userId>EEUCmyppRGkG0KvQ7sDuN0U9iw</yt:userId>
+    </author>
+    <yt:accessControl action='comment' permission='allowed'/>
+    <yt:accessControl action='commentVote' permission='allowed'/>
+    <yt:accessControl action='videoRespond' permission='moderated'/>
+    <yt:accessControl action='rate' permission='allowed'/>
+    <yt:accessControl action='embed' permission='allowed'/>
+    <yt:accessControl action='list' permission='allowed'/>
+    <yt:accessControl action='autoPlay' permission='allowed'/>
+    <yt:accessControl action='syndicate' permission='allowed'/>
+    <gd:comments>
+        <gd:feedLink rel='http://127.0.0.1/schemas/2007#comments' href='http://127.0.0.1/feeds/api/videos/w_vdDAjRKoY/comments?v=2' countHint='24'/>
+    </gd:comments>
+    <media:group>
+        <media:category label='News &amp; Politics' scheme='http://127.0.0.1/schemas/2007/categories.cat'>News</media:category>
+        <media:content url='http://www.youtube.com/v/w_vdDAjRKoY?version=3&amp;f=user_uploads&amp;app=youtube_gdata' type='application/x-shockwave-flash' medium='video' isDefault='true' expression='full' duration='2506' yt:format='5'/>
+        <media:content url='http://127.0.0.1/channel_fh264_getvideo?v=w_vdDAjRKoY' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='3'/><media:content url='http://127.0.0.1/get_480?video_id=w_vdDAjRKoY' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='14'/><media:content url='http://127.0.0.1/exp_hd?video_id=w_vdDAjRKoY' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='8'/>
+        <media:credit role='uploader' scheme='urn:youtube' yt:display='Sumes Music' yt:type='partner'>UCmyppRGkG0KvQ7sDuN0U9iw</media:credit>
+        <media:description type='plain'>Back again this year for ZZZ&apos;s annual fan work contest, Drip Fest 2025! This time, I&apos;m bringing you an original track blending jazz, funk, and drum &amp; bass, topped off with vocal samples and chops for that extra energy and flavor. Thank you for listening! :)
+
+            If you enjoy the music and want to support me, consider becoming a member! ❤️
+            https://www.youtube.com/channel/UCmyppRGkG0KvQ7sDuN0U9iw/join
+
+            __________________________
+
+            Credits:
+
+            ▶ Music composed, arranged &amp; produced by Sumes
+
+            ▶ Live Wallpaper from &quot;Drip Fest 2025&quot; Event Page:
+            https://act.hoyoverse.com/zzz/event/e20250625dripfest-g1fj0d
+
+            © All rights reserved by miHoYo. Other properties belong to their respective owners.
+            ℗ 2025 Sumes Music
+
+            __________________________
+
+            ✨Stream my music:
+            ►Spotify: https://open.spotify.com/artist/1i8sjiBLOe3WXnRJ8TFLdC?si=ERrzq16AQXuN5EgyVRo6fA
+            ►Apple Music: https://music.apple.com/us/artist/sumes-music/1679839729
+            ►Youtube Music: https://music.youtube.com/channel/UCrLw774GBUGAI_n6MQTox_w
+            ►Soundcloud: https://soundcloud.com/sumes_music
+            ►Tidal: https://tidal.com/browse/artist/38419898
+            ►Deezer: https://www.deezer.com/en/artist/207599887
+
+            ✨Connect with me:
+            ◆Bluesky: https://bsky.app/profile/sumes.bsky.social
+            ◆Hoyoverse Fan-Server (Music, Animation): https://discord.gg/ntZPTU66xd
+
+            ✨Commissions:
+            https://vgen.co/Sumes
+
+            ✨Other inquiries:
+            sumes.music@gmail.com
+
+            __________________________
+
+            Usage Guidelines for My Music
+
+            1. 🚫 Prohibited Uses:
+            - Do not reupload or remix my content without explicit permission.
+            - My music is not permitted for use in podcasts.
+            - Commercial use (e.g., advertisements, corporate videos) requires a separate license agreement. Please contact me for details.
+
+            2. ✔️ Permitted Uses for Content Creators:
+            You are welcome to use my music for your videos and streams on platforms such as YouTube, Twitch, and other social media, provided that you credit me in the video description and include a link to my channel.
+
+            3. 🎤 Downloading Instrumentals:
+            If you want to download the raw audio file of an instrumental for a cover (non-commercial use only), please contact me directly. Proper credit is required.
+
+            4. ❌ No Endorsement:
+            Using my music does not imply endorsement or sponsorship of your content. Please do not suggest otherwise.
+
+            By using my music, you agree to adhere to these guidelines. For any questions or special requests, please contact me directly.
+
+            __________________________
+
+            #Hoyoverse #Hoyocreators
+            #zzzero #Dripfest2025 #zzzS2Music
+            #ZenlessZoneZero #zzzcreators #zzzeromusic</media:description>
+        <media:keywords/>
+        <media:license type='text/html' href='http://www.youtube.com/t/terms'>youtube</media:license>
+        <media:player url='http://www.youtube.com/watch?v=w_vdDAjRKoY&amp;feature=youtube_gdata_player'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/w_vdDAjRKoY/default.jpg' height='90' width='120' time='00:20:53' yt:name='default'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/w_vdDAjRKoY/mqdefault.jpg' height='180' width='320' yt:name='mqdefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/w_vdDAjRKoY/hqdefault.jpg' height='360' width='480' yt:name='hqdefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/w_vdDAjRKoY/sddefault.jpg' height='480' width='640' yt:name='sddefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/w_vdDAjRKoY/1.jpg' height='90' width='120' time='00:10:26.500' yt:name='start'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/w_vdDAjRKoY/2.jpg' height='90' width='120' time='00:20:53' yt:name='middle'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/w_vdDAjRKoY/3.jpg' height='90' width='120' time='00:31:19.500' yt:name='end'/>
+        <media:title type='plain'>Drip Fest 2025 - &quot;What I Need&quot; (Original Music) | Zenless Zone Zero</media:title>
+        <yt:duration seconds='186'/>
+        <yt:uploaded>2025-08-07T15:22:51</yt:uploaded>
+        <yt:uploaderId>EEUCmyppRGkG0KvQ7sDuN0U9iw</yt:uploaderId>
+        <yt:videoid>w_vdDAjRKoY</yt:videoid>
+    </media:group>
+    <gd:rating average='4.151515' max='5' min='1' numRaters='99' rel='http://schemas.google.com/g/2005#overall'/>
+    <yt:statistics favoriteCount='0' viewCount='2799'/>
+    <yt:rating numDislikes='0' numLikes='0'/>
+</entry><entry gd:etag='W/&quot;CUYDQ347eCp7I2A9XRdVGEs.&quot;'>
+    <id>tag:youtube.com,2008:video:_O7n3Lyutfw</id>
+    <published>2025-08-07T15:22:51</published>
+    <updated>2025-08-07T15:22:51</updated>
+    <category scheme='http://schemas.google.com/g/2005#kind' term='http://127.0.0.1/schemas/2007#video'/>
+    <category scheme='http://127.0.0.1/schemas/2007/categories.cat' term='News' label='News &amp; Politics'/>
+    <title>Star Odyssey — Skirk Song Cover (ft. @SeikaNoLullaby) | Genshin Impact #FightLikeSkirk</title>
+    <content type='application/x-shockwave-flash' src='http://www.youtube.com/v/_O7n3Lyutfw?version=3&amp;f=user_uploads&amp;app=youtube_gdata'/>
+    <link rel='alternate' type='text/html' href='http://www.youtube.com/watch?v=_O7n3Lyutfw&amp;feature=youtube_gdata'/>
+    <link rel='http://127.0.0.1/schemas/2007#video.related' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/videos/_O7n3Lyutfw/related?v=2'/>
+    <link rel='http://127.0.0.1/schemas/2007#mobile' type='text/html' href='http://m.youtube.com/details?v=_O7n3Lyutfw'/>
+    <link rel='http://127.0.0.1/schemas/2007#uploader' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw?v=2'/>
+    <link rel='self' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw/uploads/_O7n3Lyutfw?v=2'/>
+    <author>
+        <name>Sumes Music</name>
+        <uri>http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw</uri>
+        <yt:userId>EEUCmyppRGkG0KvQ7sDuN0U9iw</yt:userId>
+    </author>
+    <yt:accessControl action='comment' permission='allowed'/>
+    <yt:accessControl action='commentVote' permission='allowed'/>
+    <yt:accessControl action='videoRespond' permission='moderated'/>
+    <yt:accessControl action='rate' permission='allowed'/>
+    <yt:accessControl action='embed' permission='allowed'/>
+    <yt:accessControl action='list' permission='allowed'/>
+    <yt:accessControl action='autoPlay' permission='allowed'/>
+    <yt:accessControl action='syndicate' permission='allowed'/>
+    <gd:comments>
+        <gd:feedLink rel='http://127.0.0.1/schemas/2007#comments' href='http://127.0.0.1/feeds/api/videos/_O7n3Lyutfw/comments?v=2' countHint='24'/>
+    </gd:comments>
+    <media:group>
+        <media:category label='News &amp; Politics' scheme='http://127.0.0.1/schemas/2007/categories.cat'>News</media:category>
+        <media:content url='http://www.youtube.com/v/_O7n3Lyutfw?version=3&amp;f=user_uploads&amp;app=youtube_gdata' type='application/x-shockwave-flash' medium='video' isDefault='true' expression='full' duration='2506' yt:format='5'/>
+        <media:content url='http://127.0.0.1/channel_fh264_getvideo?v=_O7n3Lyutfw' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='3'/><media:content url='http://127.0.0.1/get_480?video_id=_O7n3Lyutfw' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='14'/><media:content url='http://127.0.0.1/exp_hd?video_id=_O7n3Lyutfw' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='8'/>
+        <media:credit role='uploader' scheme='urn:youtube' yt:display='Sumes Music' yt:type='partner'>UCmyppRGkG0KvQ7sDuN0U9iw</media:credit>
+        <media:description type='plain'>Get ready for more Skirk love! This cover is a special one. Created in collaboration with Seika, who lends her beautiful voice to Skirks theme &quot;Star Odyssey&quot;, from her animated short. The instrumental for this project was recreated from scratch by yours truly.
+
+            Check out Seika&apos;s upload! https://youtu.be/stwougUmgqM?si=DKfLjo-vJRpPdlKG
+
+            We hope you enjoy the cover as much as we did making it. Thanks for stopping by! :)
+
+            If you enjoy the music and want to support me, consider becoming a member! ❤️
+            https://www.youtube.com/channel/UCmyppRGkG0KvQ7sDuN0U9iw/join
+
+            __________________________
+
+            Credits:
+
+            ▶ Music composed by Yang Li (HOYO-MiX)
+
+            ▶ Instrumental arranged and produced by Sumes
+
+            ▶ Vocals by Seika ( @SeikaNoLullaby )
+
+            ▶ Official Skirk Illustration:
+            https://x.com/GenshinUniverse/status/1936990615998464314
+
+            © All rights reserved by miHoYo. Other properties belong to their respective owners.
+            ℗ 2025 Sumes Music
+
+            __________________________
+
+            ✨Stream my music:
+            ►Spotify: https://open.spotify.com/artist/1i8sjiBLOe3WXnRJ8TFLdC?si=ERrzq16AQXuN5EgyVRo6fA
+            ►Apple Music: https://music.apple.com/us/artist/sumes-music/1679839729
+            ►Youtube Music: https://music.youtube.com/channel/UCrLw774GBUGAI_n6MQTox_w
+            ►Soundcloud: https://soundcloud.com/sumes_music
+            ►Tidal: https://tidal.com/browse/artist/38419898
+            ►Deezer: https://www.deezer.com/en/artist/207599887
+
+            ✨Connect with me:
+            ◆Bluesky: https://bsky.app/profile/sumes.bsky.social
+            ◆Hoyoverse Fan-Server (Music, Animation): https://discord.gg/ntZPTU66xd
+
+            ✨Commissions:
+            https://vgen.co/Sumes
+
+            ✨Other inquiries:
+            sumes.music@gmail.com
+
+            __________________________
+
+            Usage Guidelines for My Music
+
+            1. 🚫 Prohibited Uses:
+            - Do not reupload or remix my content without explicit permission.
+            - My music is not permitted for use in podcasts.
+            - Commercial use (e.g., advertisements, corporate videos) requires a separate license agreement. Please contact me for details.
+
+            2. ✔️ Permitted Uses for Content Creators:
+            You are welcome to use my music for your videos and streams on platforms such as YouTube, Twitch, and other social media, provided that you credit me in the video description and include a link to my channel.
+
+            3. 🎤 Downloading Instrumentals:
+            If you want to download the raw audio file of an instrumental for a cover (non-commercial use only), please contact me directly. Proper credit is required.
+
+            4. ❌ No Endorsement:
+            Using my music does not imply endorsement or sponsorship of your content. Please do not suggest otherwise.
+
+            By using my music, you agree to adhere to these guidelines. For any questions or special requests, please contact me directly.
+
+            __________________________
+
+            #Skirk #FightLikeSkirk #GenshinFanWork
+            #Hoyoverse #Hoyocreators
+            #GenshinImpact #原神 #원신</media:description>
+        <media:keywords/>
+        <media:license type='text/html' href='http://www.youtube.com/t/terms'>youtube</media:license>
+        <media:player url='http://www.youtube.com/watch?v=_O7n3Lyutfw&amp;feature=youtube_gdata_player'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/_O7n3Lyutfw/default.jpg' height='90' width='120' time='00:20:53' yt:name='default'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/_O7n3Lyutfw/mqdefault.jpg' height='180' width='320' yt:name='mqdefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/_O7n3Lyutfw/hqdefault.jpg' height='360' width='480' yt:name='hqdefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/_O7n3Lyutfw/sddefault.jpg' height='480' width='640' yt:name='sddefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/_O7n3Lyutfw/1.jpg' height='90' width='120' time='00:10:26.500' yt:name='start'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/_O7n3Lyutfw/2.jpg' height='90' width='120' time='00:20:53' yt:name='middle'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/_O7n3Lyutfw/3.jpg' height='90' width='120' time='00:31:19.500' yt:name='end'/>
+        <media:title type='plain'>Star Odyssey — Skirk Song Cover (ft. @SeikaNoLullaby) | Genshin Impact #FightLikeSkirk</media:title>
+        <yt:duration seconds='196'/>
+        <yt:uploaded>2025-08-07T15:22:51</yt:uploaded>
+        <yt:uploaderId>EEUCmyppRGkG0KvQ7sDuN0U9iw</yt:uploaderId>
+        <yt:videoid>_O7n3Lyutfw</yt:videoid>
+    </media:group>
+    <gd:rating average='4.151515' max='5' min='1' numRaters='99' rel='http://schemas.google.com/g/2005#overall'/>
+    <yt:statistics favoriteCount='0' viewCount='4812'/>
+    <yt:rating numDislikes='0' numLikes='0'/>
+</entry><entry gd:etag='W/&quot;CUYDQ347eCp7I2A9XRdVGEs.&quot;'>
+    <id>tag:youtube.com,2008:video:mZqBTHSoccE</id>
+    <published>2025-08-07T15:22:52</published>
+    <updated>2025-08-07T15:22:52</updated>
+    <category scheme='http://schemas.google.com/g/2005#kind' term='http://127.0.0.1/schemas/2007#video'/>
+    <category scheme='http://127.0.0.1/schemas/2007/categories.cat' term='News' label='News &amp; Politics'/>
+    <title>Ju Fufu Theme Music - Heroic Roar of the Tiger (Extended Cover) | Zenless Zone Zero</title>
+    <content type='application/x-shockwave-flash' src='http://www.youtube.com/v/mZqBTHSoccE?version=3&amp;f=user_uploads&amp;app=youtube_gdata'/>
+    <link rel='alternate' type='text/html' href='http://www.youtube.com/watch?v=mZqBTHSoccE&amp;feature=youtube_gdata'/>
+    <link rel='http://127.0.0.1/schemas/2007#video.related' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/videos/mZqBTHSoccE/related?v=2'/>
+    <link rel='http://127.0.0.1/schemas/2007#mobile' type='text/html' href='http://m.youtube.com/details?v=mZqBTHSoccE'/>
+    <link rel='http://127.0.0.1/schemas/2007#uploader' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw?v=2'/>
+    <link rel='self' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw/uploads/mZqBTHSoccE?v=2'/>
+    <author>
+        <name>Sumes Music</name>
+        <uri>http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw</uri>
+        <yt:userId>EEUCmyppRGkG0KvQ7sDuN0U9iw</yt:userId>
+    </author>
+    <yt:accessControl action='comment' permission='allowed'/>
+    <yt:accessControl action='commentVote' permission='allowed'/>
+    <yt:accessControl action='videoRespond' permission='moderated'/>
+    <yt:accessControl action='rate' permission='allowed'/>
+    <yt:accessControl action='embed' permission='allowed'/>
+    <yt:accessControl action='list' permission='allowed'/>
+    <yt:accessControl action='autoPlay' permission='allowed'/>
+    <yt:accessControl action='syndicate' permission='allowed'/>
+    <gd:comments>
+        <gd:feedLink rel='http://127.0.0.1/schemas/2007#comments' href='http://127.0.0.1/feeds/api/videos/mZqBTHSoccE/comments?v=2' countHint='24'/>
+    </gd:comments>
+    <media:group>
+        <media:category label='News &amp; Politics' scheme='http://127.0.0.1/schemas/2007/categories.cat'>News</media:category>
+        <media:content url='http://www.youtube.com/v/mZqBTHSoccE?version=3&amp;f=user_uploads&amp;app=youtube_gdata' type='application/x-shockwave-flash' medium='video' isDefault='true' expression='full' duration='2506' yt:format='5'/>
+        <media:content url='http://127.0.0.1/channel_fh264_getvideo?v=mZqBTHSoccE' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='3'/><media:content url='http://127.0.0.1/get_480?video_id=mZqBTHSoccE' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='14'/><media:content url='http://127.0.0.1/exp_hd?video_id=mZqBTHSoccE' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='8'/>
+        <media:credit role='uploader' scheme='urn:youtube' yt:display='Sumes Music' yt:type='partner'>UCmyppRGkG0KvQ7sDuN0U9iw</media:credit>
+        <media:description type='plain'>I created this extended cover of Ju Fufu&apos;s theme from her character demo! She&apos;s soooo adorable! Hope you enjoy the music! :)
+
+            If you enjoy the music and want to support me, consider becoming a member! ❤️
+            https://www.youtube.com/channel/UCmyppRGkG0KvQ7sDuN0U9iw/join
+
+            __________________________
+
+            Credits:
+
+            ▶ Music composed by HOYO-MiX
+
+            ▶ Cover arranged &amp; produced by Sumes
+
+            ▶ Ju Fufu&apos;s Character Demo:
+            https://youtu.be/DDl9QwUtLGg?si=g8lb0L4KV7NHY6NA
+
+            © All rights reserved by miHoYo. Other properties belong to their respective owners.
+            ℗ 2025 Sumes Music
+
+            __________________________
+
+            ✨Stream my music:
+            ►Spotify: https://open.spotify.com/artist/1i8sjiBLOe3WXnRJ8TFLdC?si=ERrzq16AQXuN5EgyVRo6fA
+            ►Apple Music: https://music.apple.com/us/artist/sumes-music/1679839729
+            ►Youtube Music: https://music.youtube.com/channel/UCrLw774GBUGAI_n6MQTox_w
+            ►Soundcloud: https://soundcloud.com/sumes_music
+            ►Tidal: https://tidal.com/browse/artist/38419898
+            ►Deezer: https://www.deezer.com/en/artist/207599887
+
+            ✨Connect with me:
+            ◆Bluesky: https://bsky.app/profile/sumes.bsky.social
+            ◆Hoyoverse Fan-Server (Music, Animation): https://discord.gg/ntZPTU66xd
+
+            ✨Commissions:
+            https://vgen.co/Sumes
+
+            ✨Other inquiries:
+            sumes.music@gmail.com
+
+            __________________________
+
+            Usage Guidelines for My Music
+
+            1. 🚫 Prohibited Uses:
+            - Do not reupload or remix my content without explicit permission.
+            - My music is not permitted for use in podcasts.
+            - Commercial use (e.g., advertisements, corporate videos) requires a separate license agreement. Please contact me for details.
+
+            2. ✔️ Permitted Uses for Content Creators:
+            You are welcome to use my music for your videos and streams on platforms such as YouTube, Twitch, and other social media, provided that you credit me in the video description and include a link to my channel.
+
+            3. 🎤 Downloading Instrumentals:
+            If you want to download the raw audio file of an instrumental for a cover (non-commercial use only), please contact me directly. Proper credit is required.
+
+            4. ❌ No Endorsement:
+            Using my music does not imply endorsement or sponsorship of your content. Please do not suggest otherwise.
+
+            By using my music, you agree to adhere to these guidelines. For any questions or special requests, please contact me directly.
+
+            __________________________
+
+            #JuFufu
+            #Hoyoverse #Hoyocreators
+            #ZenlessZoneZero #zzzero #zzzcreators #zzzeromusic #zzzvideo</media:description>
+        <media:keywords/>
+        <media:license type='text/html' href='http://www.youtube.com/t/terms'>youtube</media:license>
+        <media:player url='http://www.youtube.com/watch?v=mZqBTHSoccE&amp;feature=youtube_gdata_player'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/mZqBTHSoccE/default.jpg' height='90' width='120' time='00:20:53' yt:name='default'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/mZqBTHSoccE/mqdefault.jpg' height='180' width='320' yt:name='mqdefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/mZqBTHSoccE/hqdefault.jpg' height='360' width='480' yt:name='hqdefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/mZqBTHSoccE/sddefault.jpg' height='480' width='640' yt:name='sddefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/mZqBTHSoccE/1.jpg' height='90' width='120' time='00:10:26.500' yt:name='start'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/mZqBTHSoccE/2.jpg' height='90' width='120' time='00:20:53' yt:name='middle'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/mZqBTHSoccE/3.jpg' height='90' width='120' time='00:31:19.500' yt:name='end'/>
+        <media:title type='plain'>Ju Fufu Theme Music - Heroic Roar of the Tiger (Extended Cover) | Zenless Zone Zero</media:title>
+        <yt:duration seconds='122'/>
+        <yt:uploaded>2025-08-07T15:22:52</yt:uploaded>
+        <yt:uploaderId>EEUCmyppRGkG0KvQ7sDuN0U9iw</yt:uploaderId>
+        <yt:videoid>mZqBTHSoccE</yt:videoid>
+    </media:group>
+    <gd:rating average='4.151515' max='5' min='1' numRaters='99' rel='http://schemas.google.com/g/2005#overall'/>
+    <yt:statistics favoriteCount='0' viewCount='17799'/>
+    <yt:rating numDislikes='0' numLikes='0'/>
+</entry><entry gd:etag='W/&quot;CUYDQ347eCp7I2A9XRdVGEs.&quot;'>
+    <id>tag:youtube.com,2008:video:7qS0dyQWcrs</id>
+    <published>2025-08-07T15:22:52</published>
+    <updated>2025-08-07T15:22:52</updated>
+    <category scheme='http://schemas.google.com/g/2005#kind' term='http://127.0.0.1/schemas/2007#video'/>
+    <category scheme='http://127.0.0.1/schemas/2007/categories.cat' term='News' label='News &amp; Politics'/>
+    <title>Skirk Theme Music - Lament of a Ruined World (Instrumental Cover) | Genshin Impact</title>
+    <content type='application/x-shockwave-flash' src='http://www.youtube.com/v/7qS0dyQWcrs?version=3&amp;f=user_uploads&amp;app=youtube_gdata'/>
+    <link rel='alternate' type='text/html' href='http://www.youtube.com/watch?v=7qS0dyQWcrs&amp;feature=youtube_gdata'/>
+    <link rel='http://127.0.0.1/schemas/2007#video.related' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/videos/7qS0dyQWcrs/related?v=2'/>
+    <link rel='http://127.0.0.1/schemas/2007#mobile' type='text/html' href='http://m.youtube.com/details?v=7qS0dyQWcrs'/>
+    <link rel='http://127.0.0.1/schemas/2007#uploader' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw?v=2'/>
+    <link rel='self' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw/uploads/7qS0dyQWcrs?v=2'/>
+    <author>
+        <name>Sumes Music</name>
+        <uri>http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw</uri>
+        <yt:userId>EEUCmyppRGkG0KvQ7sDuN0U9iw</yt:userId>
+    </author>
+    <yt:accessControl action='comment' permission='allowed'/>
+    <yt:accessControl action='commentVote' permission='allowed'/>
+    <yt:accessControl action='videoRespond' permission='moderated'/>
+    <yt:accessControl action='rate' permission='allowed'/>
+    <yt:accessControl action='embed' permission='allowed'/>
+    <yt:accessControl action='list' permission='allowed'/>
+    <yt:accessControl action='autoPlay' permission='allowed'/>
+    <yt:accessControl action='syndicate' permission='allowed'/>
+    <gd:comments>
+        <gd:feedLink rel='http://127.0.0.1/schemas/2007#comments' href='http://127.0.0.1/feeds/api/videos/7qS0dyQWcrs/comments?v=2' countHint='24'/>
+    </gd:comments>
+    <media:group>
+        <media:category label='News &amp; Politics' scheme='http://127.0.0.1/schemas/2007/categories.cat'>News</media:category>
+        <media:content url='http://www.youtube.com/v/7qS0dyQWcrs?version=3&amp;f=user_uploads&amp;app=youtube_gdata' type='application/x-shockwave-flash' medium='video' isDefault='true' expression='full' duration='2506' yt:format='5'/>
+        <media:content url='http://127.0.0.1/channel_fh264_getvideo?v=7qS0dyQWcrs' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='3'/><media:content url='http://127.0.0.1/get_480?video_id=7qS0dyQWcrs' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='14'/><media:content url='http://127.0.0.1/exp_hd?video_id=7qS0dyQWcrs' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='8'/>
+        <media:credit role='uploader' scheme='urn:youtube' yt:display='Sumes Music' yt:type='partner'>UCmyppRGkG0KvQ7sDuN0U9iw</media:credit>
+        <media:description type='plain'>Here&apos;s my cover of Skirk&apos;s theme soundtrack from her character trailer &quot;Lament of a Ruined World&quot;. Hope you like this instrumental version! :)
+
+            If you enjoy the music and want to support me, consider becoming a member! ❤️
+            https://www.youtube.com/channel/UCmyppRGkG0KvQ7sDuN0U9iw/join
+
+            __________________________
+
+            Credits:
+
+            ▶ OST composed by HOYO-MiX
+
+            ▶ Instrumental arranged &amp; produced by Sumes
+
+            ▶ Artwork from 5.7 Preregistration Event
+            https://x.com/GenshinUniverse/status/1932697879958696283/photo/3
+
+            © All rights reserved by miHoYo. Other properties belong to their respective owners.
+            ℗ 2025 Sumes Music
+
+            __________________________
+
+            ✨Stream my music:
+            ►Spotify: https://open.spotify.com/artist/1i8sjiBLOe3WXnRJ8TFLdC?si=ERrzq16AQXuN5EgyVRo6fA
+            ►Apple Music: https://music.apple.com/us/artist/sumes-music/1679839729
+            ►Youtube Music: https://music.youtube.com/channel/UCrLw774GBUGAI_n6MQTox_w
+            ►Soundcloud: https://soundcloud.com/sumes_music
+            ►Tidal: https://tidal.com/browse/artist/38419898
+            ►Deezer: https://www.deezer.com/en/artist/207599887
+
+            ✨Connect with me:
+            ◆Bluesky: https://bsky.app/profile/sumes.bsky.social
+            ◆Hoyoverse Fan-Server (Music, Animation): https://discord.gg/ntZPTU66xd
+
+            ✨Commissions:
+            https://vgen.co/Sumes
+
+            ✨Other inquiries:
+            sumes.music@gmail.com
+
+            __________________________
+
+            Usage Guidelines for My Music
+
+            1. 🚫 Prohibited Uses:
+            - Do not reupload or remix my content without explicit permission.
+            - My music is not permitted for use in podcasts.
+            - Commercial use (e.g., advertisements, corporate videos) requires a separate license agreement. Please contact me for details.
+
+            2. ✔️ Permitted Uses for Content Creators:
+            You are welcome to use my music for your videos and streams on platforms such as YouTube, Twitch, and other social media, provided that you credit me in the video description and include a link to my channel.
+
+            3. 🎤 Downloading Instrumentals:
+            If you want to download the raw audio file of an instrumental for a cover (non-commercial use only), please contact me directly. Proper credit is required.
+
+            4. ❌ No Endorsement:
+            Using my music does not imply endorsement or sponsorship of your content. Please do not suggest otherwise.
+
+            By using my music, you agree to adhere to these guidelines. For any questions or special requests, please contact me directly.
+
+            __________________________
+
+            #FightLikeSkirk  #GenshinFanWork #Skirk
+            #Hoyoverse #Hoyocreators
+            #GenshinImpact #原神 #원신</media:description>
+        <media:keywords/>
+        <media:license type='text/html' href='http://www.youtube.com/t/terms'>youtube</media:license>
+        <media:player url='http://www.youtube.com/watch?v=7qS0dyQWcrs&amp;feature=youtube_gdata_player'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/7qS0dyQWcrs/default.jpg' height='90' width='120' time='00:20:53' yt:name='default'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/7qS0dyQWcrs/mqdefault.jpg' height='180' width='320' yt:name='mqdefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/7qS0dyQWcrs/hqdefault.jpg' height='360' width='480' yt:name='hqdefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/7qS0dyQWcrs/sddefault.jpg' height='480' width='640' yt:name='sddefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/7qS0dyQWcrs/1.jpg' height='90' width='120' time='00:10:26.500' yt:name='start'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/7qS0dyQWcrs/2.jpg' height='90' width='120' time='00:20:53' yt:name='middle'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/7qS0dyQWcrs/3.jpg' height='90' width='120' time='00:31:19.500' yt:name='end'/>
+        <media:title type='plain'>Skirk Theme Music - Lament of a Ruined World (Instrumental Cover) | Genshin Impact</media:title>
+        <yt:duration seconds='147'/>
+        <yt:uploaded>2025-08-07T15:22:52</yt:uploaded>
+        <yt:uploaderId>EEUCmyppRGkG0KvQ7sDuN0U9iw</yt:uploaderId>
+        <yt:videoid>7qS0dyQWcrs</yt:videoid>
+    </media:group>
+    <gd:rating average='4.151515' max='5' min='1' numRaters='99' rel='http://schemas.google.com/g/2005#overall'/>
+    <yt:statistics favoriteCount='0' viewCount='19019'/>
+    <yt:rating numDislikes='0' numLikes='0'/>
+</entry><entry gd:etag='W/&quot;CUYDQ347eCp7I2A9XRdVGEs.&quot;'>
+    <id>tag:youtube.com,2008:video:KsN0jYXl6YU</id>
+    <published>2025-08-07T15:22:52</published>
+    <updated>2025-08-07T15:22:52</updated>
+    <category scheme='http://schemas.google.com/g/2005#kind' term='http://127.0.0.1/schemas/2007#video'/>
+    <category scheme='http://127.0.0.1/schemas/2007/categories.cat' term='News' label='News &amp; Politics'/>
+    <title>Nod-Krai Teaser Music - Prelude to Moonlight (Sumes Cover) | Genshin Impact #NodKrai</title>
+    <content type='application/x-shockwave-flash' src='http://www.youtube.com/v/KsN0jYXl6YU?version=3&amp;f=user_uploads&amp;app=youtube_gdata'/>
+    <link rel='alternate' type='text/html' href='http://www.youtube.com/watch?v=KsN0jYXl6YU&amp;feature=youtube_gdata'/>
+    <link rel='http://127.0.0.1/schemas/2007#video.related' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/videos/KsN0jYXl6YU/related?v=2'/>
+    <link rel='http://127.0.0.1/schemas/2007#mobile' type='text/html' href='http://m.youtube.com/details?v=KsN0jYXl6YU'/>
+    <link rel='http://127.0.0.1/schemas/2007#uploader' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw?v=2'/>
+    <link rel='self' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw/uploads/KsN0jYXl6YU?v=2'/>
+    <author>
+        <name>Sumes Music</name>
+        <uri>http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw</uri>
+        <yt:userId>EEUCmyppRGkG0KvQ7sDuN0U9iw</yt:userId>
+    </author>
+    <yt:accessControl action='comment' permission='allowed'/>
+    <yt:accessControl action='commentVote' permission='allowed'/>
+    <yt:accessControl action='videoRespond' permission='moderated'/>
+    <yt:accessControl action='rate' permission='allowed'/>
+    <yt:accessControl action='embed' permission='allowed'/>
+    <yt:accessControl action='list' permission='allowed'/>
+    <yt:accessControl action='autoPlay' permission='allowed'/>
+    <yt:accessControl action='syndicate' permission='allowed'/>
+    <gd:comments>
+        <gd:feedLink rel='http://127.0.0.1/schemas/2007#comments' href='http://127.0.0.1/feeds/api/videos/KsN0jYXl6YU/comments?v=2' countHint='24'/>
+    </gd:comments>
+    <media:group>
+        <media:category label='News &amp; Politics' scheme='http://127.0.0.1/schemas/2007/categories.cat'>News</media:category>
+        <media:content url='http://www.youtube.com/v/KsN0jYXl6YU?version=3&amp;f=user_uploads&amp;app=youtube_gdata' type='application/x-shockwave-flash' medium='video' isDefault='true' expression='full' duration='2506' yt:format='5'/>
+        <media:content url='http://127.0.0.1/channel_fh264_getvideo?v=KsN0jYXl6YU' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='3'/><media:content url='http://127.0.0.1/get_480?video_id=KsN0jYXl6YU' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='14'/><media:content url='http://127.0.0.1/exp_hd?video_id=KsN0jYXl6YU' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='8'/>
+        <media:credit role='uploader' scheme='urn:youtube' yt:display='Sumes Music' yt:type='partner'>UCmyppRGkG0KvQ7sDuN0U9iw</media:credit>
+        <media:description type='plain'>Now Available on Spotify: https://open.spotify.com/track/726PYXD3vnw5Seblm8zMDP?si=b2dbf9c8e7764e66
+            Here&apos;s my cover of Nod-Krai&apos;s teaser preview soundtrack. Such a beautiful piece. I hope you like it!
+
+            If you enjoy the music and want to support me, consider becoming a member! ❤️
+            https://www.youtube.com/channel/UCmyppRGkG0KvQ7sDuN0U9iw/join
+
+            __________________________
+
+            Credits:
+
+            ▶ OST composed by HOYO-MiX
+
+            ▶ Cover arranged &amp; produced by Sumes
+
+            ▶ Artwork from teaser preview
+            https://youtu.be/k1U2LnXd5GE?si=otaCLIiSJlcil_fV
+
+            © All rights reserved by miHoYo. Other properties belong to their respective owners.
+            ℗ 2025 Sumes Music
+
+            __________________________
+
+            ✨Stream my music:
+            ►Spotify: https://open.spotify.com/artist/1i8sjiBLOe3WXnRJ8TFLdC?si=ERrzq16AQXuN5EgyVRo6fA
+            ►Apple Music: https://music.apple.com/us/artist/sumes-music/1679839729
+            ►Youtube Music: https://music.youtube.com/channel/UCrLw774GBUGAI_n6MQTox_w
+            ►Soundcloud: https://soundcloud.com/sumes_music
+            ►Tidal: https://tidal.com/browse/artist/38419898
+            ►Deezer: https://www.deezer.com/en/artist/207599887
+
+            ✨Connect with me:
+            ◆Bluesky: https://bsky.app/profile/sumes.bsky.social
+            ◆Hoyoverse Fan-Server (Music, Animation): https://discord.gg/ntZPTU66xd
+
+            ✨Commissions:
+            https://vgen.co/Sumes
+
+            ✨Other inquiries:
+            sumes.music@gmail.com
+
+            __________________________
+
+            Usage Guidelines for My Music
+
+            1. 🚫 Prohibited Uses:
+            - Do not reupload or remix my content without explicit permission.
+            - My music is not permitted for use in podcasts.
+            - Commercial use (e.g., advertisements, corporate videos) requires a separate license agreement. Please contact me for details.
+
+            2. ✔️ Permitted Uses for Content Creators:
+            You are welcome to use my music for your videos and streams on platforms such as YouTube, Twitch, and other social media, provided that you credit me in the video description and include a link to my channel.
+
+            3. 🎤 Downloading Instrumentals:
+            If you want to download the raw audio file of an instrumental for a cover (non-commercial use only), please contact me directly. Proper credit is required.
+
+            4. ❌ No Endorsement:
+            Using my music does not imply endorsement or sponsorship of your content. Please do not suggest otherwise.
+
+            By using my music, you agree to adhere to these guidelines. For any questions or special requests, please contact me directly.
+
+            __________________________
+
+            #NodKrai
+            #Hoyoverse #Hoyocreators
+            #GenshinImpact #原神 #원신</media:description>
+        <media:keywords/>
+        <media:license type='text/html' href='http://www.youtube.com/t/terms'>youtube</media:license>
+        <media:player url='http://www.youtube.com/watch?v=KsN0jYXl6YU&amp;feature=youtube_gdata_player'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/KsN0jYXl6YU/default.jpg' height='90' width='120' time='00:20:53' yt:name='default'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/KsN0jYXl6YU/mqdefault.jpg' height='180' width='320' yt:name='mqdefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/KsN0jYXl6YU/hqdefault.jpg' height='360' width='480' yt:name='hqdefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/KsN0jYXl6YU/sddefault.jpg' height='480' width='640' yt:name='sddefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/KsN0jYXl6YU/1.jpg' height='90' width='120' time='00:10:26.500' yt:name='start'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/KsN0jYXl6YU/2.jpg' height='90' width='120' time='00:20:53' yt:name='middle'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/KsN0jYXl6YU/3.jpg' height='90' width='120' time='00:31:19.500' yt:name='end'/>
+        <media:title type='plain'>Nod-Krai Teaser Music - Prelude to Moonlight (Sumes Cover) | Genshin Impact #NodKrai</media:title>
+        <yt:duration seconds='93'/>
+        <yt:uploaded>2025-08-07T15:22:52</yt:uploaded>
+        <yt:uploaderId>EEUCmyppRGkG0KvQ7sDuN0U9iw</yt:uploaderId>
+        <yt:videoid>KsN0jYXl6YU</yt:videoid>
+    </media:group>
+    <gd:rating average='4.151515' max='5' min='1' numRaters='99' rel='http://schemas.google.com/g/2005#overall'/>
+    <yt:statistics favoriteCount='0' viewCount='56624'/>
+    <yt:rating numDislikes='0' numLikes='0'/>
+</entry><entry gd:etag='W/&quot;CUYDQ347eCp7I2A9XRdVGEs.&quot;'>
+    <id>tag:youtube.com,2008:video:GNAhR1cGRxw</id>
+    <published>2025-08-07T15:22:52</published>
+    <updated>2025-08-07T15:22:52</updated>
+    <category scheme='http://schemas.google.com/g/2005#kind' term='http://127.0.0.1/schemas/2007#video'/>
+    <category scheme='http://127.0.0.1/schemas/2007/categories.cat' term='News' label='News &amp; Politics'/>
+    <title>Skirk Theme Music - The Sinner&apos;s Disciple (Fan-Made) | Genshin Impact</title>
+    <content type='application/x-shockwave-flash' src='http://www.youtube.com/v/GNAhR1cGRxw?version=3&amp;f=user_uploads&amp;app=youtube_gdata'/>
+    <link rel='alternate' type='text/html' href='http://www.youtube.com/watch?v=GNAhR1cGRxw&amp;feature=youtube_gdata'/>
+    <link rel='http://127.0.0.1/schemas/2007#video.related' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/videos/GNAhR1cGRxw/related?v=2'/>
+    <link rel='http://127.0.0.1/schemas/2007#mobile' type='text/html' href='http://m.youtube.com/details?v=GNAhR1cGRxw'/>
+    <link rel='http://127.0.0.1/schemas/2007#uploader' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw?v=2'/>
+    <link rel='self' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw/uploads/GNAhR1cGRxw?v=2'/>
+    <author>
+        <name>Sumes Music</name>
+        <uri>http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw</uri>
+        <yt:userId>EEUCmyppRGkG0KvQ7sDuN0U9iw</yt:userId>
+    </author>
+    <yt:accessControl action='comment' permission='allowed'/>
+    <yt:accessControl action='commentVote' permission='allowed'/>
+    <yt:accessControl action='videoRespond' permission='moderated'/>
+    <yt:accessControl action='rate' permission='allowed'/>
+    <yt:accessControl action='embed' permission='allowed'/>
+    <yt:accessControl action='list' permission='allowed'/>
+    <yt:accessControl action='autoPlay' permission='allowed'/>
+    <yt:accessControl action='syndicate' permission='allowed'/>
+    <gd:comments>
+        <gd:feedLink rel='http://127.0.0.1/schemas/2007#comments' href='http://127.0.0.1/feeds/api/videos/GNAhR1cGRxw/comments?v=2' countHint='24'/>
+    </gd:comments>
+    <media:group>
+        <media:category label='News &amp; Politics' scheme='http://127.0.0.1/schemas/2007/categories.cat'>News</media:category>
+        <media:content url='http://www.youtube.com/v/GNAhR1cGRxw?version=3&amp;f=user_uploads&amp;app=youtube_gdata' type='application/x-shockwave-flash' medium='video' isDefault='true' expression='full' duration='2506' yt:format='5'/>
+        <media:content url='http://127.0.0.1/channel_fh264_getvideo?v=GNAhR1cGRxw' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='3'/><media:content url='http://127.0.0.1/get_480?video_id=GNAhR1cGRxw' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='14'/><media:content url='http://127.0.0.1/exp_hd?video_id=GNAhR1cGRxw' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='8'/>
+        <media:credit role='uploader' scheme='urn:youtube' yt:display='Sumes Music' yt:type='partner'>UCmyppRGkG0KvQ7sDuN0U9iw</media:credit>
+        <media:description type='plain'>Dwelling in the darkest corners of the Abyss, she treads where stars dare not linger, her sword a silent hymn to secrets carved in the bones of a shattered world.
+
+            I created this fan-theme to capture Skirk&apos;s enigmatic, otherworldly nature and her overwhelming strength. It&apos;s a bit different from the one I made last year following her brief appearance in Fontaine. This time, I leaned into a darker, heavier tone, incorporating more electronic elements and building a deeper, more atmospheric soundscape. I hope you enjoy this piece!
+
+            If you enjoy the music and want to support me, consider becoming a member! ❤️
+            https://www.youtube.com/channel/UCmyppRGkG0KvQ7sDuN0U9iw/join
+
+            __________________________
+
+            Credits:
+
+            ▶ OST composed, arranged &amp; produced by Sumes
+
+            © All rights reserved by miHoYo. Other properties belong to their respective owners.
+            ℗ 2025 Sumes Music
+
+            __________________________
+
+            ✨Stream my music:
+            ►Spotify: https://open.spotify.com/artist/1i8sjiBLOe3WXnRJ8TFLdC?si=ERrzq16AQXuN5EgyVRo6fA
+            ►Apple Music: https://music.apple.com/us/artist/sumes-music/1679839729
+            ►Youtube Music: https://music.youtube.com/channel/UCrLw774GBUGAI_n6MQTox_w
+            ►Soundcloud: https://soundcloud.com/sumes_music
+            ►Tidal: https://tidal.com/browse/artist/38419898
+            ►Deezer: https://www.deezer.com/en/artist/207599887
+
+            ✨Connect with me:
+            ◆Bluesky: https://bsky.app/profile/sumes.bsky.social
+            ◆Hoyoverse Fan-Server (Music, Animation): https://discord.gg/ntZPTU66xd
+
+            ✨Commissions:
+            https://vgen.co/Sumes
+
+            ✨Other inquiries:
+            sumes.music@gmail.com
+
+            __________________________
+
+            Usage Guidelines for My Music
+
+            1. 🚫 Prohibited Uses:
+            - Do not reupload or remix my content without explicit permission.
+            - My music is not permitted for use in podcasts.
+            - Commercial use (e.g., advertisements, corporate videos) requires a separate license agreement. Please contact me for details.
+
+            2. ✔️ Permitted Uses for Content Creators:
+            You are welcome to use my music for your videos and streams on platforms such as YouTube, Twitch, and other social media, provided that you credit me in the video description and include a link to my channel.
+
+            3. 🎤 Downloading Instrumentals:
+            If you want to download the raw audio file of an instrumental for a cover (non-commercial use only), please contact me directly. Proper credit is required.
+
+            4. ❌ No Endorsement:
+            Using my music does not imply endorsement or sponsorship of your content. Please do not suggest otherwise.
+
+            By using my music, you agree to adhere to these guidelines. For any questions or special requests, please contact me directly.
+
+            __________________________
+            #FightLikeSkirk  #GenshinFanWork
+            #Skirk #Nodkrai
+            #Hoyoverse #Hoyocreators
+            #GenshinImpact #原神 #원신</media:description>
+        <media:keywords/>
+        <media:license type='text/html' href='http://www.youtube.com/t/terms'>youtube</media:license>
+        <media:player url='http://www.youtube.com/watch?v=GNAhR1cGRxw&amp;feature=youtube_gdata_player'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/GNAhR1cGRxw/default.jpg' height='90' width='120' time='00:20:53' yt:name='default'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/GNAhR1cGRxw/mqdefault.jpg' height='180' width='320' yt:name='mqdefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/GNAhR1cGRxw/hqdefault.jpg' height='360' width='480' yt:name='hqdefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/GNAhR1cGRxw/sddefault.jpg' height='480' width='640' yt:name='sddefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/GNAhR1cGRxw/1.jpg' height='90' width='120' time='00:10:26.500' yt:name='start'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/GNAhR1cGRxw/2.jpg' height='90' width='120' time='00:20:53' yt:name='middle'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/GNAhR1cGRxw/3.jpg' height='90' width='120' time='00:31:19.500' yt:name='end'/>
+        <media:title type='plain'>Skirk Theme Music - The Sinner&apos;s Disciple (Fan-Made) | Genshin Impact</media:title>
+        <yt:duration seconds='231'/>
+        <yt:uploaded>2025-08-07T15:22:52</yt:uploaded>
+        <yt:uploaderId>EEUCmyppRGkG0KvQ7sDuN0U9iw</yt:uploaderId>
+        <yt:videoid>GNAhR1cGRxw</yt:videoid>
+    </media:group>
+    <gd:rating average='4.151515' max='5' min='1' numRaters='99' rel='http://schemas.google.com/g/2005#overall'/>
+    <yt:statistics favoriteCount='0' viewCount='9527'/>
+    <yt:rating numDislikes='0' numLikes='0'/>
+</entry><entry gd:etag='W/&quot;CUYDQ347eCp7I2A9XRdVGEs.&quot;'>
+    <id>tag:youtube.com,2008:video:mB2svXI9mPk</id>
+    <published>2025-08-07T15:22:52</published>
+    <updated>2025-08-07T15:22:52</updated>
+    <category scheme='http://schemas.google.com/g/2005#kind' term='http://127.0.0.1/schemas/2007#video'/>
+    <category scheme='http://127.0.0.1/schemas/2007/categories.cat' term='News' label='News &amp; Politics'/>
+    <title>Yixuan Theme Reimagined - Martial Summit Showdown (Sumes Mix) | Zenless Zone Zero</title>
+    <content type='application/x-shockwave-flash' src='http://www.youtube.com/v/mB2svXI9mPk?version=3&amp;f=user_uploads&amp;app=youtube_gdata'/>
+    <link rel='alternate' type='text/html' href='http://www.youtube.com/watch?v=mB2svXI9mPk&amp;feature=youtube_gdata'/>
+    <link rel='http://127.0.0.1/schemas/2007#video.related' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/videos/mB2svXI9mPk/related?v=2'/>
+    <link rel='http://127.0.0.1/schemas/2007#mobile' type='text/html' href='http://m.youtube.com/details?v=mB2svXI9mPk'/>
+    <link rel='http://127.0.0.1/schemas/2007#uploader' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw?v=2'/>
+    <link rel='self' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw/uploads/mB2svXI9mPk?v=2'/>
+    <author>
+        <name>Sumes Music</name>
+        <uri>http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw</uri>
+        <yt:userId>EEUCmyppRGkG0KvQ7sDuN0U9iw</yt:userId>
+    </author>
+    <yt:accessControl action='comment' permission='allowed'/>
+    <yt:accessControl action='commentVote' permission='allowed'/>
+    <yt:accessControl action='videoRespond' permission='moderated'/>
+    <yt:accessControl action='rate' permission='allowed'/>
+    <yt:accessControl action='embed' permission='allowed'/>
+    <yt:accessControl action='list' permission='allowed'/>
+    <yt:accessControl action='autoPlay' permission='allowed'/>
+    <yt:accessControl action='syndicate' permission='allowed'/>
+    <gd:comments>
+        <gd:feedLink rel='http://127.0.0.1/schemas/2007#comments' href='http://127.0.0.1/feeds/api/videos/mB2svXI9mPk/comments?v=2' countHint='24'/>
+    </gd:comments>
+    <media:group>
+        <media:category label='News &amp; Politics' scheme='http://127.0.0.1/schemas/2007/categories.cat'>News</media:category>
+        <media:content url='http://www.youtube.com/v/mB2svXI9mPk?version=3&amp;f=user_uploads&amp;app=youtube_gdata' type='application/x-shockwave-flash' medium='video' isDefault='true' expression='full' duration='2506' yt:format='5'/>
+        <media:content url='http://127.0.0.1/channel_fh264_getvideo?v=mB2svXI9mPk' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='3'/><media:content url='http://127.0.0.1/get_480?video_id=mB2svXI9mPk' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='14'/><media:content url='http://127.0.0.1/exp_hd?video_id=mB2svXI9mPk' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='8'/>
+        <media:credit role='uploader' scheme='urn:youtube' yt:display='Sumes Music' yt:type='partner'>UCmyppRGkG0KvQ7sDuN0U9iw</media:credit>
+        <media:description type='plain'>This is my reimagined version of Yixuan&apos;s theme from her character demo &quot;Martial Summit Showdown&quot;. It is a little different from my usual covers. I was excited to work on her theme, but the original track in the trailer felt more tailored to the pacing and visuals of the trailer, and rather fragmented unlike like the usual character themes we get (in my opinion). As a result, it didn&apos;t have the kind of structure I usually look for when covering a theme.
+
+            That said, there were still some musical ideas - melodic fragments, drums, and the distinct instrumentation - that served as the inspiration for this reinterpretation. I was a bit more experimental with this one (especially with the vocal samples and chops xD), and also gave myself a time constraint since I was originally working on a different piece meant to release today.
+
+            Anyway, I hope you find some enjoyment in this version of Yixuan&apos;s theme, and as always, thank you for listening!
+
+            If you enjoy the music and want to support me, consider becoming a member! ❤️
+            https://www.youtube.com/channel/UCmyppRGkG0KvQ7sDuN0U9iw/join
+
+            __________________________
+
+            Credits:
+
+            ▶ Music composed, arranged &amp; produced by Sumes
+
+            © All rights reserved by miHoYo. Other properties belong to their respective owners.
+            ℗ 2025 Sumes Music
+
+            __________________________
+
+            ✨Stream my music:
+            ►Spotify: https://open.spotify.com/artist/1i8sjiBLOe3WXnRJ8TFLdC?si=ERrzq16AQXuN5EgyVRo6fA
+            ►Apple Music: https://music.apple.com/us/artist/sumes-music/1679839729
+            ►Youtube Music: https://music.youtube.com/channel/UCrLw774GBUGAI_n6MQTox_w
+            ►Soundcloud: https://soundcloud.com/sumes_music
+            ►Tidal: https://tidal.com/browse/artist/38419898
+            ►Deezer: https://www.deezer.com/en/artist/207599887
+
+            ✨Connect with me:
+            ◆Bluesky: https://bsky.app/profile/sumes.bsky.social
+            ◆Hoyoverse Fan-Server (Music, Animation): https://discord.gg/ntZPTU66xd
+
+            ✨Commissions:
+            https://vgen.co/Sumes
+
+            ✨Other inquiries:
+            sumes.music@gmail.com
+
+            __________________________
+
+            Usage Guidelines for My Music
+
+            1. 🚫 Prohibited Uses:
+            - Do not reupload or remix my content without explicit permission.
+            - My music is not permitted for use in podcasts.
+            - Commercial use (e.g., advertisements, corporate videos) requires a separate license agreement. Please contact me for details.
+
+            2. ✔️ Permitted Uses for Content Creators:
+            You are welcome to use my music for your videos and streams on platforms such as YouTube, Twitch, and other social media, provided that you credit me in the video description and include a link to my channel.
+
+            3. 🎤 Downloading Instrumentals:
+            If you want to download the raw audio file of an instrumental for a cover (non-commercial use only), please contact me directly. Proper credit is required.
+
+            4. ❌ No Endorsement:
+            Using my music does not imply endorsement or sponsorship of your content. Please do not suggest otherwise.
+
+            By using my music, you agree to adhere to these guidelines. For any questions or special requests, please contact me directly.
+
+            __________________________
+
+            #Yixuan #Jufufu
+            #Hoyoverse #Hoyocreators
+            #ZenlessZoneZero #zzzero #zzzcreator #zzzeromusic</media:description>
+        <media:keywords/>
+        <media:license type='text/html' href='http://www.youtube.com/t/terms'>youtube</media:license>
+        <media:player url='http://www.youtube.com/watch?v=mB2svXI9mPk&amp;feature=youtube_gdata_player'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/mB2svXI9mPk/default.jpg' height='90' width='120' time='00:20:53' yt:name='default'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/mB2svXI9mPk/mqdefault.jpg' height='180' width='320' yt:name='mqdefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/mB2svXI9mPk/hqdefault.jpg' height='360' width='480' yt:name='hqdefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/mB2svXI9mPk/sddefault.jpg' height='480' width='640' yt:name='sddefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/mB2svXI9mPk/1.jpg' height='90' width='120' time='00:10:26.500' yt:name='start'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/mB2svXI9mPk/2.jpg' height='90' width='120' time='00:20:53' yt:name='middle'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/mB2svXI9mPk/3.jpg' height='90' width='120' time='00:31:19.500' yt:name='end'/>
+        <media:title type='plain'>Yixuan Theme Reimagined - Martial Summit Showdown (Sumes Mix) | Zenless Zone Zero</media:title>
+        <yt:duration seconds='118'/>
+        <yt:uploaded>2025-08-07T15:22:52</yt:uploaded>
+        <yt:uploaderId>EEUCmyppRGkG0KvQ7sDuN0U9iw</yt:uploaderId>
+        <yt:videoid>mB2svXI9mPk</yt:videoid>
+    </media:group>
+    <gd:rating average='4.151515' max='5' min='1' numRaters='99' rel='http://schemas.google.com/g/2005#overall'/>
+    <yt:statistics favoriteCount='0' viewCount='11252'/>
+    <yt:rating numDislikes='0' numLikes='0'/>
+</entry><entry gd:etag='W/&quot;CUYDQ347eCp7I2A9XRdVGEs.&quot;'>
+    <id>tag:youtube.com,2008:video:BwAp5fWv7gk</id>
+    <published>2025-08-07T15:22:52</published>
+    <updated>2025-08-07T15:22:52</updated>
+    <category scheme='http://schemas.google.com/g/2005#kind' term='http://127.0.0.1/schemas/2007#video'/>
+    <category scheme='http://127.0.0.1/schemas/2007/categories.cat' term='News' label='News &amp; Politics'/>
+    <title>Hyacine&apos;s Theme But It&apos;s BOSSA NOVA | Honkai: Star Rail</title>
+    <content type='application/x-shockwave-flash' src='http://www.youtube.com/v/BwAp5fWv7gk?version=3&amp;f=user_uploads&amp;app=youtube_gdata'/>
+    <link rel='alternate' type='text/html' href='http://www.youtube.com/watch?v=BwAp5fWv7gk&amp;feature=youtube_gdata'/>
+    <link rel='http://127.0.0.1/schemas/2007#video.related' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/videos/BwAp5fWv7gk/related?v=2'/>
+    <link rel='http://127.0.0.1/schemas/2007#mobile' type='text/html' href='http://m.youtube.com/details?v=BwAp5fWv7gk'/>
+    <link rel='http://127.0.0.1/schemas/2007#uploader' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw?v=2'/>
+    <link rel='self' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw/uploads/BwAp5fWv7gk?v=2'/>
+    <author>
+        <name>Sumes Music</name>
+        <uri>http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw</uri>
+        <yt:userId>EEUCmyppRGkG0KvQ7sDuN0U9iw</yt:userId>
+    </author>
+    <yt:accessControl action='comment' permission='allowed'/>
+    <yt:accessControl action='commentVote' permission='allowed'/>
+    <yt:accessControl action='videoRespond' permission='moderated'/>
+    <yt:accessControl action='rate' permission='allowed'/>
+    <yt:accessControl action='embed' permission='allowed'/>
+    <yt:accessControl action='list' permission='allowed'/>
+    <yt:accessControl action='autoPlay' permission='allowed'/>
+    <yt:accessControl action='syndicate' permission='allowed'/>
+    <gd:comments>
+        <gd:feedLink rel='http://127.0.0.1/schemas/2007#comments' href='http://127.0.0.1/feeds/api/videos/BwAp5fWv7gk/comments?v=2' countHint='24'/>
+    </gd:comments>
+    <media:group>
+        <media:category label='News &amp; Politics' scheme='http://127.0.0.1/schemas/2007/categories.cat'>News</media:category>
+        <media:content url='http://www.youtube.com/v/BwAp5fWv7gk?version=3&amp;f=user_uploads&amp;app=youtube_gdata' type='application/x-shockwave-flash' medium='video' isDefault='true' expression='full' duration='2506' yt:format='5'/>
+        <media:content url='http://127.0.0.1/channel_fh264_getvideo?v=BwAp5fWv7gk' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='3'/><media:content url='http://127.0.0.1/get_480?video_id=BwAp5fWv7gk' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='14'/><media:content url='http://127.0.0.1/exp_hd?video_id=BwAp5fWv7gk' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='8'/>
+        <media:credit role='uploader' scheme='urn:youtube' yt:display='Sumes Music' yt:type='partner'>UCmyppRGkG0KvQ7sDuN0U9iw</media:credit>
+        <media:description type='plain'>Here&apos;s my cover of Hyacine&apos;s Theme Music &quot;Always Here to Help&quot;, but with a fresh spin! For this arrangement, I took some liberties and reharmonized the track into a laid-back bossa nova vibe. I tried to keep the original melody and essence intact while adding some of my own ideas. Hope you enjoy this take on Hyacine&apos;s cute theme! :)
+
+            If you enjoy the music and want to support me, consider becoming a member! ❤️
+            https://www.youtube.com/channel/UCmyppRGkG0KvQ7sDuN0U9iw/join
+
+            __________________________
+
+            Credits:
+
+            ▶ OST composed by HOYO-MiX
+
+            ▶ Bossa Nova Version arranged &amp; produced by Sumes
+
+            © All rights reserved by miHoYo. Other properties belong to their respective owners.
+            ℗ 2025 Sumes Music
+
+            __________________________
+
+            ✨Stream my music:
+            ►Spotify: https://open.spotify.com/artist/1i8sjiBLOe3WXnRJ8TFLdC?si=ERrzq16AQXuN5EgyVRo6fA
+            ►Apple Music: https://music.apple.com/us/artist/sumes-music/1679839729
+            ►Youtube Music: https://music.youtube.com/channel/UCrLw774GBUGAI_n6MQTox_w
+            ►Soundcloud: https://soundcloud.com/sumes_music
+            ►Tidal: https://tidal.com/browse/artist/38419898
+            ►Deezer: https://www.deezer.com/en/artist/207599887
+
+            ✨Connect with me:
+            ◆Bluesky: https://bsky.app/profile/sumes.bsky.social
+            ◆Hoyoverse Fan-Server (Music, Animation): https://discord.gg/ntZPTU66xd
+
+            ✨Commissions:
+            https://vgen.co/Sumes
+
+            ✨Other inquiries:
+            sumes.music@gmail.com
+
+            __________________________
+
+            Usage Guidelines for My Music
+
+            1. 🚫 Prohibited Uses:
+            - Do not reupload or remix my content without explicit permission.
+            - My music is not permitted for use in podcasts.
+            - Commercial use (e.g., advertisements, corporate videos) requires a separate license agreement. Please contact me for details.
+
+            2. ✔️ Permitted Uses for Content Creators:
+            You are welcome to use my music for your videos and streams on platforms such as YouTube, Twitch, and other social media, provided that you credit me in the video description and include a link to my channel.
+
+            3. 🎤 Downloading Instrumentals:
+            If you want to download the raw audio file of an instrumental for a cover (non-commercial use only), please contact me directly. Proper credit is required.
+
+            4. ❌ No Endorsement:
+            Using my music does not imply endorsement or sponsorship of your content. Please do not suggest otherwise.
+
+            By using my music, you agree to adhere to these guidelines. For any questions or special requests, please contact me directly.
+
+            __________________________
+            #Hyacine
+            #Hoyoverse #Hoyocreators #hsrcreators
+            #HonkaiStarRail #崩壊スターレイル #崩坏星穹铁道 #스타레일</media:description>
+        <media:keywords/>
+        <media:license type='text/html' href='http://www.youtube.com/t/terms'>youtube</media:license>
+        <media:player url='http://www.youtube.com/watch?v=BwAp5fWv7gk&amp;feature=youtube_gdata_player'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/BwAp5fWv7gk/default.jpg' height='90' width='120' time='00:20:53' yt:name='default'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/BwAp5fWv7gk/mqdefault.jpg' height='180' width='320' yt:name='mqdefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/BwAp5fWv7gk/hqdefault.jpg' height='360' width='480' yt:name='hqdefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/BwAp5fWv7gk/sddefault.jpg' height='480' width='640' yt:name='sddefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/BwAp5fWv7gk/1.jpg' height='90' width='120' time='00:10:26.500' yt:name='start'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/BwAp5fWv7gk/2.jpg' height='90' width='120' time='00:20:53' yt:name='middle'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/BwAp5fWv7gk/3.jpg' height='90' width='120' time='00:31:19.500' yt:name='end'/>
+        <media:title type='plain'>Hyacine&apos;s Theme But It&apos;s BOSSA NOVA | Honkai: Star Rail</media:title>
+        <yt:duration seconds='204'/>
+        <yt:uploaded>2025-08-07T15:22:52</yt:uploaded>
+        <yt:uploaderId>EEUCmyppRGkG0KvQ7sDuN0U9iw</yt:uploaderId>
+        <yt:videoid>BwAp5fWv7gk</yt:videoid>
+    </media:group>
+    <gd:rating average='4.151515' max='5' min='1' numRaters='99' rel='http://schemas.google.com/g/2005#overall'/>
+    <yt:statistics favoriteCount='0' viewCount='11300'/>
+    <yt:rating numDislikes='0' numLikes='0'/>
+</entry><entry gd:etag='W/&quot;CUYDQ347eCp7I2A9XRdVGEs.&quot;'>
+    <id>tag:youtube.com,2008:video:THd30YS9Fg4</id>
+    <published>2025-08-07T15:22:53</published>
+    <updated>2025-08-07T15:22:53</updated>
+    <category scheme='http://schemas.google.com/g/2005#kind' term='http://127.0.0.1/schemas/2007#video'/>
+    <category scheme='http://127.0.0.1/schemas/2007/categories.cat' term='News' label='News &amp; Politics'/>
+    <title>Faruzan&apos;s Theme But It&apos;s CITY POP | Genshin Impact</title>
+    <content type='application/x-shockwave-flash' src='http://www.youtube.com/v/THd30YS9Fg4?version=3&amp;f=user_uploads&amp;app=youtube_gdata'/>
+    <link rel='alternate' type='text/html' href='http://www.youtube.com/watch?v=THd30YS9Fg4&amp;feature=youtube_gdata'/>
+    <link rel='http://127.0.0.1/schemas/2007#video.related' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/videos/THd30YS9Fg4/related?v=2'/>
+    <link rel='http://127.0.0.1/schemas/2007#mobile' type='text/html' href='http://m.youtube.com/details?v=THd30YS9Fg4'/>
+    <link rel='http://127.0.0.1/schemas/2007#uploader' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw?v=2'/>
+    <link rel='self' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw/uploads/THd30YS9Fg4?v=2'/>
+    <author>
+        <name>Sumes Music</name>
+        <uri>http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw</uri>
+        <yt:userId>EEUCmyppRGkG0KvQ7sDuN0U9iw</yt:userId>
+    </author>
+    <yt:accessControl action='comment' permission='allowed'/>
+    <yt:accessControl action='commentVote' permission='allowed'/>
+    <yt:accessControl action='videoRespond' permission='moderated'/>
+    <yt:accessControl action='rate' permission='allowed'/>
+    <yt:accessControl action='embed' permission='allowed'/>
+    <yt:accessControl action='list' permission='allowed'/>
+    <yt:accessControl action='autoPlay' permission='allowed'/>
+    <yt:accessControl action='syndicate' permission='allowed'/>
+    <gd:comments>
+        <gd:feedLink rel='http://127.0.0.1/schemas/2007#comments' href='http://127.0.0.1/feeds/api/videos/THd30YS9Fg4/comments?v=2' countHint='24'/>
+    </gd:comments>
+    <media:group>
+        <media:category label='News &amp; Politics' scheme='http://127.0.0.1/schemas/2007/categories.cat'>News</media:category>
+        <media:content url='http://www.youtube.com/v/THd30YS9Fg4?version=3&amp;f=user_uploads&amp;app=youtube_gdata' type='application/x-shockwave-flash' medium='video' isDefault='true' expression='full' duration='2506' yt:format='5'/>
+        <media:content url='http://127.0.0.1/channel_fh264_getvideo?v=THd30YS9Fg4' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='3'/><media:content url='http://127.0.0.1/get_480?video_id=THd30YS9Fg4' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='14'/><media:content url='http://127.0.0.1/exp_hd?video_id=THd30YS9Fg4' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='8'/>
+        <media:credit role='uploader' scheme='urn:youtube' yt:display='Sumes Music' yt:type='partner'>UCmyppRGkG0KvQ7sDuN0U9iw</media:credit>
+        <media:description type='plain'>I noticed that I never got around to cover Faruzan&apos;s theme and since I was in the mood for something funky, this happened! I hope you enjoy! ^-^
+            For the best experience, be sure to grab your headphones!
+
+            Support my work by becoming a channel member! 🥺
+            https://www.youtube.com/channel/UCmyppRGkG0KvQ7sDuN0U9iw/join
+
+            __________________________
+
+            Credits:
+            ▶Original character theme composed by HOYO-MiX
+            https://youtu.be/0grd767X4Jg?si=sPDKro9Vo3rYbrLC
+
+            ▶City Pop Version arranged &amp; produced by Sumes
+
+            ▶Artwork by SuperGoat
+            https://www.pixiv.net/en/artworks/104049551
+
+            © All rights reserved by miHoYo. Other properties belong to their respective owners.
+            ℗ 2024 Sumes Music
+            __________________________
+
+            Stream my music:
+            ►Spotify: https://open.spotify.com/artist/1i8sjiBLOe3WXnRJ8TFLdC?si=ERrzq16AQXuN5EgyVRo6fA
+            ►Apple Music: https://music.apple.com/us/artist/sumes-music/1679839729
+            ►Youtube Music: https://music.youtube.com/channel/UCrLw774GBUGAI_n6MQTox_w
+            ►Soundcloud: https://soundcloud.com/sumes_music
+            ►Tidal: https://tidal.com/browse/artist/38419898
+            ►Deezer: https://www.deezer.com/en/artist/207599887
+
+            Connect with me:
+            ◆Twitter: https://twitter.com/sumes_music
+            ◆Hoyoverse Fan-Server (Music, Animation): https://discord.gg/ntZPTU66xd
+
+            ✨Commissions:
+            https://vgen.co/Sumes
+
+            ✨Other inquiries:
+            sumes.music@gmail.com
+            __________________________
+
+            Do not reupload or remix my content without my permission!
+
+            If you are a Content Creator, feel free to use my music for your videos &amp; streams, however, please leave credit and provide a link to my channel!
+
+            If you enjoy my music, please consider liking, subscribing and sharing this video! Your support goes a long way towards growing the channel and keeping me motivated! Thank you so much for listening!
+
+            #GenshinImpact #Faruzan #hoyoverse #citypop #soundtrack #原神 #원신</media:description>
+        <media:keywords/>
+        <media:license type='text/html' href='http://www.youtube.com/t/terms'>youtube</media:license>
+        <media:player url='http://www.youtube.com/watch?v=THd30YS9Fg4&amp;feature=youtube_gdata_player'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/THd30YS9Fg4/default.jpg' height='90' width='120' time='00:20:53' yt:name='default'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/THd30YS9Fg4/mqdefault.jpg' height='180' width='320' yt:name='mqdefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/THd30YS9Fg4/hqdefault.jpg' height='360' width='480' yt:name='hqdefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/THd30YS9Fg4/sddefault.jpg' height='480' width='640' yt:name='sddefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/THd30YS9Fg4/1.jpg' height='90' width='120' time='00:10:26.500' yt:name='start'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/THd30YS9Fg4/2.jpg' height='90' width='120' time='00:20:53' yt:name='middle'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/THd30YS9Fg4/3.jpg' height='90' width='120' time='00:31:19.500' yt:name='end'/>
+        <media:title type='plain'>Faruzan&apos;s Theme But It&apos;s CITY POP | Genshin Impact</media:title>
+        <yt:duration seconds='188'/>
+        <yt:uploaded>2025-08-07T15:22:53</yt:uploaded>
+        <yt:uploaderId>EEUCmyppRGkG0KvQ7sDuN0U9iw</yt:uploaderId>
+        <yt:videoid>THd30YS9Fg4</yt:videoid>
+    </media:group>
+    <gd:rating average='4.151515' max='5' min='1' numRaters='99' rel='http://schemas.google.com/g/2005#overall'/>
+    <yt:statistics favoriteCount='0' viewCount='1084030'/>
+    <yt:rating numDislikes='0' numLikes='0'/>
+</entry><entry gd:etag='W/&quot;CUYDQ347eCp7I2A9XRdVGEs.&quot;'>
+    <id>tag:youtube.com,2008:video:T7KI66XSB7w</id>
+    <published>2025-08-07T15:22:53</published>
+    <updated>2025-08-07T15:22:53</updated>
+    <category scheme='http://schemas.google.com/g/2005#kind' term='http://127.0.0.1/schemas/2007#video'/>
+    <category scheme='http://127.0.0.1/schemas/2007/categories.cat' term='News' label='News &amp; Politics'/>
+    <title>Furina&apos;s Theme but it&apos;s ELECTRO SWING | Genshin Impact</title>
+    <content type='application/x-shockwave-flash' src='http://www.youtube.com/v/T7KI66XSB7w?version=3&amp;f=user_uploads&amp;app=youtube_gdata'/>
+    <link rel='alternate' type='text/html' href='http://www.youtube.com/watch?v=T7KI66XSB7w&amp;feature=youtube_gdata'/>
+    <link rel='http://127.0.0.1/schemas/2007#video.related' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/videos/T7KI66XSB7w/related?v=2'/>
+    <link rel='http://127.0.0.1/schemas/2007#mobile' type='text/html' href='http://m.youtube.com/details?v=T7KI66XSB7w'/>
+    <link rel='http://127.0.0.1/schemas/2007#uploader' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw?v=2'/>
+    <link rel='self' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw/uploads/T7KI66XSB7w?v=2'/>
+    <author>
+        <name>Sumes Music</name>
+        <uri>http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw</uri>
+        <yt:userId>EEUCmyppRGkG0KvQ7sDuN0U9iw</yt:userId>
+    </author>
+    <yt:accessControl action='comment' permission='allowed'/>
+    <yt:accessControl action='commentVote' permission='allowed'/>
+    <yt:accessControl action='videoRespond' permission='moderated'/>
+    <yt:accessControl action='rate' permission='allowed'/>
+    <yt:accessControl action='embed' permission='allowed'/>
+    <yt:accessControl action='list' permission='allowed'/>
+    <yt:accessControl action='autoPlay' permission='allowed'/>
+    <yt:accessControl action='syndicate' permission='allowed'/>
+    <gd:comments>
+        <gd:feedLink rel='http://127.0.0.1/schemas/2007#comments' href='http://127.0.0.1/feeds/api/videos/T7KI66XSB7w/comments?v=2' countHint='24'/>
+    </gd:comments>
+    <media:group>
+        <media:category label='News &amp; Politics' scheme='http://127.0.0.1/schemas/2007/categories.cat'>News</media:category>
+        <media:content url='http://www.youtube.com/v/T7KI66XSB7w?version=3&amp;f=user_uploads&amp;app=youtube_gdata' type='application/x-shockwave-flash' medium='video' isDefault='true' expression='full' duration='2506' yt:format='5'/>
+        <media:content url='http://127.0.0.1/channel_fh264_getvideo?v=T7KI66XSB7w' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='3'/><media:content url='http://127.0.0.1/get_480?video_id=T7KI66XSB7w' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='14'/><media:content url='http://127.0.0.1/exp_hd?video_id=T7KI66XSB7w' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='8'/>
+        <media:credit role='uploader' scheme='urn:youtube' yt:display='Sumes Music' yt:type='partner'>UCmyppRGkG0KvQ7sDuN0U9iw</media:credit>
+        <media:description type='plain'>Back at it again, I&apos;m thrilled to present to you an exciting new release that I planned on doing for quite a while! This time featuring none other than our lovely Lady Furina! Bringing together one of my favorite characters from Genshin Impact and the vibrant tunes of a beloved music genre, prepare for yet another musical treat! Now, take your seats and let the show begin!
+            For the best experience, be sure to grab your headphones!
+
+            Support my work by becoming a channel member! 🥺
+            https://www.youtube.com/channel/UCmyppRGkG0KvQ7sDuN0U9iw/join
+
+            __________________________
+
+            Credits:
+            ▶Furina&apos;s Original Theme composed by HOYO-MiX
+
+            ▶Electro Swing Version arranged &amp; produced by Sumes
+
+            ▶Thumbnail Artwork by O cha:
+            https://www.pixiv.net/en/artworks/116946579
+
+            ▶Live Wallpaper from Version 4.2 &quot;Masquerade of the Guilty&quot; Preview Page
+
+            © All rights reserved by miHoYo. Other properties belong to their respective owners.
+            ℗ 2024 Sumes Music
+            __________________________
+
+            Stream my music:
+            ►Spotify: https://open.spotify.com/artist/1i8sjiBLOe3WXnRJ8TFLdC?si=ERrzq16AQXuN5EgyVRo6fA
+            ►Apple Music: https://music.apple.com/us/artist/sumes-music/1679839729
+            ►Youtube Music: https://music.youtube.com/channel/UCrLw774GBUGAI_n6MQTox_w
+            ►Soundcloud: https://soundcloud.com/sumes_music
+            ►Tidal: https://tidal.com/browse/artist/38419898
+            ►Deezer: https://www.deezer.com/en/artist/207599887
+
+            Connect with me:
+            ◆Twitter: https://twitter.com/sumes_music
+            ◆Hoyoverse Fan-Server (Music, Animation): https://discord.gg/ntZPTU66xd
+
+            ✨Commissions:
+            https://vgen.co/Sumes
+
+            ✨Other inquiries:
+            sumes.music@gmail.com
+            __________________________
+
+            Do not reupload or remix my content without my permission!
+
+            If you are a Content Creator, feel free to use my music for your videos &amp; streams, however, please leave credit and provide a link to my channel!
+
+            If you enjoy my music, please consider liking, subscribing and sharing this video! Your support goes a long way towards growing the channel and keeping me motivated! Thank you so much for listening!
+
+            #GenshinImpact #Furina #ElectroSwing #Fontaine #hoyoverse #soundtrack #原神 #원신</media:description>
+        <media:keywords/>
+        <media:license type='text/html' href='http://www.youtube.com/t/terms'>youtube</media:license>
+        <media:player url='http://www.youtube.com/watch?v=T7KI66XSB7w&amp;feature=youtube_gdata_player'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/T7KI66XSB7w/default.jpg' height='90' width='120' time='00:20:53' yt:name='default'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/T7KI66XSB7w/mqdefault.jpg' height='180' width='320' yt:name='mqdefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/T7KI66XSB7w/hqdefault.jpg' height='360' width='480' yt:name='hqdefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/T7KI66XSB7w/sddefault.jpg' height='480' width='640' yt:name='sddefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/T7KI66XSB7w/1.jpg' height='90' width='120' time='00:10:26.500' yt:name='start'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/T7KI66XSB7w/2.jpg' height='90' width='120' time='00:20:53' yt:name='middle'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/T7KI66XSB7w/3.jpg' height='90' width='120' time='00:31:19.500' yt:name='end'/>
+        <media:title type='plain'>Furina&apos;s Theme but it&apos;s ELECTRO SWING | Genshin Impact</media:title>
+        <yt:duration seconds='256'/>
+        <yt:uploaded>2025-08-07T15:22:53</yt:uploaded>
+        <yt:uploaderId>EEUCmyppRGkG0KvQ7sDuN0U9iw</yt:uploaderId>
+        <yt:videoid>T7KI66XSB7w</yt:videoid>
+    </media:group>
+    <gd:rating average='4.151515' max='5' min='1' numRaters='99' rel='http://schemas.google.com/g/2005#overall'/>
+    <yt:statistics favoriteCount='0' viewCount='437023'/>
+    <yt:rating numDislikes='0' numLikes='0'/>
+</entry><entry gd:etag='W/&quot;CUYDQ347eCp7I2A9XRdVGEs.&quot;'>
+    <id>tag:youtube.com,2008:video:hj5z8WIhOKI</id>
+    <published>2025-08-07T15:22:53</published>
+    <updated>2025-08-07T15:22:53</updated>
+    <category scheme='http://schemas.google.com/g/2005#kind' term='http://127.0.0.1/schemas/2007#video'/>
+    <category scheme='http://127.0.0.1/schemas/2007/categories.cat' term='News' label='News &amp; Politics'/>
+    <title>Hu Tao&apos;s Theme But It&apos;s ELECTRO SWING | Genshin Impact</title>
+    <content type='application/x-shockwave-flash' src='http://www.youtube.com/v/hj5z8WIhOKI?version=3&amp;f=user_uploads&amp;app=youtube_gdata'/>
+    <link rel='alternate' type='text/html' href='http://www.youtube.com/watch?v=hj5z8WIhOKI&amp;feature=youtube_gdata'/>
+    <link rel='http://127.0.0.1/schemas/2007#video.related' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/videos/hj5z8WIhOKI/related?v=2'/>
+    <link rel='http://127.0.0.1/schemas/2007#mobile' type='text/html' href='http://m.youtube.com/details?v=hj5z8WIhOKI'/>
+    <link rel='http://127.0.0.1/schemas/2007#uploader' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw?v=2'/>
+    <link rel='self' type='applicatio0tom+xml' href='http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw/uploads/hj5z8WIhOKI?v=2'/>
+    <author>
+        <name>Sumes Music</name>
+        <uri>http://127.0.0.1/feeds/api/users/UCmyppRGkG0KvQ7sDuN0U9iw</uri>
+        <yt:userId>EEUCmyppRGkG0KvQ7sDuN0U9iw</yt:userId>
+    </author>
+    <yt:accessControl action='comment' permission='allowed'/>
+    <yt:accessControl action='commentVote' permission='allowed'/>
+    <yt:accessControl action='videoRespond' permission='moderated'/>
+    <yt:accessControl action='rate' permission='allowed'/>
+    <yt:accessControl action='embed' permission='allowed'/>
+    <yt:accessControl action='list' permission='allowed'/>
+    <yt:accessControl action='autoPlay' permission='allowed'/>
+    <yt:accessControl action='syndicate' permission='allowed'/>
+    <gd:comments>
+        <gd:feedLink rel='http://127.0.0.1/schemas/2007#comments' href='http://127.0.0.1/feeds/api/videos/hj5z8WIhOKI/comments?v=2' countHint='24'/>
+    </gd:comments>
+    <media:group>
+        <media:category label='News &amp; Politics' scheme='http://127.0.0.1/schemas/2007/categories.cat'>News</media:category>
+        <media:content url='http://www.youtube.com/v/hj5z8WIhOKI?version=3&amp;f=user_uploads&amp;app=youtube_gdata' type='application/x-shockwave-flash' medium='video' isDefault='true' expression='full' duration='2506' yt:format='5'/>
+        <media:content url='http://127.0.0.1/channel_fh264_getvideo?v=hj5z8WIhOKI' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='3'/><media:content url='http://127.0.0.1/get_480?video_id=hj5z8WIhOKI' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='14'/><media:content url='http://127.0.0.1/exp_hd?video_id=hj5z8WIhOKI' type='video/3gpp' medium='video' expression='full' duration='999' yt:format='8'/>
+        <media:credit role='uploader' scheme='urn:youtube' yt:display='Sumes Music' yt:type='partner'>UCmyppRGkG0KvQ7sDuN0U9iw</media:credit>
+        <media:description type='plain'>Hu Tao&apos;s theme... but with an Electro Swing twist?! You heard that right! Get ready to groove!
+
+            It&apos;s been 2 incredible years of music, and it wouldn&apos;t have been possible without all of you! Thank you for the love and support! You guys are amazing ❤️
+            For the best experience, be sure to grab your headphones!
+
+            Support my work by becoming a channel member! 🥺
+            https://www.youtube.com/channel/UCmyppRGkG0KvQ7sDuN0U9iw/join
+            __________________________
+
+            Credits:
+            ▶ Hu Tao&apos;s theme &quot;Any Last Words?&quot; composed by Yu-Peng Chen, Dimeng Yuan (HOYO-MiX)
+
+            ▶ Electro Swing Version composed, arranged &amp; produced by Sumes
+
+            ▶ Thumbnail from Genshin Impact x OnePlus Collab
+            https://x.com/GenshinUpdate/status/1556995829877338113/photo/1
+
+            ▶ Live Wallpaper Source:
+            https://wallpaperwaifu.com/anime/hu-tao-genshin-impact-live-wallpaper/
+
+            © All rights reserved by miHoYo. Other properties belong to their respective owners.
+            ℗ 2024 Sumes Music
+
+            __________________________
+
+            ✨Stream my music:
+            ►Spotify: https://open.spotify.com/artist/1i8sjiBLOe3WXnRJ8TFLdC?si=ERrzq16AQXuN5EgyVRo6fA
+            ►Apple Music: https://music.apple.com/us/artist/sumes-music/1679839729
+            ►Youtube Music: https://music.youtube.com/channel/UCrLw774GBUGAI_n6MQTox_w
+            ►Soundcloud: https://soundcloud.com/sumes_music
+            ►Tidal: https://tidal.com/browse/artist/38419898
+            ►Deezer: https://www.deezer.com/en/artist/207599887
+
+            ✨Connect with me:
+            ◆Twitter: https://twitter.com/sumes_music
+            ◆Hoyoverse Fan-Server (Music, Animation): https://discord.gg/ntZPTU66xd
+
+            ✨Commissions:
+            https://vgen.co/Sumes
+
+            ✨Other inquiries:
+            sumes.music@gmail.com
+
+            If you enjoy my music, please consider liking, subscribing, and sharing my videos! Your support helps grow the channel and keeps me motivated to create more music. Thank you so much for listening! 🌟
+
+            __________________________
+
+            Usage Guidelines for My Music
+
+            1. 🚫 Prohibited Uses:
+            - Do not reupload or remix my content without explicit permission.
+            - My music is not permitted for use in podcasts.
+            - Commercial use (e.g., advertisements, corporate videos) requires a separate license agreement. Please contact me for details.
+
+            2. ✔️ Permitted Uses for Content Creators:
+            You are welcome to use my music for your videos and streams on platforms such as YouTube, Twitch, and other social media, provided that you credit me in the video description and include a link to my channel.
+
+            3. 🎤 Downloading Instrumentals:
+            If you want to download the raw audio file of an instrumental for a cover (non-commercial use only), please contact me directly. Proper credit is required.
+
+            4. ❌ No Endorsement:
+            Using my music does not imply endorsement or sponsorship of your content. Please do not suggest otherwise.
+
+            By using my music, you agree to adhere to these guidelines. For any questions or special requests, please contact me directly.
+
+            __________________________
+
+            #hutao #electroswing
+            #Hoyoverse #Hoyocreators
+            #GenshinImpact #原神 #원신</media:description>
+        <media:keywords/>
+        <media:license type='text/html' href='http://www.youtube.com/t/terms'>youtube</media:license>
+        <media:player url='http://www.youtube.com/watch?v=hj5z8WIhOKI&amp;feature=youtube_gdata_player'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/hj5z8WIhOKI/default.jpg' height='90' width='120' time='00:20:53' yt:name='default'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/hj5z8WIhOKI/mqdefault.jpg' height='180' width='320' yt:name='mqdefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/hj5z8WIhOKI/hqdefault.jpg' height='360' width='480' yt:name='hqdefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/hj5z8WIhOKI/sddefault.jpg' height='480' width='640' yt:name='sddefault'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/hj5z8WIhOKI/1.jpg' height='90' width='120' time='00:10:26.500' yt:name='start'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/hj5z8WIhOKI/2.jpg' height='90' width='120' time='00:20:53' yt:name='middle'/>
+        <media:thumbnail url='http://i.ytimg.com/vi/hj5z8WIhOKI/3.jpg' height='90' width='120' time='00:31:19.500' yt:name='end'/>
+        <media:title type='plain'>Hu Tao&apos;s Theme But It&apos;s ELECTRO SWING | Genshin Impact</media:title>
+        <yt:duration seconds='229'/>
+        <yt:uploaded>2025-08-07T15:22:53</yt:uploaded>
+        <yt:uploaderId>EEUCmyppRGkG0KvQ7sDuN0U9iw</yt:uploaderId>
+        <yt:videoid>hj5z8WIhOKI</yt:videoid>
+    </media:group>
+    <gd:rating average='4.151515' max='5' min='1' numRaters='99' rel='http://schemas.google.com/g/2005#overall'/>
+    <yt:statistics favoriteCount='0' viewCount='254622'/>
+    <yt:rating numDislikes='0' numLikes='0'/>
+</entry>
+</feed>

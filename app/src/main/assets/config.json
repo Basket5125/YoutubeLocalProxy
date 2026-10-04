@@ -1,0 +1,11 @@
+{
+  "port": 8080,
+  "redirect_port_80_via_root": true,
+  "client_version": "2.20230206.06.00",
+  "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:102.0) Gecko/20100101 Firefox/102.0",
+  "hl": "en",
+  "gl": "PL",
+  "visitor_data": "CgtaUVZYcmNmQXlIUSjtuZ-fBg%3D%3D",
+  "innertube_api_key": "",
+  "preferred_itag": 18
+}
