@@ -1,9 +1,13 @@
 package com.viitube.proxy;
 
 import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.os.Build;
 import android.os.IBinder;
+import android.widget.RemoteViews;
 
 import fi.iki.elonen.NanoHTTPD;
 
@@ -13,8 +17,10 @@ import fi.iki.elonen.NanoHTTPD;
  */
 public class ProxyService extends Service {
 
+    private static final String NOTIFICATION_CHANNEL_ID = "proxy";
     private ProxyServer server;
     private int listeningPort;
+    private boolean port80RedirectApplied;
 
     @Override
     public void onCreate() {
@@ -37,27 +43,53 @@ public class ProxyService extends Service {
         }
 
         if (config.getBool("redirect_port_80_via_root", true)) {
-            redirectPort80(port);
+            port80RedirectApplied = redirectPort80(port);
         }
 
-        Notification notification = new Notification.Builder(this)
-                .setContentTitle("YouTube Proxy")
-                .setContentText("Running on 127.0.0.1:" + port)
-                .setSmallIcon(android.R.drawable.ic_menu_info_details)
-                .build();
+        Notification notification = buildNotification(port);
         startForeground(1, notification);
     }
 
-    private void redirectPort80(int targetPort) {
-        try {
-            String cmd = "iptables -t nat -A OUTPUT -p tcp --dport 80 -d 127.0.0.1 -j REDIRECT --to-port "
-                    + targetPort;
-            Process p = Runtime.getRuntime().exec(new String[]{"su", "-c", cmd});
-            p.waitFor();
-        } catch (Exception e) {
-            // brak roota / iptables niedostepny - appka i tak dziala na skonfigurowanym porcie
-            e.printStackTrace();
+    private Notification buildNotification(int port) {
+        String text = "Running on 127.0.0.1:" + port;
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+            Notification notification = new Notification(
+                    android.R.drawable.ic_menu_info_details, "YouTube Proxy", System.currentTimeMillis());
+            Intent launchIntent = new Intent(this, MainActivity.class);
+            PendingIntent contentIntent = PendingIntent.getActivity(
+                    this, 0, launchIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+            RemoteViews contentView = new RemoteViews(getPackageName(), R.layout.notification_legacy);
+            contentView.setImageViewResource(R.id.notification_icon,
+                    android.R.drawable.ic_menu_info_details);
+            contentView.setTextViewText(R.id.notification_title, "YouTube Proxy");
+            contentView.setTextViewText(R.id.notification_text, text);
+            notification.contentView = contentView;
+            notification.contentIntent = contentIntent;
+            notification.flags |= Notification.FLAG_ONGOING_EVENT;
+            return notification;
         }
+
+        Notification.Builder builder;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            manager.createNotificationChannel(new android.app.NotificationChannel(
+                    NOTIFICATION_CHANNEL_ID, "YouTube Proxy", NotificationManager.IMPORTANCE_LOW));
+            builder = new Notification.Builder(this, NOTIFICATION_CHANNEL_ID);
+        } else {
+            builder = new Notification.Builder(this);
+        }
+        builder.setContentTitle("YouTube Proxy")
+                .setContentText(text)
+                .setSmallIcon(android.R.drawable.ic_menu_info_details)
+                .setOngoing(true);
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN
+                ? builder.build() : builder.getNotification();
+    }
+
+    private boolean redirectPort80(int targetPort) {
+        String cmd = "iptables -t nat -A OUTPUT -p tcp --dport 80 -d 127.0.0.1 -j REDIRECT --to-port "
+                + targetPort;
+        return runRootCommand(cmd, "add port 80 redirect");
     }
 
     @Override
@@ -65,20 +97,42 @@ public class ProxyService extends Service {
         if (server != null) {
             server.stop();
         }
-        removePort80Redirect(listeningPort);
+        if (port80RedirectApplied) removePort80Redirect(listeningPort);
         super.onDestroy();
     }
 
     private void removePort80Redirect(int targetPort) {
         if (targetPort <= 0) return;
+        String cmd = "iptables -t nat -D OUTPUT -p tcp --dport 80 -d 127.0.0.1 -j REDIRECT --to-port "
+                + targetPort;
+        runRootCommand(cmd, "remove port 80 redirect");
+    }
+
+    private boolean runRootCommand(String command, String operation) {
+        Process process = null;
         try {
-            String cmd = "iptables -t nat -D OUTPUT -p tcp --dport 80 -d 127.0.0.1 -j REDIRECT --to-port "
-                    + targetPort;
-            Process process = Runtime.getRuntime().exec(new String[]{"su", "-c", cmd});
-            process.waitFor();
-        } catch (Exception e) {
-            e.printStackTrace();
+            process = Runtime.getRuntime().exec(new String[]{"su", "-c", command});
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                android.util.Log.i("ProxyService", "Could not " + operation
+                        + " (su/iptables exited with " + exitCode + "); proxy remains available on port "
+                        + listeningPort);
+                return false;
+            }
+            return true;
+        } catch (java.io.IOException e) {
+            android.util.Log.i("ProxyService", "Could not " + operation
+                    + " (root access unavailable); proxy remains available on port " + listeningPort);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            android.util.Log.w("ProxyService", "Interrupted while attempting to " + operation, e);
+        } catch (SecurityException e) {
+            android.util.Log.i("ProxyService", "Could not " + operation
+                    + " (command execution denied); proxy remains available on port " + listeningPort);
+        } finally {
+            if (process != null) process.destroy();
         }
+        return false;
     }
 
     @Override

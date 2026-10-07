@@ -33,7 +33,7 @@ public class ChannelEndpoint implements Endpoint {
             int maxResults = parsePositiveInt(session.getParms().get("max-results"), 25, 50);
             String cacheKey = channelId + "_" + startIndex + "_" + maxResults + "_" + host(session);
             java.io.File cache = HttpClient.cacheFile(context.getCacheDir(),
-                    "uploads_metadata_v2", cacheKey);
+                    "uploads_metadata_v4", cacheKey);
             if (HttpClient.isFresh(cache, 30L * 1000)) {
                 return response(HttpClient.readFile(cache));
             }
@@ -169,20 +169,23 @@ public class ChannelEndpoint implements Endpoint {
         int endIndex = startIndex + maxResults - 1;
         List<InnertubeEndpoint.Video> allVideos = new ArrayList<InnertubeEndpoint.Video>();
         String continuation = "";
-        String channelName = channelId;
+        String channelName = "";
         JSONObject currentPage = root;
 
         for (int page = 0; page < 20 && allVideos.size() < endIndex; page++) {
             JSONObject metadata = currentPage.optJSONObject("metadata");
             JSONObject channel = metadata == null ? null : metadata.optJSONObject("channelMetadataRenderer");
-            if (channel != null) channelName = channel.optString("title", channelName);
+            if (channel != null) {
+                String title = channel.optString("title", "");
+                if (!title.isEmpty()) channelName = title;
+            }
 
             Object items = uploadItems(currentPage);
             List<JSONObject> renderers = collectVideoRenderers(items, endIndex);
             for (JSONObject renderer : renderers) {
                 InnertubeEndpoint.Video video = InnertubeEndpoint.parseVideo(renderer);
                 if (video.id.isEmpty() || containsVideo(allVideos, video.id)) continue;
-                video.channel = channelName;
+                if (!channelName.isEmpty()) video.channel = channelName;
                 video.channelId = channelId;
                 allVideos.add(video);
             }
@@ -193,7 +196,17 @@ public class ChannelEndpoint implements Endpoint {
             currentPage = InnertubeEndpoint.requestFast("browse", payload, config);
         }
 
-        InnertubeEndpoint.enrichUploadVideos(allVideos, config, context);
+        InnertubeEndpoint.enrichVideos(allVideos, config, context);
+        if (channelName.isEmpty()) {
+            for (InnertubeEndpoint.Video video : allVideos) {
+                if (!video.channel.isEmpty()) {
+                    channelName = video.channel;
+                    break;
+                }
+            }
+        }
+        allVideos = InnertubeEndpoint.completeFeedVideos(allVideos);
+        if (channelName.isEmpty()) channelName = channelId;
         int offset = Math.min(startIndex - 1, allVideos.size());
         int limit = Math.min(maxResults, allVideos.size() - offset);
         List<InnertubeEndpoint.Video> videos = new ArrayList<InnertubeEndpoint.Video>(
@@ -201,7 +214,7 @@ public class ChannelEndpoint implements Endpoint {
         String feedUrl = baseUrl + "/feeds/api/users/" + channelId + "/uploads";
         String nextLink = continuation.isEmpty() || videos.isEmpty() ? ""
                 : feedUrl + "?start-index=" + (startIndex + videos.size()) + "&max-results=" + maxResults;
-        return InnertubeEndpoint.buildFeed(videos, "Uploads from " + channelId, feedUrl, baseUrl,
+        return InnertubeEndpoint.buildFeed(videos, "Uploads from " + channelName, feedUrl, baseUrl,
                 startIndex, nextLink);
     }
 

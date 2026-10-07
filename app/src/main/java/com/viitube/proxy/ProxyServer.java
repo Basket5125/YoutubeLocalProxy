@@ -88,12 +88,35 @@ public class ProxyServer extends NanoHTTPD {
                 try {
                     return r.endpoint.handle(session, captured, config, context);
                 } catch (Exception e) {
+                    String error = safeErrorMessage(e);
+                    android.util.Log.e("ProxyServer", "Request failed for " + uri + ": " + error);
                     return newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "text/plain",
-                            "error: " + e.getMessage());
+                            "error: " + error);
                 }
             }
         }
         return newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", "not found: " + uri);
+    }
+
+    private String safeErrorMessage(Throwable error) {
+        StringBuilder message = new StringBuilder();
+        Throwable current = error;
+        while (current != null) {
+            if (message.length() > 0) message.append(" <- ");
+            message.append(current.getClass().getSimpleName());
+            String detail = current.getMessage();
+            if (detail != null && !detail.isEmpty()) {
+                detail = redact(detail, config.getInnertubeApiKey());
+                detail = redact(detail, config.getYouTubeApiKey());
+                message.append(": ").append(detail);
+            }
+            current = current.getCause();
+        }
+        return message.toString();
+    }
+
+    private static String redact(String value, String secret) {
+        return secret == null || secret.isEmpty() ? value : value.replace(secret, "[redacted]");
     }
 
     private String[] match(String[] pattern, String[] segments) {

@@ -25,6 +25,12 @@ public class PlaylistEndpoint implements Endpoint {
         String title = playlistTitle(response);
         List<JSONObject> entries = new ArrayList<JSONObject>();
         collectPlaylistVideos(response, entries, 50);
+        List<InnertubeEndpoint.Video> videos = new ArrayList<InnertubeEndpoint.Video>();
+        for (JSONObject renderer : entries) {
+            videos.add(InnertubeEndpoint.parseVideo(renderer));
+        }
+        InnertubeEndpoint.enrichVideos(videos, config, context);
+        videos = InnertubeEndpoint.completeFeedVideos(videos);
 
         StringBuilder xml = new StringBuilder("<?xml version='1.0' encoding='UTF-8'?>")
                 .append("<feed xmlns='http://www.w3.org/2005/Atom' xmlns:media='http://search.yahoo.com/mrss/'")
@@ -36,14 +42,13 @@ public class PlaylistEndpoint implements Endpoint {
                 .append("<category scheme='http://schemas.google.com/g/2005#kind' term='http://gdata.youtube.com/schemas/2007#playlist'/>")
                 .append("<title type='text'>").append(XmlUtil.escape(title)).append("</title>")
                 .append("<logo>http://www.youtube.com/img/pic_youtubelogo_123x63.gif</logo>")
-                .append("<openSearch:totalResults>").append(entries.size()).append("</openSearch:totalResults>")
+                .append("<openSearch:totalResults>").append(videos.size()).append("</openSearch:totalResults>")
                 .append("<openSearch:startIndex>1</openSearch:startIndex><openSearch:itemsPerPage>")
-                .append(entries.size()).append("</openSearch:itemsPerPage><yt:playlistId>")
+                .append(videos.size()).append("</openSearch:itemsPerPage><yt:playlistId>")
                 .append(XmlUtil.escape(playlistId)).append("</yt:playlistId>");
 
         int position = 1;
-        for (JSONObject renderer : entries) {
-            InnertubeEndpoint.Video video = InnertubeEndpoint.parseVideo(renderer);
+        for (InnertubeEndpoint.Video video : videos) {
             String safeId = XmlUtil.escape(video.id);
             String videoUrl = baseUrl + "/feeds/api/videos/" + video.id;
             xml.append("<entry><id>").append(XmlUtil.escape(videoUrl)).append("</id>")
@@ -70,8 +75,12 @@ public class PlaylistEndpoint implements Endpoint {
                     .append("<yt:duration seconds='").append(InnertubeEndpoint.durationSecondsPublic(video.duration)).append("'/>")
                     .append("<yt:videoid id='").append(safeId).append("'>").append(safeId).append("</yt:videoid>")
                     .append("<youTubeId id='").append(safeId).append("'>").append(safeId).append("</youTubeId></media:group>")
-                    .append("<yt:statistics favoriteCount='0' viewCount='").append(video.views.replaceAll("[^0-9]", ""))
-                    .append("'/><yt:position>").append(position++).append("</yt:position></entry>");
+                    .append("<yt:statistics favoriteCount='0' viewCount='")
+                    .append(InnertubeEndpoint.numericCount(video.views))
+                    .append("'/><yt:rating numLikes='")
+                    .append(InnertubeEndpoint.numericCount(video.likes))
+                    .append("' numDislikes='0'/><yt:position>")
+                    .append(position++).append("</yt:position></entry>");
         }
         return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.OK,
                 "application/atom+xml; charset=utf-8", xml.append("</feed>").toString());

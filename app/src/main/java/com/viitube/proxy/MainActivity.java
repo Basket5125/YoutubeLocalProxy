@@ -6,8 +6,8 @@ import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.ToggleButton;
 
 public class MainActivity extends Activity {
 
@@ -25,8 +25,9 @@ public class MainActivity extends Activity {
         label.setText("YouTube Proxy");
         layout.addView(label);
 
-        final Switch proxySwitch = new Switch(this);
-        proxySwitch.setText("Proxy enabled");
+        final ToggleButton proxySwitch = new ToggleButton(this);
+        proxySwitch.setTextOn("Proxy enabled");
+        proxySwitch.setTextOff("Proxy disabled");
         proxySwitch.setChecked(config.getBool("proxy_enabled", true));
         layout.addView(proxySwitch);
 

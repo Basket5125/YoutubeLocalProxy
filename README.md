@@ -21,6 +21,7 @@ cannot be resolved by this app.
 
 ## Requirements
 
+- Android 2.3 (API 9) or newer.
 - JDK 11 or 17.
 - Android SDK with Android SDK Platform 33 and Build Tools installed.
 - Internet access to download Gradle and Maven dependencies on the first build.
@@ -65,12 +66,19 @@ the HTTP server listens on port `8080`.
 
 On a rooted device, the service can try to redirect local port `80` to `8080`.
 Root is only used to add or remove this iptables rule; the HTTP server itself
-does not require root. Without root, configure the client to use
-`http://127.0.0.1:8080`. From another device on the same network, use the
-Android device's LAN IP, for example:
+does not require root. If root access is unavailable, the redirect is skipped
+and the proxy remains available on port `8080`; configure the client to use
+`http://127.0.0.1:8080`. From another device on the same network, use the Android
+device's LAN IP, for example:
 
 ```text
 http://192.168.1.25:8080
+```
+
+For HTTP 500 errors, inspect the proxy's server-side exception with:
+
+```sh
+adb logcat -s ProxyServer
 ```
 
 Example endpoints:
@@ -93,12 +101,19 @@ first launch. The generated private `config.json` can be edited on a rooted or
 debuggable device to change the listening port or Innertube settings.
 
 The optional YouTube Data API v3 key can be entered in the app. It is stored
-locally and can be used for popular feeds and batched upload titles, descriptions,
-and view counts. Without a valid key, uploads request missing title, description,
-and view-count details from Innertube in parallel, with a short overall wait
-limit and a local cache to keep responses suitable for older devices. YouTube may
-still omit metadata or reject a request, in which case unavailable fields remain
-blank or use the values present in the channel feed.
+locally and can be used for popular feeds and batched titles, full descriptions,
+view counts, and like counts. Without a valid key, video feeds request full
+metadata from Innertube in parallel and load like counts from the public Return
+YouTube Dislike API, with local caching and a short wait limit to keep responses
+suitable for older devices. Channel upload feeds also preserve the channel name
+provided by the video when an uploads response omits channel metadata. YouTube
+may still omit metadata or reject a request, in which case unavailable fields
+remain blank or use the values present in the channel feed.
+
+Malformed feed results are skipped: video IDs must be 11 valid YouTube ID
+characters, and each entry must have a title and channel identity. A standard
+thumbnail URL is used when the response omits a thumbnail. Video descriptions
+and counts may legitimately be empty or zero.
 
 Do not put personal API keys, signing keys, or other secrets into source files
 or commit them to GitHub.

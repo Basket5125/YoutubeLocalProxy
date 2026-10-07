@@ -36,7 +36,7 @@ public class MostPopularEndpoint implements Endpoint {
                 ? params[0].toUpperCase(Locale.US) : "US";
 
         // cache: <cacheDir>/feeds/most_popular_US.json  (rozszerzenie .json narzuca cacheFile)
-        File cacheFile = HttpClient.cacheFile(context.getCacheDir(), "feeds", "most_popular_" + region);
+        File cacheFile = HttpClient.cacheFile(context.getCacheDir(), "feeds", "most_popular_v3_" + region);
 
         // 1) Cache hit (5h)?
         if (HttpClient.isFresh(cacheFile, CACHE_TTL_MS)) {
@@ -59,7 +59,7 @@ public class MostPopularEndpoint implements Endpoint {
 
                 try {
                         String xml = InnertubeEndpoint.fetchPopularFeed(region, config,
-                                "__BASE_URL__");
+                                "__BASE_URL__", context);
             if (xml != null && !xml.isEmpty()) {
                 HttpClient.writeFile(cacheFile, xml);
                 return atomResponse(xml, session);
@@ -144,6 +144,13 @@ public class MostPopularEndpoint implements Endpoint {
             String channelId = snippet.optString("channelId", "");
             String published = snippet.optString("publishedAt", "");
             String categoryName = "Science &amp; Technology";
+            if (!InnertubeEndpoint.isValidVideoId(videoId) || title.trim().isEmpty()
+                    || channel.trim().isEmpty() || channelId.trim().isEmpty()
+                    || channel.trim().equals(channelId.trim())) {
+                android.util.Log.w("MostPopularEndpoint",
+                        "Skipping incomplete or malformed popular video entry");
+                continue;
+            }
 
             long viewCount = 0, likeCount = 0, favCount = 0;
             if (stats != null) {
@@ -165,7 +172,7 @@ public class MostPopularEndpoint implements Endpoint {
             sb.append("<category scheme='http://gdata.youtube.com/schemas/2007/categories.cat' label='")
                     .append(categoryName).append("' term='").append(categoryName).append("'>Science &amp; Technology</category>\n");
             sb.append("    <title type='text'>").append(escapeXml(title)).append("</title>\n");
-            sb.append("    <content type='text'>").append(escapeXml(title)).append("</content>\n");
+            sb.append("    <content type='text'>").append(escapeXml(desc)).append("</content>\n");
             sb.append("    <link rel='alternate' type='text/html' href='http://www.youtube.com/watch?v=")
                     .append(videoId).append("&amp;feature=youtube_gdata'/>\n");
             sb.append("    <link rel='http://gdata.youtube.com/schemas/2007#video.related'")
