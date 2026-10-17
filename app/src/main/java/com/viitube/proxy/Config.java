@@ -18,15 +18,20 @@ import java.io.OutputStreamWriter;
  */
 public class Config {
 
-    public String getYouTubeApiKey() { return data.optString("youtube_api_key", ""); }
-    public String getInnertubeApiKey() { return data.optString("innertube_api_key", "").trim(); }
-    public void setYouTubeApiKey(String key) {
+    public synchronized String getYouTubeApiKey() { return data.optString("youtube_api_key", ""); }
+    public synchronized String getInnertubeApiKey() { return data.optString("innertube_api_key", "").trim(); }
+    public synchronized void setYouTubeApiKey(String key) {
         try { data.put("youtube_api_key", key == null ? "" : key.trim()); }
         catch (org.json.JSONException e) { throw new IllegalStateException(e); }
     }
 
-    public void setBool(String key, boolean value) {
+    public synchronized void setBool(String key, boolean value) {
         try { data.put(key, value); }
+        catch (org.json.JSONException e) { throw new IllegalStateException(e); }
+    }
+
+    public synchronized void setString(String key, String value) {
+        try { data.put(key, value == null ? "" : value); }
         catch (org.json.JSONException e) { throw new IllegalStateException(e); }
     }
 
@@ -87,15 +92,15 @@ public class Config {
         return sb.toString();
     }
 
-    public String getString(String key, String def) {
+    public synchronized String getString(String key, String def) {
         return data.optString(key, def);
     }
 
-    public int getInt(String key, int def) {
+    public synchronized int getInt(String key, int def) {
         return data.optInt(key, def);
     }
 
-    public boolean getBool(String key, boolean def) {
+    public synchronized boolean getBool(String key, boolean def) {
         return data.optBoolean(key, def);
     }
 }

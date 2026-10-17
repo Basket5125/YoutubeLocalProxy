@@ -42,12 +42,24 @@ public class ProxyServer extends NanoHTTPD {
         register("/youtube/accounts/registerDevice", new RegisterDeviceEndpoint());
         register("/proxy/ytbt", new RegisterDeviceEndpoint());
         register("/feeds/api/standardfeeds/*/most_popular", new MostPopularEndpoint());
+        register("/feeds/api/standardfeeds/*/most_popular/*", new MostPopularEndpoint());
+        register("/feeds/api/standardfeeds/*/*", new MostPopularEndpoint());
+        register("/feeds/api/standardfeeds/*", new MostPopularEndpoint());
+        register("/feeds/api/charts/live/events/live_now", new LiveEventsEndpoint());
+        register("/feeds/api/videoCategories", new VideoCategoriesEndpoint());
+        register("/feeds/api/videos/categories", new VideoCategoriesEndpoint());
+        register("/feeds/api/channels", new ChannelSearchEndpoint());
+        register("/feeds/api/channels/*", new ChannelEndpoint("channel"));
         register("/feeds/api/videos", new InnertubeEndpoint("search"));
         register("/complete/search", new InnertubeEndpoint("suggestions"));
         register("/feeds/api/videos/*/comments", new InnertubeEndpoint("comments"));
         register("/feeds/api/videos/*/related", new InnertubeEndpoint("related"));
         register("/feeds/api/users/*/uploads", new ChannelEndpoint("uploads"));
         register("/feeds/api/users/*/playlists", new ChannelEndpoint("playlists"));
+        register("/feeds/api/users/*/playlists/*", new PlaylistEndpoint(true));
+        register("/feeds/api/users/*/activity", new ChannelEndpoint("activity"));
+        register("/feeds/api/users/*/events", new ChannelEndpoint("activity"));
+        register("/feeds/api/events", new ChannelEndpoint("events"));
         register("/feeds/api/users/*", new ChannelEndpoint("channel"));
         register("/feeds/api/playlists/*", new PlaylistEndpoint());
         register("/video/*", new VideoRedirectEndpoint());
@@ -63,7 +75,6 @@ public class ProxyServer extends NanoHTTPD {
         StubEndpoint stub = new StubEndpoint();
         String[] notImplementedYet = {
                 "/feeds/api/users/*/icon",
-                "/feeds/api/channels",
                 "/feeds/tv/users/default",
                 "/feeds/tv/users/default/subscriptions",
                 "/feeds/tv/users/default/favorites",

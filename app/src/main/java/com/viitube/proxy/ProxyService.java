@@ -27,6 +27,7 @@ public class ProxyService extends Service {
         super.onCreate();
 
         HttpClient.initTls();
+        PlayerLookup.clearPlayerCache(this);
         Config config = Config.get(this);
         if (!config.getBool("proxy_enabled", true)) {
             stopSelf();
@@ -94,11 +95,18 @@ public class ProxyService extends Service {
 
     @Override
     public void onDestroy() {
+        PlayerLookup.clearPlayerCache(this);
         if (server != null) {
             server.stop();
         }
         if (port80RedirectApplied) removePort80Redirect(listeningPort);
         super.onDestroy();
+    }
+
+    @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        PlayerLookup.clearPlayerCache(this);
+        super.onTaskRemoved(rootIntent);
     }
 
     private void removePort80Redirect(int targetPort) {

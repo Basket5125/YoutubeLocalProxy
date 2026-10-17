@@ -66,13 +66,18 @@ public class InnertubeEndpoint implements Endpoint {
                 return text(NanoHTTPD.Response.Status.BAD_REQUEST, "Missing 'q' parameter");
             }
             String normalizedQuery = query.trim();
-            int limit = parseLimit(session.getParms().get("limit"));
-                String requestHost = requestHost(session);
-                java.io.File cache = HttpClient.cacheFile(context.getCacheDir(), "search",
-                    "v6_" + requestHost + "_" + normalizedQuery + "_" + limit);
-            if (HttpClient.isFresh(cache, 30L * 60 * 1000)) return atom(HttpClient.readFile(cache));
-            String feed = searchFeed(normalizedQuery, limit, session, config, context);
-            HttpClient.writeFile(cache, feed);
+            // gdata uses max-results/start-index; "limit" is kept for older callers.
+            String maxParam = session.getParms().get("max-results");
+            int limit = parseLimit(maxParam != null ? maxParam : session.getParms().get("limit"));
+            int startIndex = parseStartIndex(session.getParms().get("start-index"));
+            String requestHost = requestHost(session);
+            java.io.File cache = HttpClient.cacheFile(context.getCacheDir(), "search",
+                    "v7_" + requestHost + "_" + normalizedQuery + "_" + startIndex + "_" + limit);
+            if (HttpClient.isFresh(cache, SEARCH_MAX_AGE_MS)) return atom(HttpClient.readFile(cache));
+            boolean[] complete = {false};
+            String feed = searchFeed(normalizedQuery, startIndex, limit, session, config, context,
+                    complete);
+            HttpClient.writeFeedCache(cache, feed, complete[0], SEARCH_MAX_AGE_MS);
             return atom(feed);
         }
         if ("suggestions".equals(mode)) {
@@ -90,32 +95,362 @@ public class InnertubeEndpoint implements Endpoint {
 
     public static String fetchPopularFeed(String region, Config config, String baseUrl,
                                           Context context) throws Exception {
-        JSONObject payload = context(config).put("browseId", "FEtrending");
-        payload.getJSONObject("context").getJSONObject("client").put("gl", region);
-        JSONObject response = post("browse", payload, config);
-        List<Video> videos = collectVideos(response, 50);
-        java.util.Collections.sort(videos, (left, right) -> {
-            int countOrder = Long.compare(viewCount(right.views), viewCount(left.views));
-            return countOrder != 0 ? countOrder : left.id.compareTo(right.id);
-        });
-        if (videos.size() > MAX_RESULTS) {
-            videos = new ArrayList<Video>(videos.subList(0, MAX_RESULTS));
-        }
-        enrichVideos(videos, config, context);
-        return buildFeed(videos, "YouTube Most Popular Videos in " + region.toUpperCase(Locale.US),
-            baseUrl + "/feeds/api/standardfeeds/" + region.toUpperCase(Locale.US) + "/most_popular", baseUrl);
+        return fetchPopularFeed(region, "", config, baseUrl, context);
     }
 
-    private String searchFeed(String query, int limit, NanoHTTPD.IHTTPSession session,
-                              Config config, Context context) throws Exception {
-        JSONObject payload = InnertubeEndpoint.context(config)
-                .put("query", query);
-        JSONObject response = post("search", payload, config);
-        List<Video> videos = collectVideos(response, limit);
+    public static String fetchPopularFeed(String region, String category, Config config,
+                                          String baseUrl, Context context) throws Exception {
+        return fetchPopularFeed(region, category, MAX_RESULTS, config, baseUrl, context);
+    }
+
+    /** Search filter: sort by view count, uploaded this week, videos only. */
+    private static final String POPULAR_THIS_WEEK = "CAMSBAgDEAE=";
+    /** Search filter: sort by view count, uploaded this month, videos only. */
+    private static final String POPULAR_THIS_MONTH = "CAMSBAgEEAE=";
+    private static final int MAX_SHORTS_SECONDS = 60;
+    /** Regular videos between two chart music videos in the general popular feed. */
+    private static final int MUSIC_VIDEO_EVERY = 4;
+
+    /**
+     * Most popular videos from Innertube. YouTube removed the Trending page (FEtrending now
+     * answers HTTP 400), so the feed is built the way the page was ranked: the most viewed
+     * videos uploaded this week in the region (an empty search sorted by view count). Music
+     * uses the region's "Top 100 Music Videos" chart; other categories search the category
+     * name among the most viewed videos of this month.
+     */
+    public static String fetchPopularFeed(String region, String category, int resultLimit,
+                                          Config config, String baseUrl, Context context) throws Exception {
+        String gl = region == null || region.length() != 2 ? config.getString("gl", "US")
+                : region.toUpperCase(Locale.US);
+        boolean hasCategory = category != null && !category.isEmpty();
+        boolean music = hasCategory && category.toLowerCase(Locale.US).contains("music");
+        List<Video> videos = new ArrayList<Video>();
+        if (music) {
+            videos.addAll(chartVideos(gl, "Top 100 Music Videos", resultLimit, config));
+        }
+        if (videos.size() < resultLimit) {
+            List<Video> found = new ArrayList<Video>();
+            collectPopular(hasCategory ? category : "", hasCategory ? POPULAR_THIS_MONTH : POPULAR_THIS_WEEK,
+                    gl, resultLimit, config, found);
+            if (found.size() < resultLimit && !hasCategory) {
+                // Quiet weeks: widen to this month.
+                collectPopular("", POPULAR_THIS_MONTH, gl, resultLimit, config, found);
+            }
+            java.util.Collections.sort(found, (left, right) -> {
+                int countOrder = Long.compare(viewCount(right.views), viewCount(left.views));
+                return countOrder != 0 ? countOrder : left.id.compareTo(right.id);
+            });
+            if (hasCategory) {
+                for (Video video : found) if (!containsVideo(videos, video.id)) videos.add(video);
+            } else {
+                // Mostly regular videos; every fifth entry is a music video from the region's
+                // trending chart, which also gives the global view-count ranking a local touch.
+                List<Video> local = chartVideos(gl, "Trending 20",
+                        resultLimit / (MUSIC_VIDEO_EVERY + 1) + 1, config);
+                int nextLocal = 0;
+                for (Video video : found) {
+                    if (videos.size() % (MUSIC_VIDEO_EVERY + 1) == MUSIC_VIDEO_EVERY) {
+                        while (nextLocal < local.size()
+                                && containsVideo(videos, local.get(nextLocal).id)) nextLocal++;
+                        if (nextLocal < local.size()) videos.add(local.get(nextLocal++));
+                    }
+                    if (!containsVideo(videos, video.id)) videos.add(video);
+                }
+                // Too few regular videos: fill up with the chart.
+                for (; nextLocal < local.size() && videos.size() < resultLimit; nextLocal++) {
+                    if (!containsVideo(videos, local.get(nextLocal).id)) videos.add(local.get(nextLocal));
+                }
+            }
+        }
+        if (videos.size() > resultLimit) {
+            videos = new ArrayList<Video>(videos.subList(0, resultLimit));
+        }
+        if (videos.isEmpty()) throw new IOException("YouTube returned no popular videos");
+        if (hasCategory) for (Video video : videos) video.category = category;
         enrichVideos(videos, config, context);
+        String title = "YouTube Most Popular " + (hasCategory ? category : "Videos") + " in " + gl;
+        String feedId = baseUrl + "/feeds/api/standardfeeds/" + gl + "/most_popular"
+                + (hasCategory ? "?category=" + URLEncoder.encode(category, "UTF-8") : "");
+        return buildFeed(videos, title, feedId, baseUrl);
+    }
+
+    private static List<Video> chartVideos(String gl, String chartTitle, int limit, Config config) {
+        List<Video> videos = new ArrayList<Video>();
+        try {
+            String chart = musicChartPlaylist(gl, chartTitle, config);
+            if (!chart.isEmpty()) {
+                for (Video video : PlaylistEndpoint.fetchPlaylist(chart, limit, config).videos) {
+                    if (isPopularCandidate(video)) videos.add(video);
+                }
+            }
+        } catch (Exception e) {
+            android.util.Log.w("InnertubeEndpoint", chartTitle + " chart unavailable: " + e);
+        }
+        return videos;
+    }
+
+    /** Adds search results (with continuations) until {@code limit} candidates are known. */
+    private static void collectPopular(String query, String params, String gl, int limit,
+                                       Config config, List<Video> videos) throws Exception {
+        JSONObject payload = context(config).put("query", query).put("params", params);
+        payload.getJSONObject("context").getJSONObject("client").put("gl", gl);
+        JSONObject response = post("search", payload, config);
+        for (int page = 0; page < 3; page++) {
+            List<Video> found = new ArrayList<Video>();
+            collectVideoObjects(response, found, Integer.MAX_VALUE);
+            for (Video video : found) {
+                if (isPopularCandidate(video) && !containsVideo(videos, video.id)) videos.add(video);
+            }
+            String continuation = PlaylistEndpoint.findContinuation(response);
+            if (videos.size() >= limit || continuation.isEmpty()) break;
+            JSONObject next = context(config).put("continuation", continuation);
+            next.getJSONObject("context").getJSONObject("client").put("gl", gl);
+            response = post("search", next, config);
+        }
+    }
+
+    /** Skips live streams, premieres and Shorts, like the old most_popular chart. */
+    private static boolean isPopularCandidate(Video video) {
+        if (!isValidVideoId(video.id) || video.duration.isEmpty()) return false;
+        String views = video.views.toLowerCase(Locale.US);
+        if (views.contains("watching") || views.contains("waiting")) return false;
+        int seconds = durationSecondsPublic(video.duration);
+        return seconds == 0 || seconds > MAX_SHORTS_SECONDS;
+    }
+
+    private static final java.util.Map<String, String[]> MUSIC_CHARTS =
+            java.util.Collections.synchronizedMap(new java.util.HashMap<String, String[]>());
+
+    /**
+     * Id of a YouTube Music chart playlist for a region, by title prefix ("Top 100 Music Videos"
+     * or "Trending 20"); chart pages are cached for a day.
+     */
+    private static String musicChartPlaylist(String gl, String titlePrefix, Config config)
+            throws Exception {
+        String[] cached = MUSIC_CHARTS.get(gl + "|" + titlePrefix);
+        if (cached != null && System.currentTimeMillis() - Long.parseLong(cached[1])
+                < TimeUnit.DAYS.toMillis(1)) {
+            return cached[0];
+        }
+        JSONObject payload = new JSONObject()
+                .put("context", new JSONObject().put("client", new JSONObject()
+                        .put("clientName", "WEB_REMIX")
+                        .put("clientVersion", "1.20260720.01.00")
+                        .put("hl", "en")
+                        .put("gl", gl)))
+                .put("browseId", "FEmusic_charts")
+                .put("formData", new JSONObject().put("selectedValues", new JSONArray().put(gl)));
+        java.util.Map<String, String> headers = new java.util.HashMap<String, String>();
+        headers.put("Origin", "https://music.youtube.com");
+        headers.put("X-YouTube-Client-Name", "67");
+        headers.put("X-YouTube-Client-Version", "1.20260720.01.00");
+        JSONObject response = new JSONObject(HttpClient.postJson(
+                "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false",
+                payload.toString(), DEFAULT_WEB_USER_AGENT, headers, 5000, 8000));
+        String now = Long.toString(System.currentTimeMillis());
+        for (String prefix : new String[]{"Top 100 Music Videos", "Trending 20"}) {
+            MUSIC_CHARTS.put(gl + "|" + prefix, new String[]{findChartPlaylist(response, prefix), now});
+        }
+        return MUSIC_CHARTS.get(gl + "|" + titlePrefix)[0];
+    }
+
+    private static String findChartPlaylist(Object node, String titlePrefix) {
+        if (node instanceof JSONObject) {
+            JSONObject object = (JSONObject) node;
+            JSONObject item = object.optJSONObject("musicTwoRowItemRenderer");
+            if (item != null && runs(item.optJSONObject("title")).startsWith(titlePrefix)) {
+                String browseId = findFirst(item.optJSONObject("navigationEndpoint"), "browseId");
+                if (browseId.startsWith("VL")) return browseId.substring(2);
+            }
+            JSONArray names = object.names();
+            if (names != null) for (int i = 0; i < names.length(); i++) {
+                String found = findChartPlaylist(object.opt(names.optString(i)), titlePrefix);
+                if (!found.isEmpty()) return found;
+            }
+        } else if (node instanceof JSONArray) {
+            JSONArray array = (JSONArray) node;
+            for (int i = 0; i < array.length(); i++) {
+                String found = findChartPlaylist(array.opt(i), titlePrefix);
+                if (!found.isEmpty()) return found;
+            }
+        }
+        return "";
+    }
+
+    static String fetchLiveEventsFeed(int resultLimit, Config config, String baseUrl)
+            throws Exception {
+        JSONObject payload = context(config)
+                .put("query", "live")
+                .put("params", "EgJAAQ==");
+        JSONObject response = post("search", payload, config);
+        List<Video> videos = collectVideos(response, resultLimit);
+        videos = completeFeedVideos(videos);
+        String feedId = baseUrl + "/feeds/api/charts/live/events/live_now";
+        return buildFeed(videos, "Live now", feedId, baseUrl);
+    }
+
+    private static final long SEARCH_MAX_AGE_MS = 30L * 60 * 1000;
+
+    /** Search results loaded so far for a query, so later pages continue from the stored token. */
+    private static final class LoadedSearch {
+        final List<Video> videos = new ArrayList<Video>();
+        String continuation = "";
+        long estimatedResults;
+        long loadedAt;
+    }
+
+    private static final java.util.Map<String, LoadedSearch> SEARCHES =
+            new java.util.LinkedHashMap<String, LoadedSearch>(16, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(java.util.Map.Entry<String, LoadedSearch> eldest) {
+                    return size() > 16;
+                }
+            };
+
+    private String searchFeed(String query, int startIndex, int limit,
+                              NanoHTTPD.IHTTPSession session, Config config, Context context,
+                              boolean[] complete) throws Exception {
+        int endIndex = startIndex + limit - 1;
+        LoadedSearch loaded;
+        synchronized (SEARCHES) {
+            loaded = SEARCHES.get(query);
+            if (loaded == null || (loaded.loadedAt != 0
+                    && System.currentTimeMillis() - loaded.loadedAt > SEARCH_MAX_AGE_MS)) {
+                loaded = new LoadedSearch();
+                SEARCHES.put(query, loaded);
+            }
+        }
+        // Waits for a prefetch of the same query that is still running.
+        synchronized (loaded) {
+            loadSearchPages(query, loaded, endIndex, config);
+        }
+        if (!loaded.continuation.isEmpty()) {
+            PREFETCH.execute(new SearchPrefetch(query, loaded, endIndex, limit, config, context));
+        }
+
+        int offset;
+        int count;
+        List<Video> videos;
+        boolean hasContinuation;
+        int loadedCount;
+        synchronized (loaded) {
+            offset = Math.min(startIndex - 1, loaded.videos.size());
+            count = Math.min(limit, loaded.videos.size() - offset);
+            videos = new ArrayList<Video>(count);
+            for (int i = offset; i < offset + count; i++) videos.add(loaded.videos.get(i).copy());
+            hasContinuation = !loaded.continuation.isEmpty();
+            loadedCount = loaded.videos.size();
+        }
+        complete[0] = enrichVideos(videos, config, context);
         String baseUrl = "http://" + requestHost(session);
-        return buildFeed(videos, "Search results: " + query,
-            baseUrl + "/feeds/api/videos?q=" + URLEncoder.encode(query, "UTF-8"), baseUrl);
+        String feedUrl = baseUrl + "/feeds/api/videos?q=" + URLEncoder.encode(query, "UTF-8");
+        boolean more = count > 0 && (hasContinuation || loadedCount > offset + count);
+        String nextLink = more ? feedUrl + "&start-index=" + (startIndex + count)
+                + "&max-results=" + limit : "";
+        long known = loadedCount + (hasContinuation ? limit : 0);
+        long total = !hasContinuation ? loadedCount
+                : Math.max(known, Math.min(loaded.estimatedResults, 1000));
+        return buildFeed(videos, "Search results: " + query, feedUrl, baseUrl, startIndex,
+                nextLink, "", (int) total, false);
+    }
+
+    /** Loads result pages until {@code endIndex} results are known. Caller holds the lock. */
+    private static void loadSearchPages(String query, LoadedSearch loaded, int endIndex,
+                                        Config config) throws Exception {
+        if (loaded.loadedAt == 0) {
+            JSONObject response = post("search", InnertubeEndpoint.context(config).put("query", query), config);
+            loaded.estimatedResults = parseLong(response.optString("estimatedResults", ""));
+            addSearchPage(response, loaded);
+            loaded.loadedAt = System.currentTimeMillis();
+        }
+        // About 20 results per page; follow continuations until the requested page is covered.
+        for (int page = 0; page < 10 && loaded.videos.size() < endIndex
+                && !loaded.continuation.isEmpty(); page++) {
+            JSONObject next = post("search", InnertubeEndpoint.context(config)
+                    .put("continuation", loaded.continuation), config);
+            int before = loaded.videos.size();
+            addSearchPage(next, loaded);
+            if (loaded.videos.size() == before) loaded.continuation = "";
+        }
+    }
+
+    private static final ExecutorService PREFETCH = Executors.newSingleThreadExecutor(
+            new java.util.concurrent.ThreadFactory() {
+                @Override
+                public Thread newThread(Runnable task) {
+                    Thread thread = new Thread(task, "search-prefetch");
+                    thread.setDaemon(true);
+                    thread.setPriority(Thread.MIN_PRIORITY);
+                    return thread;
+                }
+            });
+
+    /**
+     * YouTube takes one to three seconds to answer a continuation, so the next page and its
+     * metadata are loaded while the current page is shown; scrolling to it is then fast.
+     */
+    private static final class SearchPrefetch implements Runnable {
+        private final String query;
+        private final LoadedSearch loaded;
+        private final int shownEnd;
+        private final int limit;
+        private final Config config;
+        private final Context context;
+
+        SearchPrefetch(String query, LoadedSearch loaded, int shownEnd, int limit, Config config,
+                       Context context) {
+            this.query = query;
+            this.loaded = loaded;
+            this.shownEnd = shownEnd;
+            this.limit = limit;
+            this.config = config;
+            this.context = context;
+        }
+
+        @Override
+        public void run() {
+            List<Video> next = new ArrayList<Video>();
+            synchronized (loaded) {
+                try {
+                    loadSearchPages(query, loaded, shownEnd + limit, config);
+                } catch (Exception e) {
+                    android.util.Log.w("InnertubeEndpoint", "Search prefetch failed: " + e);
+                }
+                for (int i = shownEnd; i < loaded.videos.size() && i < shownEnd + limit; i++) {
+                    next.add(loaded.videos.get(i).copy());
+                }
+            }
+            // Warm the metadata caches only; nothing waits for these lookups.
+            for (Video video : next) {
+                if (!isValidVideoId(video.id)) continue;
+                ENRICH_POOL.submit(new MetadataTask(video, config, context));
+                if (config.getYouTubeApiKey().isEmpty()) ENRICH_POOL.submit(new LikesTask(video, context));
+            }
+        }
+    }
+
+    private static void addSearchPage(JSONObject page, LoadedSearch loaded) {
+        List<Video> found = new ArrayList<Video>(loaded.videos);
+        collectVideoObjects(page, found, Integer.MAX_VALUE);
+        for (int i = loaded.videos.size(); i < found.size(); i++) loaded.videos.add(found.get(i));
+        loaded.continuation = PlaylistEndpoint.findContinuation(page);
+    }
+
+    private static long parseLong(String value) {
+        try {
+            return Long.parseLong(value.trim());
+        } catch (Exception ignored) {
+            return 0;
+        }
+    }
+
+    private static int parseStartIndex(String value) {
+        try {
+            int start = Integer.parseInt(value.trim());
+            return start < 1 ? 1 : Math.min(start, 1000);
+        } catch (Exception ignored) {
+            return 1;
+        }
     }
 
     private String relatedFeed(String videoId, NanoHTTPD.IHTTPSession session,
@@ -219,7 +554,8 @@ public class InnertubeEndpoint implements Endpoint {
             String authorId = browseEndpoint == null ? "" : browseEndpoint.optString("browseId", "");
             if (authorId.isEmpty() && authorData != null) authorId = authorData.optString("channelId", "");
             String publishedAt = renderer.optString("publishedAt", "");
-            if (publishedAt.isEmpty()) publishedAt = toAtomDate(runs(publishedText));
+            if (publishedAt.isEmpty()) publishedAt = runs(publishedText);
+            publishedAt = toAtomDate(publishedAt);
             if (id.isEmpty()) id = authorId;
             String shownAuthor = author.startsWith("@") ? author : "@" + author;
             xml.append("<entry><id>tag:youtube.com,2008:comment:")
@@ -265,6 +601,19 @@ public class InnertubeEndpoint implements Endpoint {
     private static JSONObject post(String endpoint, JSONObject payload, Config config, String userAgent,
                                    int connectTimeout, int readTimeout)
             throws IOException, JSONException {
+        return post(endpoint, payload, config, userAgent, connectTimeout, readTimeout, null);
+    }
+
+    private static JSONObject post(String endpoint, JSONObject payload, Config config, String userAgent,
+                                   java.util.Map<String, String> extraHeaders)
+            throws IOException, JSONException {
+        return post(endpoint, payload, config, userAgent, 10000, 15000, extraHeaders);
+    }
+
+    private static JSONObject post(String endpoint, JSONObject payload, Config config, String userAgent,
+                                   int connectTimeout, int readTimeout,
+                                   java.util.Map<String, String> extraHeaders)
+            throws IOException, JSONException {
         JSONObject requestContext = payload.optJSONObject("context");
         JSONObject client = requestContext == null ? null : requestContext.optJSONObject("client");
         String clientName = client == null ? "" : client.optString("clientName", "");
@@ -293,12 +642,12 @@ public class InnertubeEndpoint implements Endpoint {
         headers.put("Referer", client == null
                 ? defaultReferer : client.optString("originalUrl", defaultReferer));
         headers.put("Accept", "*/*");
+        if (extraHeaders != null) headers.putAll(extraHeaders);
 
         if (userAgent == null || userAgent.trim().isEmpty()) {
             userAgent = configuredUserAgent(config);
         }
-        if ("Mozilla/5.0".equals(userAgent.trim())
-                || userAgent.contains("Chrome/131.0.0.0")) {
+        if ("Mozilla/5.0".equals(userAgent.trim())) {
             userAgent = "ANDROID".equals(clientName)
                     ? "Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 "
                             + "(KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36"
@@ -336,6 +685,11 @@ public class InnertubeEndpoint implements Endpoint {
     static JSONObject request(String endpoint, JSONObject payload, Config config, String userAgent)
             throws Exception {
         return post(endpoint, payload, config, userAgent);
+    }
+
+    static JSONObject request(String endpoint, JSONObject payload, Config config, String userAgent,
+                              java.util.Map<String, String> headers) throws Exception {
+        return post(endpoint, payload, config, userAgent, headers);
     }
 
     static JSONObject requestFast(String endpoint, JSONObject payload, Config config) throws Exception {
@@ -439,13 +793,76 @@ public class InnertubeEndpoint implements Endpoint {
         return "";
     }
 
-    static void enrichVideos(List<Video> videos, Config config, Context context) {
-        if (videos.isEmpty()) return;
+    /** Time a feed request waits for extra metadata before it is answered. */
+    private static final long ENRICH_BUDGET_MS = 2000;
+    /**
+     * Shared pool for metadata lookups. Lookups that miss the budget keep running here and fill
+     * the caches, so the next request for the same videos is answered with full data at once
+     * (the same idea as yt2009's video cache).
+     */
+    private static final ExecutorService ENRICH_POOL = Executors.newFixedThreadPool(10,
+            new java.util.concurrent.ThreadFactory() {
+                private int count;
+                @Override
+                public synchronized Thread newThread(Runnable task) {
+                    Thread thread = new Thread(task, "metadata-" + (++count));
+                    thread.setDaemon(true);
+                    thread.setPriority(Thread.NORM_PRIORITY - 1);
+                    return thread;
+                }
+            });
+
+    /**
+     * Fills in metadata within {@link #ENRICH_BUDGET_MS}.
+     *
+     * @return true when every lookup finished in time, so the finished feed may be cached
+     */
+    static boolean enrichVideos(List<Video> videos, Config config, Context context) {
+        if (videos.isEmpty()) return true;
 
         String apiKey = config.getYouTubeApiKey();
         if (!apiKey.isEmpty()) enrichVideosFromDataApi(videos, config, apiKey);
-        enrichVideosFromInnertube(videos, config, context, apiKey.isEmpty());
-        if (apiKey.isEmpty()) enrichVideoLikesFromRyd(videos, context);
+        boolean fetchFullMetadata = apiKey.isEmpty();
+        long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(ENRICH_BUDGET_MS);
+
+        // Each task returns the change to apply; changes are applied on this thread only.
+        CompletionService<Runnable> completion = new ExecutorCompletionService<Runnable>(ENRICH_POOL);
+        List<Future<Runnable>> futures = new ArrayList<Future<Runnable>>();
+        int submitted = 0;
+        for (Video video : videos) {
+            if (!isValidVideoId(video.id)) continue;
+            if (fetchFullMetadata || video.description.isEmpty()
+                    || "0".equals(numericCount(video.views)) || video.channel.isEmpty()) {
+                futures.add(completion.submit(new MetadataTask(video, config, context)));
+                submitted++;
+            }
+            if (fetchFullMetadata) {
+                futures.add(completion.submit(new LikesTask(video, context)));
+                submitted++;
+            }
+        }
+
+        int completed = 0;
+        try {
+            for (; completed < submitted; completed++) {
+                long remaining = deadline - System.nanoTime();
+                if (remaining <= 0) break;
+                Future<Runnable> future = completion.poll(remaining, TimeUnit.NANOSECONDS);
+                if (future == null) break;
+                try {
+                    future.get().run();
+                } catch (ExecutionException e) {
+                    android.util.Log.w("InnertubeEndpoint", "Could not load video metadata: "
+                            + e.getCause());
+                }
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        // Lookups already running finish in the background and fill the caches; queued ones are
+        // dropped so they do not hold up the next page or feed.
+        for (Future<Runnable> future : futures) future.cancel(false);
+        return completed >= submitted;
     }
 
     private static void enrichVideosFromDataApi(List<Video> videos, Config config, String apiKey) {
@@ -477,6 +894,7 @@ public class InnertubeEndpoint implements Endpoint {
                         video.description = snippet.optString("description", video.description);
                         video.channel = snippet.optString("channelTitle", video.channel);
                         video.channelId = snippet.optString("channelId", video.channelId);
+                        video.published = snippet.optString("publishedAt", video.published);
                     }
                     if (statistics != null) {
                         video.views = statistics.optString("viewCount", video.views);
@@ -490,62 +908,7 @@ public class InnertubeEndpoint implements Endpoint {
         }
     }
 
-    private static void enrichVideosFromInnertube(List<Video> videos, Config config,
-                                                  Context context, boolean fetchFullMetadata) {
-        List<Video> missing = new ArrayList<Video>();
-        for (Video video : videos) {
-            if (fetchFullMetadata || video.description.isEmpty()
-                    || "0".equals(numericCount(video.views)) || video.channel.isEmpty()) {
-                missing.add(video);
-            }
-        }
-        if (missing.isEmpty()) return;
-
-        int workerCount = Math.min(8, missing.size());
-        ExecutorService executor = Executors.newFixedThreadPool(workerCount);
-        CompletionService<PlayerMetadataResult> completion =
-                new ExecutorCompletionService<PlayerMetadataResult>(executor);
-        List<Future<PlayerMetadataResult>> futures = new ArrayList<Future<PlayerMetadataResult>>();
-        for (final Video video : missing) {
-            futures.add(completion.submit(new Callable<PlayerMetadataResult>() {
-                @Override
-                public PlayerMetadataResult call() throws Exception {
-                    return new PlayerMetadataResult(video,
-                            PlayerLookup.fetchUploadMetadata(video.id, config, context));
-                }
-            }));
-        }
-
-        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
-        int completed = 0;
-        try {
-            while (completed < futures.size()) {
-                long remaining = deadline - System.nanoTime();
-                if (remaining <= 0) break;
-                Future<PlayerMetadataResult> future = completion.poll(remaining, TimeUnit.NANOSECONDS);
-                if (future == null) break;
-                completed++;
-                try {
-                    applyPlayerMetadata(future.get());
-                } catch (ExecutionException e) {
-                    android.util.Log.w("InnertubeEndpoint",
-                            "Could not load Innertube video metadata", e.getCause());
-                }
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            android.util.Log.w("InnertubeEndpoint", "Interrupted while loading upload metadata", e);
-        } finally {
-            for (Future<PlayerMetadataResult> future : futures) {
-                if (!future.isDone()) future.cancel(true);
-            }
-            executor.shutdownNow();
-        }
-    }
-
-    private static void applyPlayerMetadata(PlayerMetadataResult result) {
-        Video video = result.video;
-        JSONObject player = result.response;
+    private static void applyPlayerMetadata(Video video, JSONObject player) {
         JSONObject details = player.optJSONObject("videoDetails");
         if (details == null) return;
 
@@ -566,53 +929,100 @@ public class InnertubeEndpoint implements Endpoint {
         if (!duration.isEmpty()) video.duration = duration;
         video.channel = details.optString("author", video.channel);
         video.channelId = details.optString("channelId", video.channelId);
+        if (playerMetadata != null && video.category.isEmpty()) {
+            video.category = playerMetadata.optString("category", "");
+        }
+        if (playerMetadata != null && !hasAbsoluteDate(video.published)) {
+            String published = playerMetadata.optString("publishDate",
+                    playerMetadata.optString("uploadDate", ""));
+            if (!published.isEmpty()) video.published = published;
+        }
     }
 
-    private static void enrichVideoLikesFromRyd(List<Video> videos, Context context) {
-        int workerCount = Math.min(8, videos.size());
-        ExecutorService executor = Executors.newFixedThreadPool(workerCount);
-        CompletionService<RydResult> completion = new ExecutorCompletionService<RydResult>(executor);
-        List<Future<RydResult>> futures = new ArrayList<Future<RydResult>>();
-        for (final Video video : videos) {
-            if (video.id.isEmpty()) continue;
-            futures.add(completion.submit(new Callable<RydResult>() {
+    private static boolean hasAbsoluteDate(String value) {
+        return value != null && value.matches("\\d{4}-\\d{2}-\\d{2}.*");
+    }
+
+    /** Loads feed metadata in the background; the returned change is applied by the caller. */
+    private static final class MetadataTask implements Callable<Runnable> {
+        private final Video video;
+        private final Config config;
+        private final Context context;
+
+        MetadataTask(Video video, Config config, Context context) {
+            this.video = video;
+            this.config = config;
+            this.context = context;
+        }
+
+        @Override
+        public Runnable call() throws Exception {
+            return new ApplyMetadata(video, PlayerLookup.fetchUploadMetadata(video.id, config, context));
+        }
+    }
+
+    private static final class ApplyMetadata implements Runnable {
+        private final Video video;
+        private final JSONObject metadata;
+
+        ApplyMetadata(Video video, JSONObject metadata) {
+            this.video = video;
+            this.metadata = metadata;
+        }
+
+        @Override
+        public void run() {
+            applyPlayerMetadata(video, metadata);
+        }
+    }
+
+    private static final class LikesTask implements Callable<Runnable> {
+        private final Video video;
+        private final Context context;
+
+        LikesTask(Video video, Context context) {
+            this.video = video;
+            this.context = context;
+        }
+
+        @Override
+        public Runnable call() throws Exception {
+            return new ApplyLikes(video, fetchRydLikes(video.id, context));
+        }
+    }
+
+    private static final class ApplyLikes implements Runnable {
+        private final Video video;
+        private final String likes;
+
+        ApplyLikes(Video video, String likes) {
+            this.video = video;
+            this.likes = likes;
+        }
+
+        @Override
+        public void run() {
+            if (!likes.isEmpty()) video.likes = likes;
+        }
+    }
+
+    private static final java.util.Map<String, String> RYD_MEMORY =
+            java.util.Collections.synchronizedMap(new java.util.LinkedHashMap<String, String>(64, 0.75f, true) {
                 @Override
-                public RydResult call() throws Exception {
-                    return new RydResult(video, fetchRydLikes(video.id, context));
+                protected boolean removeEldestEntry(java.util.Map.Entry<String, String> eldest) {
+                    return size() > 512;
                 }
-            }));
-        }
-
-        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(3);
-        int completed = 0;
-        try {
-            while (completed < futures.size()) {
-                long remaining = deadline - System.nanoTime();
-                if (remaining <= 0) break;
-                Future<RydResult> future = completion.poll(remaining, TimeUnit.NANOSECONDS);
-                if (future == null) break;
-                completed++;
-                try {
-                    RydResult result = future.get();
-                    if (!result.likes.isEmpty()) result.video.likes = result.likes;
-                } catch (ExecutionException e) {
-                    android.util.Log.w("InnertubeEndpoint",
-                            "Could not load like count from Return YouTube Dislike", e.getCause());
-                }
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            android.util.Log.w("InnertubeEndpoint",
-                    "Interrupted while loading like counts", e);
-        } finally {
-            for (Future<RydResult> future : futures) {
-                if (!future.isDone()) future.cancel(true);
-            }
-            executor.shutdownNow();
-        }
-    }
+            });
 
     private static String fetchRydLikes(String videoId, Context context) throws Exception {
+        String remembered = RYD_MEMORY.get(videoId);
+        if (remembered != null) return remembered;
+        String likes = fetchRydLikesUncached(videoId, context);
+        RYD_MEMORY.put(videoId, likes);
+        return likes;
+    }
+
+    private static String fetchRydLikesUncached(String videoId, Context context) throws Exception {
         java.io.File cache = HttpClient.cacheFile(context.getCacheDir(), "ryd_likes_v1", videoId);
         if (HttpClient.isFresh(cache, TimeUnit.HOURS.toMillis(24))) {
             JSONObject cached = new JSONObject(HttpClient.readFile(cache));
@@ -626,26 +1036,6 @@ public class InnertubeEndpoint implements Endpoint {
         String likes = response.optString("likes", "");
         HttpClient.writeFile(cache, new JSONObject().put("likes", likes).toString());
         return likes;
-    }
-
-    private static final class RydResult {
-        final Video video;
-        final String likes;
-
-        RydResult(Video video, String likes) {
-            this.video = video;
-            this.likes = likes;
-        }
-    }
-
-    private static final class PlayerMetadataResult {
-        final Video video;
-        final JSONObject response;
-
-        PlayerMetadataResult(Video video, JSONObject response) {
-            this.video = video;
-            this.response = response;
-        }
     }
 
     private static boolean isTruncated(String text) {
@@ -707,7 +1097,20 @@ public class InnertubeEndpoint implements Endpoint {
         video.views = text(renderer.optJSONObject("viewCountText"));
         if (video.views.isEmpty()) video.views = text(renderer.optJSONObject("shortViewCountText"));
         video.duration = text(renderer.optJSONObject("lengthText"));
+        if (video.duration.isEmpty()) video.duration = renderer.optString("lengthSeconds", "");
         video.published = text(renderer.optJSONObject("publishedTimeText"));
+        JSONArray videoInfo = renderer.optJSONObject("videoInfo") == null
+                ? null : renderer.optJSONObject("videoInfo").optJSONArray("runs");
+        if (videoInfo != null) {
+            for (int i = 0; i < videoInfo.length(); i++) {
+                JSONObject run = videoInfo.optJSONObject(i);
+                String part = run == null ? "" : run.optString("text", "").trim();
+                String normalized = part.toLowerCase(Locale.US);
+                if (video.views.isEmpty() && normalized.contains("view")) video.views = part;
+                else if (video.published.isEmpty() && normalized.endsWith(" ago")) video.published = part;
+            }
+        }
+        if (video.views.isEmpty()) video.views = "0";
         video.thumbnail = thumbnail(renderer);
         video.description = video.description.replace("\n", " ");
         return video;
@@ -741,6 +1144,9 @@ public class InnertubeEndpoint implements Endpoint {
         return complete;
     }
 
+    private static final java.util.regex.Pattern COMPACT_COUNT =
+            java.util.regex.Pattern.compile("[0-9][0-9.,]*\\s*[kmb]?");
+
     private static Video parseLockupVideo(JSONObject renderer) {
         Video video = new Video();
         video.id = renderer.optString("contentId", "");
@@ -765,20 +1171,33 @@ public class InnertubeEndpoint implements Endpoint {
                     JSONObject text = part == null ? null : part.optJSONObject("text");
                     if (text != null) {
                         String value = text.optString("content", "");
-                        if (!value.isEmpty()) metadataParts.add(value);
+                        String linkedChannel = findFirst(text.opt("commandRuns"), "browseId");
+                        if (video.channel.isEmpty() && !value.isEmpty()
+                                && linkedChannel.startsWith("UC")) {
+                            video.channel = value;
+                            video.channelId = linkedChannel;
+                        } else if (!value.isEmpty()) {
+                            metadataParts.add(value);
+                        }
                     }
                 }
             }
         }
+        if (video.channel.isEmpty() && !metadataParts.isEmpty()) {
+            // Collaborations list "Channel A and Channel B" without a channel link.
+            String first = metadataParts.get(0).toLowerCase(Locale.US);
+            if (!first.contains(" view") && !first.contains(" ago")) video.channel = metadataParts.get(0);
+        }
         for (String part : metadataParts) {
             String normalized = part.toLowerCase(Locale.US);
-            if (normalized.contains(" view")) {
+            if (normalized.contains(" view") || COMPACT_COUNT.matcher(normalized).matches()) {
+                // "1.2M views", or the compact "207M" used for related videos
                 video.views = numericCount(part);
             } else if (normalized.contains(" ago")) {
                 video.published = part;
             }
         }
-        video.channelId = findFirst(renderer, "browseId");
+        if (video.channelId.isEmpty()) video.channelId = findFirst(renderer, "browseId");
         video.description = "";
         JSONObject contentImage = renderer.optJSONObject("contentImage");
         JSONObject thumbnailModel = contentImage == null
@@ -873,6 +1292,17 @@ public class InnertubeEndpoint implements Endpoint {
 
     static String buildFeed(List<Video> videos, String title, String feedId, String baseUrl,
                             int startIndex, String nextLink) {
+        return buildFeed(videos, title, feedId, baseUrl, startIndex, nextLink, "", -1, false);
+    }
+
+    /**
+     * @param extraHeader  raw XML inserted after the feed metadata (for example playlist details)
+     * @param totalResults total number of results, or -1 to use the number of entries
+     * @param positions    whether to add yt:position elements (playlist feeds)
+     */
+    static String buildFeed(List<Video> videos, String title, String feedId, String baseUrl,
+                            int startIndex, String nextLink, String extraHeader,
+                            int totalResults, boolean positions) {
         videos = completeFeedVideos(videos);
         StringBuilder xml = feedStart(title, feedId);
         String feedUrl = feedId;
@@ -889,62 +1319,77 @@ public class InnertubeEndpoint implements Endpoint {
             .append("<author><name>YouTube/yt2009</name><uri>http://www.youtube.com/</uri></author>")
             .append("<generator version='2.0' uri='").append(XmlUtil.escape(baseUrl))
             .append("'>YouTube data API</generator>");
-        xml.append("<openSearch:totalResults>").append(videos.size()).append("</openSearch:totalResults>")
+        xml.append("<openSearch:totalResults>")
+                .append(totalResults >= 0 ? totalResults : videos.size()).append("</openSearch:totalResults>")
                 .append("<openSearch:startIndex>").append(startIndex).append("</openSearch:startIndex>")
                 .append("<openSearch:itemsPerPage>").append(videos.size()).append("</openSearch:itemsPerPage>");
         if (!nextLink.isEmpty()) {
             xml.append("<link rel='next' type='application/atom+xml' href='")
                     .append(XmlUtil.escape(nextLink)).append("'/>");
         }
+        xml.append(extraHeader);
+        int position = startIndex;
         for (Video video : videos) {
-            String videoUrl = baseUrl + "/feeds/api/videos/" + video.id;
-            String safeId = XmlUtil.escape(video.id);
-            String safeChannelId = XmlUtil.escape(video.channelId);
-            String safeTitle = XmlUtil.escape(video.title);
-            String safeDescription = XmlUtil.escape(video.description);
-            String safeChannel = XmlUtil.escape(video.channel);
-            String category = XmlUtil.escape(video.category);
-            xml.append("<entry><id>").append(XmlUtil.escape(videoUrl)).append("</id>")
-                .append("<youTubeId id='").append(safeId).append("'>").append(safeId).append("</youTubeId>")
-                .append("<published>").append(XmlUtil.escape(toAtomDate(video.published))).append("</published>")
-                .append("<updated>").append(XmlUtil.escape(toAtomDate(video.published))).append("</updated>")
-                .append("<title type='text'>").append(safeTitle).append("</title>")
-                    .append("<content type='text'>").append(safeDescription).append("</content>")
-                .append("<link rel='http://gdata.youtube.com/schemas/2007#video.related' href='")
-                .append(XmlUtil.escape(videoUrl)).append("/related'/>")
-                .append("<author><name>").append(safeChannel).append("</name><uri>")
-                .append(XmlUtil.escape(baseUrl)).append("/feeds/api/users/").append(safeChannelId)
-                .append("</uri><yt:userId>").append(safeChannelId).append("</yt:userId></author>")
-                .append("<gd:comments><gd:feedLink href='").append(XmlUtil.escape(videoUrl))
-                .append("/comments' countHint='0'/></gd:comments><media:group>")
-                .append("<media:title>").append(safeTitle).append("</media:title>")
-                    .append(category.isEmpty() ? "" : "<category scheme='http://gdata.youtube.com/schemas/2007/categories.cat' label='" + category + "' term='" + category + "'/>")
-                    .append(category.isEmpty() ? "" : "<media:category label='" + category + "' scheme='http://gdata.youtube.com/schemas/2007/categories.cat'>" + category + "</media:category>")
-                .append("<media:content url='").append(XmlUtil.escape(baseUrl)).append("/video/")
-                .append(safeId).append("' type='video/3gpp' medium='video' expression='full' duration='")
-                .append(durationSecondsPublic(video.duration)).append("' yt:format='3'/>")
-                .append("<media:description type='plain'>").append(safeDescription).append("</media:description>")
-                .append("<media:keywords>").append(safeTitle).append("</media:keywords>")
-                .append("<media:player url='http://www.youtube.com/watch?v=").append(safeId).append("'/>")
-                    .append("<media:thumbnail yt:name='hqdefault' url='").append(XmlUtil.escape(video.thumbnail))
-                    .append("' height='240' width='320' time='00:00:00'/>")
-                .append("<media:thumbnail yt:name='poster' url='http://i.ytimg.com/vi/").append(safeId)
-                .append("/0.jpg' height='240' width='320' time='00:00:00'/>")
-                .append("<media:thumbnail yt:name='default' url='http://i.ytimg.com/vi/").append(safeId)
-                .append("/0.jpg' height='240' width='320' time='00:00:00'/>")
-                .append("<yt:duration seconds='").append(durationSecondsPublic(video.duration)).append("'/>")
-                .append("<yt:uploaded>").append(XmlUtil.escape(toAtomDate(video.published))).append("</yt:uploaded>")
-                .append("<yt:uploaderId>").append(safeChannelId).append("</yt:uploaderId>")
-                .append("<yt:videoid id='").append(safeId).append("'>").append(safeId).append("</yt:videoid>")
-                .append("<youTubeId id='").append(safeId).append("'>").append(safeId).append("</youTubeId>")
-                .append("<media:credit role='uploader' yt:display='").append(safeChannel)
-                .append("' name='").append(safeChannelId).append("'>").append(safeChannelId)
-                .append("</media:credit></media:group><gd:rating average='5' max='5' min='1' numRaters='0' rel='http://schemas.google.com/g/2005#overall'/>")
-                .append("<yt:statistics favoriteCount='0' viewCount='").append(numericCount(video.views)).append("'/>")
-                .append("<yt:rating numLikes='").append(numericCount(video.likes))
-                .append("' numDislikes='0'/></entry>");
+            appendVideoEntry(xml, video, baseUrl, positions ? position++ : 0);
         }
         return xml.append("</feed>").toString();
+    }
+
+    static String videoEntry(Video video, String baseUrl) {
+        StringBuilder xml = new StringBuilder();
+        appendVideoEntry(xml, video, baseUrl, 0);
+        return xml.toString();
+    }
+
+    private static void appendVideoEntry(StringBuilder xml, Video video, String baseUrl, int position) {
+        String videoUrl = baseUrl + "/feeds/api/videos/" + video.id;
+        String safeId = XmlUtil.escape(video.id);
+        String safeChannelId = XmlUtil.escape(video.channelId);
+        String safeTitle = XmlUtil.escape(video.title);
+        String safeDescription = XmlUtil.escape(video.description);
+        String safeChannel = XmlUtil.escape(video.channel);
+        String category = XmlUtil.escape(video.category);
+        xml.append("<entry><id>").append(XmlUtil.escape(videoUrl)).append("</id>")
+            .append("<youTubeId id='").append(safeId).append("'>").append(safeId).append("</youTubeId>")
+            .append("<published>").append(XmlUtil.escape(toAtomDate(video.published))).append("</published>")
+            .append("<updated>").append(XmlUtil.escape(toAtomDate(video.published))).append("</updated>")
+            .append("<title type='text'>").append(safeTitle).append("</title>")
+                .append("<content type='text'>").append(safeDescription).append("</content>")
+            .append("<link rel='http://gdata.youtube.com/schemas/2007#video.related' href='")
+            .append(XmlUtil.escape(videoUrl)).append("/related'/>")
+            .append("<author><name>").append(safeChannel).append("</name><uri>")
+            .append(XmlUtil.escape(baseUrl)).append("/feeds/api/users/").append(safeChannelId)
+            .append("</uri><yt:userId>").append(safeChannelId).append("</yt:userId></author>")
+            .append("<gd:comments><gd:feedLink href='").append(XmlUtil.escape(videoUrl))
+            .append("/comments' countHint='0'/></gd:comments><media:group>")
+            .append("<media:title>").append(safeTitle).append("</media:title>")
+                .append(category.isEmpty() ? "" : "<category scheme='http://gdata.youtube.com/schemas/2007/categories.cat' label='" + category + "' term='" + category + "'/>")
+                .append(category.isEmpty() ? "" : "<media:category label='" + category + "' scheme='http://gdata.youtube.com/schemas/2007/categories.cat'>" + category + "</media:category>")
+            .append("<media:content url='").append(XmlUtil.escape(baseUrl)).append("/video/")
+            .append(safeId).append("' type='video/3gpp' medium='video' expression='full' duration='")
+            .append(durationSecondsPublic(video.duration)).append("' yt:format='3'/>")
+            .append("<media:description type='plain'>").append(safeDescription).append("</media:description>")
+            .append("<media:keywords>").append(safeTitle).append("</media:keywords>")
+            .append("<media:player url='http://www.youtube.com/watch?v=").append(safeId).append("'/>")
+                .append("<media:thumbnail yt:name='hqdefault' url='").append(XmlUtil.escape(video.thumbnail))
+                .append("' height='240' width='320' time='00:00:00'/>")
+            .append("<media:thumbnail yt:name='poster' url='http://i.ytimg.com/vi/").append(safeId)
+            .append("/0.jpg' height='240' width='320' time='00:00:00'/>")
+            .append("<media:thumbnail yt:name='default' url='http://i.ytimg.com/vi/").append(safeId)
+            .append("/0.jpg' height='240' width='320' time='00:00:00'/>")
+            .append("<yt:duration seconds='").append(durationSecondsPublic(video.duration)).append("'/>")
+            .append("<yt:uploaded>").append(XmlUtil.escape(toAtomDate(video.published))).append("</yt:uploaded>")
+            .append("<yt:uploaderId>").append(safeChannelId).append("</yt:uploaderId>")
+            .append("<yt:videoid id='").append(safeId).append("'>").append(safeId).append("</yt:videoid>")
+            .append("<youTubeId id='").append(safeId).append("'>").append(safeId).append("</youTubeId>")
+            .append("<media:credit role='uploader' yt:display='").append(safeChannel)
+            .append("' name='").append(safeChannelId).append("'>").append(safeChannelId)
+            .append("</media:credit></media:group><gd:rating average='5' max='5' min='1' numRaters='0' rel='http://schemas.google.com/g/2005#overall'/>")
+            .append("<yt:statistics favoriteCount='0' viewCount='").append(numericCount(video.views)).append("'/>")
+            .append("<yt:rating numLikes='").append(numericCount(video.likes))
+            .append("' numDislikes='0'/>");
+        if (position > 0) xml.append("<yt:position>").append(position).append("</yt:position>");
+        xml.append("</entry>");
     }
 
     private static StringBuilder feedStart(String title, String id) {
@@ -1125,9 +1570,43 @@ public class InnertubeEndpoint implements Endpoint {
         return "";
     }
 
+    private static final java.util.regex.Pattern ISO_DATE = java.util.regex.Pattern.compile(
+            "(\\d{4})-(\\d{2})-(\\d{2})(?:[T ](\\d{2}):(\\d{2})(?::(\\d{2})(?:\\.(\\d{1,9}))?)?)?"
+                    + "\\s*(Z|[+-]\\d{2}:?\\d{2})?");
+
+    /**
+     * Returns a date in the exact form the legacy apps parse, like yt2009's toISOString():
+     * "2024-05-01T15:00:00.000Z" (UTC, milliseconds, 'Z'). YouTube's own dates such as
+     * "2024-05-01T08:00:00-07:00" or "2024-05-01T15:00:00Z" are converted; relative texts
+     * ("3 years ago") are approximated.
+     */
     static String toAtomDate(String source) {
-        if (source != null && source.matches("\\d{4}-\\d{2}-\\d{2}")) return source + "T00:00:00.000Z";
-        if (source != null && source.matches("\\d{4}-\\d{2}-\\d{2}T.*")) return source;
+        java.util.regex.Matcher iso = ISO_DATE.matcher(source == null ? "" : source.trim());
+        if (iso.matches()) {
+            java.util.Calendar calendar = java.util.Calendar.getInstance(TimeZone.getTimeZone("UTC"), Locale.US);
+            calendar.clear();
+            calendar.set(Integer.parseInt(iso.group(1)), Integer.parseInt(iso.group(2)) - 1,
+                    Integer.parseInt(iso.group(3)),
+                    iso.group(4) == null ? 0 : Integer.parseInt(iso.group(4)),
+                    iso.group(5) == null ? 0 : Integer.parseInt(iso.group(5)),
+                    iso.group(6) == null ? 0 : Integer.parseInt(iso.group(6)));
+            String fraction = iso.group(7);
+            if (fraction != null) {
+                calendar.set(java.util.Calendar.MILLISECOND,
+                        Integer.parseInt((fraction + "00").substring(0, 3)));
+            }
+            long time = calendar.getTimeInMillis();
+            String zone = iso.group(8);
+            if (zone != null && !"Z".equals(zone)) {
+                String digits = zone.substring(1).replace(":", "");
+                long offset = (Integer.parseInt(digits.substring(0, 2)) * 60L
+                        + Integer.parseInt(digits.substring(2, 4))) * 60_000L;
+                time -= zone.charAt(0) == '-' ? -offset : offset;
+            }
+            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
+            format.setTimeZone(TimeZone.getTimeZone("UTC"));
+            return format.format(new java.util.Date(time));
+        }
         long age = 0;
         java.util.regex.Matcher matcher = java.util.regex.Pattern.compile(
                 "(\\d+)\\s*(seconds?|minutes?|hours?|days?|weeks?|months?|years?|s|m|h|d|w|mo|y)\\s+ago",
@@ -1160,5 +1639,21 @@ public class InnertubeEndpoint implements Endpoint {
         String published = "";
         String thumbnail = "";
         String category = "";
+
+        Video copy() {
+            Video copy = new Video();
+            copy.id = id;
+            copy.title = title;
+            copy.description = description;
+            copy.channel = channel;
+            copy.channelId = channelId;
+            copy.views = views;
+            copy.likes = likes;
+            copy.duration = duration;
+            copy.published = published;
+            copy.thumbnail = thumbnail;
+            copy.category = category;
+            return copy;
+        }
     }
 }

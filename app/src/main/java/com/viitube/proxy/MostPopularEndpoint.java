@@ -6,10 +6,8 @@ import fi.iki.elonen.NanoHTTPD;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -17,14 +15,30 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 /**
- * "Most Popular" z YouTube Data API v3 (chart=mostPopular),
- * filtr Shorts (<= 60s), konwersja do formatu Atom/GData,
- * cache na dysku 24h przez HttpClient.cacheFile / isFresh, z fallbackiem Innertube.
+ * Most popular videos as a legacy Atom/GData feed: YouTube Data API v3 (chart=mostPopular,
+ * once a day per region) when a key is set, otherwise Innertube (see
+ * InnertubeEndpoint.fetchPopularFeed). Shorts (<= 60 s) are left out.
  */
 public class MostPopularEndpoint implements Endpoint {
 
-        private static final long CACHE_TTL_MS = 24L * 60 * 60 * 1000L;
+    static final String[][] CATEGORIES = {
+            {"1", "Film & Animation"}, {"2", "Autos & Vehicles"}, {"10", "Music"},
+            {"15", "Pets & Animals"}, {"17", "Sports"}, {"18", "Short Movies"},
+            {"19", "Travel & Events"}, {"20", "Gaming"}, {"21", "Videoblogging"},
+            {"22", "People & Blogs"}, {"23", "Comedy"}, {"24", "Entertainment"},
+            {"25", "News & Politics"}, {"26", "Howto & Style"}, {"27", "Education"},
+            {"28", "Science & Technology"}, {"29", "Nonprofits & Activism"},
+            {"30", "Movies"}, {"31", "Anime & Animation"}, {"32", "Action & Adventure"},
+            {"33", "Classics"}, {"34", "Comedy"}, {"35", "Documentary"},
+            {"36", "Drama"}, {"37", "Family"}, {"38", "Foreign"}, {"39", "Horror"},
+            {"40", "Sci-Fi & Fantasy"}, {"41", "Thriller"}, {"42", "Shorts"},
+            {"43", "Shows"}, {"44", "Trailers"}
+    };
+
+    private static final long DATA_API_CACHE_TTL_MS = 24L * 60 * 60 * 1000L;
+    private static final long INNERTUBE_CACHE_TTL_MS = 60L * 60 * 1000L;
     private static final int MAX_RESULTS = 20;
+        private static final int MAX_API_RESULTS = 50;
     private static final int MAX_SHORTS_SECONDS = 60;
     private static final String USER_AGENT = "ViitubeProxy/1.0";
 
@@ -32,46 +46,72 @@ public class MostPopularEndpoint implements Endpoint {
     public NanoHTTPD.Response handle(NanoHTTPD.IHTTPSession session, String[] params,
                                      Config config, Context context) throws IOException {
 
-        String region = (params.length > 0 && params[0] != null && !params[0].isEmpty())
-                ? params[0].toUpperCase(Locale.US) : "US";
+        // /standardfeeds/REGION/FEED[_Category] or region-less /standardfeeds/FEED[_Category]
+        String[] path = params;
+        String region;
+        if (path.length > 0 && path[0] != null && path[0].matches("[A-Za-z]{2}")) {
+            region = path[0].toUpperCase(Locale.US);
+            path = java.util.Arrays.copyOfRange(path, 1, path.length);
+        } else {
+            region = config.getString("gl", "US").toUpperCase(Locale.US);
+        }
+        String requestedCategory = null;
+        for (String segment : path) {
+            String category = stripStandardFeedName(segment);
+            if (!category.isEmpty()) requestedCategory = category;
+        }
+        if (requestedCategory == null || requestedCategory.isEmpty()) {
+            requestedCategory = session.getParms().get("videoCategoryId");
+        }
+        if (requestedCategory == null || requestedCategory.isEmpty()) {
+            requestedCategory = session.getParms().get("category");
+        }
+        String categoryId = resolveCategoryId(requestedCategory);
+        if (requestedCategory != null && !requestedCategory.isEmpty() && categoryId.isEmpty()) {
+            return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST,
+                    "text/plain", "unknown video category");
+        }
+        String categoryName = categoryName(categoryId);
+        int resultLimit = parsePositiveInt(session.getParms().get("max-results"), MAX_RESULTS,
+                MAX_API_RESULTS);
 
-        // cache: <cacheDir>/feeds/most_popular_US.json  (rozszerzenie .json narzuca cacheFile)
-        File cacheFile = HttpClient.cacheFile(context.getCacheDir(), "feeds", "most_popular_v3_" + region);
-
-        // 1) Cache hit (5h)?
-        if (HttpClient.isFresh(cacheFile, CACHE_TTL_MS)) {
-                        return atomResponse(HttpClient.readFile(cacheFile), session);
+        String apiKey = config.getYouTubeApiKey();
+        boolean useDataApi = apiKey != null && !apiKey.isEmpty();
+        // The Data API is asked once a day per region (quota); Innertube results change faster.
+        long maxAge = useDataApi ? DATA_API_CACHE_TTL_MS : INNERTUBE_CACHE_TTL_MS;
+        File cacheFile = HttpClient.cacheFile(context.getCacheDir(), "feeds",
+                "most_popular_v4_" + (useDataApi ? "api_" : "it_") + region + "_" + categoryId
+                        + "_" + resultLimit);
+        if (HttpClient.isFresh(cacheFile, maxAge)) {
+            return atomResponse(HttpClient.readFile(cacheFile), session);
         }
 
-                // Keep one Data API request per region per day; use Innertube when unavailable.
-        try {
-            String apiKey = config.getYouTubeApiKey();
-                        if (apiKey != null && !apiKey.isEmpty()) {
-                                String xml = fetchAndBuildAtom(region, apiKey);
-                                if (xml != null && !xml.isEmpty()) {
-                                        HttpClient.writeFile(cacheFile, xml);
-                                        return atomResponse(xml, session);
-                                }
-            }
-                } catch (Exception e) {
-                        e.printStackTrace();
+        if (useDataApi) {
+            try {
+                String xml = fetchAndBuildAtom(region, categoryId, categoryName, resultLimit, apiKey);
+                if (xml != null && xml.contains("<entry>")) {
+                    HttpClient.writeFile(cacheFile, xml);
+                    return atomResponse(xml, session);
                 }
-
-                try {
-                        String xml = InnertubeEndpoint.fetchPopularFeed(region, config,
-                                "__BASE_URL__", context);
-            if (xml != null && !xml.isEmpty()) {
-                HttpClient.writeFile(cacheFile, xml);
-                return atomResponse(xml, session);
+            } catch (Exception e) {
+                android.util.Log.w("MostPopularEndpoint", "Data API failed; using Innertube: " + e);
             }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
 
-                // Fallback: stale cache before the bundled sample feed.
-                if (cacheFile.exists()) return atomResponse(HttpClient.readFile(cacheFile), session);
+        try {
+            String xml = InnertubeEndpoint.fetchPopularFeed(region, categoryName,
+                    resultLimit, config, "__BASE_URL__", context);
+            HttpClient.writeFile(cacheFile, xml);
+            return atomResponse(xml, session);
+        } catch (Exception e) {
+            android.util.Log.w("MostPopularEndpoint", "Innertube popular feed failed: " + e);
+        }
 
-        return atomResponse(readAsset(context, "feeds/most_popular_default.xml"), session);
+        // YouTube unreachable: serve the last feed, or an empty one so the client still starts.
+        if (cacheFile.exists()) return atomResponse(HttpClient.readFile(cacheFile), session);
+        return atomResponse(InnertubeEndpoint.buildFeed(new java.util.ArrayList<InnertubeEndpoint.Video>(),
+                "YouTube Most Popular", "__BASE_URL__/feeds/api/standardfeeds/" + region
+                        + "/most_popular", "__BASE_URL__"), session);
     }
 
         private NanoHTTPD.Response atomResponse(String xml, NanoHTTPD.IHTTPSession session) {
@@ -82,12 +122,14 @@ public class MostPopularEndpoint implements Endpoint {
     }
 
     // ---------------------------------------------------------------------
-    private String fetchAndBuildAtom(String region, String apiKey) throws Exception {
+        private String fetchAndBuildAtom(String region, String categoryId, String categoryName,
+                                                                         int resultLimit, String apiKey) throws Exception {
         String url = "https://www.googleapis.com/youtube/v3/videos"
                 + "?part=snippet,contentDetails,statistics"
                 + "&chart=mostPopular"
                 + "&regionCode=" + URLEncoder.encode(region, "UTF-8")
-                + "&maxResults=" + (MAX_RESULTS * 2)
+                + "&maxResults=" + Math.min(MAX_API_RESULTS, resultLimit * 2)
+                                + (categoryId.isEmpty() ? "" : "&videoCategoryId=" + URLEncoder.encode(categoryId, "UTF-8"))
                 + "&key=" + URLEncoder.encode(apiKey, "UTF-8");
 
         String json = HttpClient.getUrl(url, USER_AGENT);
@@ -101,7 +143,8 @@ public class MostPopularEndpoint implements Endpoint {
 
         StringBuilder sb = new StringBuilder(64 * 1024);
         sb.append("<?xml version='1.0' encoding='UTF-8'?>\n");
-        String feedUrl = "__BASE_URL__/feeds/api/standardfeeds/" + region + "/most_popular";
+        String feedUrl = "__BASE_URL__/feeds/api/standardfeeds/" + region + "/most_popular"
+                + (categoryId.isEmpty() ? "" : "?category=" + categoryId);
         sb.append("<feed xmlns='http://www.w3.org/2005/Atom'")
                 .append(" xmlns:openSearch='http://a9.com/-/spec/opensearch/1.1/'")
                 .append(" xmlns:media='http://search.yahoo.com/mrss/'")
@@ -112,7 +155,9 @@ public class MostPopularEndpoint implements Endpoint {
         sb.append("  <updated>").append(nowIso).append("</updated>\n");
         sb.append("  <category scheme='http://schemas.google.com/g/2005#kind'")
                 .append(" term='http://gdata.youtube.com/schemas/2007#video'/>\n");
-        sb.append("  <title type='text'>YouTube Most Popular Videos in ").append(region).append("</title>\n");
+        sb.append("  <title type='text'>YouTube Most Popular ")
+                .append(categoryId.isEmpty() ? "Videos" : escapeXml(categoryName))
+                .append(" in ").append(region).append("</title>\n");
         sb.append("  <logo>http://www.youtube.com/img/pic_youtubelogo_123x63.gif</logo>\n");
         sb.append("  <link rel='alternate' type='text/html' href='http://www.youtube.com'/>\n");
         sb.append("  <link rel='http://schemas.google.com/g/2005#feed' type='application/atom+xml' href='__BASE_URL__/feeds/api/videos'/>\n");
@@ -122,10 +167,10 @@ public class MostPopularEndpoint implements Endpoint {
         sb.append("  <generator version='2.0' uri='__BASE_URL__/'>YouTube data API</generator>\n");
         sb.append("  <openSearch:totalResults>").append(items.length()).append("</openSearch:totalResults>\n");
         sb.append("  <openSearch:startIndex>1</openSearch:startIndex>\n");
-        sb.append("  <openSearch:itemsPerPage>").append(MAX_RESULTS).append("</openSearch:itemsPerPage>\n");
+        sb.append("  <openSearch:itemsPerPage>").append(resultLimit).append("</openSearch:itemsPerPage>\n");
 
         int emitted = 0;
-        for (int i = 0; i < items.length() && emitted < MAX_RESULTS; i++) {
+        for (int i = 0; i < items.length() && emitted < resultLimit; i++) {
             JSONObject v = items.getJSONObject(i);
             JSONObject snippet = v.optJSONObject("snippet");
             JSONObject contentDetails = v.optJSONObject("contentDetails");
@@ -142,8 +187,8 @@ public class MostPopularEndpoint implements Endpoint {
             String desc      = snippet.optString("description", "");
             String channel   = snippet.optString("channelTitle", "");
             String channelId = snippet.optString("channelId", "");
-            String published = snippet.optString("publishedAt", "");
-            String categoryName = "Science &amp; Technology";
+            String published = InnertubeEndpoint.toAtomDate(snippet.optString("publishedAt", ""));
+            String escapedCategoryName = escapeXml(categoryName);
             if (!InnertubeEndpoint.isValidVideoId(videoId) || title.trim().isEmpty()
                     || channel.trim().isEmpty() || channelId.trim().isEmpty()
                     || channel.trim().equals(channelId.trim())) {
@@ -169,8 +214,11 @@ public class MostPopularEndpoint implements Endpoint {
             sb.append("    <published>").append(escapeXml(published)).append("</published>\n");
             sb.append("    <updated>").append(escapeXml(published)).append("</updated>\n");
             sb.append("    <category scheme='http://schemas.google.com/g/2005#kind' term='http://gdata.youtube.com/schemas/2007#video'/>");
-            sb.append("<category scheme='http://gdata.youtube.com/schemas/2007/categories.cat' label='")
-                    .append(categoryName).append("' term='").append(categoryName).append("'>Science &amp; Technology</category>\n");
+            if (!categoryId.isEmpty()) {
+                sb.append("<category scheme='http://gdata.youtube.com/schemas/2007/categories.cat' label='")
+                        .append(escapedCategoryName).append("' term='").append(categoryId).append("'>")
+                        .append(escapedCategoryName).append("</category>\n");
+            }
             sb.append("    <title type='text'>").append(escapeXml(title)).append("</title>\n");
             sb.append("    <content type='text'>").append(escapeXml(desc)).append("</content>\n");
             sb.append("    <link rel='alternate' type='text/html' href='http://www.youtube.com/watch?v=")
@@ -204,8 +252,11 @@ public class MostPopularEndpoint implements Endpoint {
 
             sb.append("    <media:group>\n");
             sb.append("      <media:title>").append(escapeXml(title)).append("</media:title>\n");
-            sb.append("      <media:category label='").append(categoryName)
-                    .append("' scheme='http://gdata.youtube.com/schemas/2007/categories.cat'>Science &amp; Technology</media:category>\n");
+            if (!categoryId.isEmpty()) {
+                sb.append("      <media:category label='").append(escapedCategoryName)
+                        .append("' scheme='http://gdata.youtube.com/schemas/2007/categories.cat'>")
+                        .append(escapedCategoryName).append("</media:category>\n");
+            }
                     sb.append("      <media:content url='__BASE_URL__/video/").append(escapeXml(videoId))
                             .append("' type='video/3gpp' medium='video' expression='full' duration='")
                             .append(seconds).append("' yt:format='3'/>\n");
@@ -294,13 +345,74 @@ public class MostPopularEndpoint implements Endpoint {
                 .replace("'", "&apos;");
     }
 
-    private String readAsset(Context context, String path) throws IOException {
-        InputStream in = context.getAssets().open(path);
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        byte[] buf = new byte[2048];
-        int n;
-        while ((n = in.read(buf)) != -1) bos.write(buf, 0, n);
-        in.close();
-        return bos.toString("UTF-8");
+    /** Legacy chart names; all of them are served from the same popular videos. */
+    private static final String[] STANDARD_FEEDS = {"most_popular", "most_viewed", "top_rated",
+            "recently_featured", "most_discussed", "most_recent", "top_favorites",
+            "most_responded", "most_shared", "most_linked", "trending_videos", "on_the_web",
+            "watch_on_mobile"};
+
+    /** "most_popular_Music" -> "Music", "top_rated" -> "", "Music" -> "Music". */
+    private static String stripStandardFeedName(String segment) {
+        if (segment == null) return "";
+        for (String feed : STANDARD_FEEDS) {
+            if (segment.equals(feed)) return "";
+            if (segment.startsWith(feed + "_")) return segment.substring(feed.length() + 1);
+        }
+        return segment;
     }
+
+        static String resolveCategoryId(String value) {
+                if (value == null || value.trim().isEmpty()) return "";
+        String normalized = normalizeCategory(value);
+        String legacyId = legacyCategoryId(normalized);
+        if (!legacyId.isEmpty()) return legacyId;
+                for (String[] category : CATEGORIES) {
+                        if (category[0].equals(value.trim())
+                    || normalizeCategory(category[1]).equals(normalized)) return category[0];
+                }
+                return "";
+        }
+
+        static String categoryName(String id) {
+                for (String[] category : CATEGORIES) {
+                        if (category[0].equals(id)) return category[1];
+                }
+                return id.isEmpty() ? "" : "Category " + id;
+        }
+
+        private static String normalizeCategory(String value) {
+                return value.toLowerCase(Locale.US).replaceAll("[^a-z0-9]", "");
+        }
+
+        private static int parsePositiveInt(String value, int fallback, int maximum) {
+                if (value == null) return fallback;
+                try {
+                        int parsed = Integer.parseInt(value);
+                        return parsed >= 1 && parsed <= maximum ? parsed : fallback;
+                } catch (NumberFormatException ignored) {
+                        return fallback;
+                }
+        }
+
+        private static String legacyCategoryId(String category) {
+                switch (category) {
+                        case "autos": return "2";
+                        case "comedy": return "23";
+                        case "education": return "27";
+                        case "entertainment": return "24";
+                        case "film": return "1";
+                        case "games": return "20";
+                        case "music": return "10";
+                        case "news": return "25";
+                        case "nonprofit": return "29";
+                        case "people": return "22";
+                        case "animals": return "15";
+                        case "tech": return "28";
+                        case "sports": return "17";
+                        case "travel": return "19";
+                        case "howto": return "26";
+                        default: return "";
+                }
+        }
+
 }

@@ -81,6 +81,31 @@ For HTTP 500 errors, inspect the proxy's server-side exception with:
 adb logcat -s ProxyServer
 ```
 
+After an app crash, the next launch offers to send a report. Nothing is uploaded
+unless **Send logs** is selected. A report includes the crash stack, bounded
+YouTube HTTP request/response logs, app version, device model, and Android
+version. API keys, visitor data, and request signatures are redacted. Reports
+are stored locally until upload succeeds; selecting **Not now** keeps them on
+the device. The HTTPS host can see the sender's IP address while handling an
+upload.
+
+## Crash report receiver
+
+The Node.js receiver is in `crash-log-server/` and requires Node.js 18 or newer.
+Run it with `cd crash-log-server && npm start`; by default it listens on
+`127.0.0.1:3000/ytproxy`. Put it behind HTTPS at
+`crashlogs.truehosting.net/ytproxy` and review `crash-log-server/README.md` for
+deployment details. Reports are organized in date directories and contain a
+JSON payload plus a readable crash summary. Keep the report directory private.
+
+Video search (`/feeds/api/videos?q=`) supports `start-index` and `max-results`
+(default 20, up to 50) and links the next page; while one page is shown, the
+next page and its metadata are loaded in the background. Loaded search pages,
+playlist pages and uploads are kept in memory for 10-30 minutes, so later pages
+continue where the previous request stopped. Finished feeds are cached on disk:
+search 30 minutes, uploads and activity 10 minutes, playlists 15 minutes,
+channel playlists 30 minutes.
+
 Example endpoints:
 
 ```text
@@ -88,11 +113,96 @@ Example endpoints:
 /feeds/api/users/UC_CHANNEL_ID
 /feeds/api/users/UC_CHANNEL_ID/uploads
 /feeds/api/users/UC_CHANNEL_ID/playlists
+/feeds/api/users/UC_CHANNEL_ID/playlists/PLAYLIST_ID
+/feeds/api/playlists/PLAYLIST_ID
 /feeds/api/videos/VIDEO_ID/related
 /feeds/api/videos/VIDEO_ID/comments
 /feeds/api/standardfeeds/US/most_popular
+/feeds/api/standardfeeds/US/most_popular?category=10
+/feeds/api/videoCategories
+/feeds/api/channels?q=music
+/feeds/api/users/UC_CHANNEL_ID/activity
+/feeds/api/events?author=UC_CHANNEL_ID
 /video/VIDEO_ID
 ```
+
+Popular-video feeds can be filtered by a YouTube video category ID or category
+name, for example `category=10` or `category=Music`. With a YouTube Data API v3
+key, the proxy requests `videos.list` with `chart=mostPopular` and
+`videoCategoryId` (cached for a day). Without a key, or when the Data API fails,
+the feed comes from Innertube (cached for an hour); YouTube's Trending page no
+longer exists, so the proxy lists the most viewed videos uploaded this week and
+adds a music video from the region's "Trending 20" chart (YouTube Music) as
+every fifth entry. The Music category uses
+the region's "Top 100 Music Videos" chart, and other categories list the most
+viewed videos of this month matching the category name. Live streams and Shorts
+are left out. Legacy chart names (`top_rated`, `most_viewed`,
+`recently_featured`, ...) and paths without a region return the same feed. When
+YouTube cannot be reached, the last feed is served, or an empty feed if there is
+none. The proxy also accepts legacy category
+paths such as `/feeds/api/standardfeeds/PL/most_popular_Autos`. The category
+catalog is available at `/feeds/api/videoCategories`. Channel search accepts
+`q`, channel activity (`/feeds/api/events?author=`, as requested by the legacy
+apps' channel Activity tab, or `/feeds/api/users/ID/activity`) returns the seven
+newest uploads as `video_uploaded` events with an embedded video entry, and
+`/feeds/api/charts/live/events/live_now` returns live videos.
+
+Channel upload feeds are read from the channel's `UU` uploads playlist, so they
+include Shorts and past live streams in upload order; the Videos tab is used as a
+fallback. Playlist feeds follow yt2009's layout: channel playlist entries link to
+`/feeds/api/users/ID/playlists/PLAYLIST_ID`, and playlist feeds start with the
+playlist title, author, video count and thumbnail, followed by video entries with
+`yt:position`. Both playlist routes support `start-index` and `max-results`.
+Usernames and handles are resolved to channel IDs. Channel search results are cached for
+30 minutes and include the subscriber count, avatar and uploads/playlists links,
+so clients do not need to load every profile; profiles
+(`/feeds/api/users/ID`, also `/feeds/api/channels/ID`) are cached for an hour.
+Activity entries show the channel name, not its ID.
+
+The **Playback format** setting controls all video redirect endpoints and takes
+effect on the next video. It defaults to 360p video with audio; the other
+options redirect to the best H.264 video-only stream up to 1080p, or to the
+highest-bitrate AAC audio stream of the original audio track. When the selected
+format is unavailable, the 360p stream is used.
+
+**Experimental: 720p with audio.** YouTube offers 720p only as separate video and
+audio streams. In this mode the proxy muxes the 720p H.264 video-only stream and
+the AAC audio stream on the phone while the video plays, without transcoding.
+Both streams are fragmented MP4: as in the DASH manifest Invidious builds from
+the player's `adaptiveFormats`, the `initRange` and `indexRange` fields give the
+stream header (`moov`) and its fragment index (`sidx`). For videos with up to 480
+fragments (roughly 30 minutes), the proxy first reads every fragment header
+(about 2 KB each, in parallel) and writes a classic MP4: one `moov` with complete
+sample tables (`stts`, `ctts`, `stss`, `stsc`, `stsz`, `stco`) followed by the
+raw samples of both tracks, interleaved every half second like YouTube's own
+progressive MP4s (Samsung's Android 4.x player cannot buffer files with
+5-10 second chunks). This plays on any Android version that
+can decode 720p H.264 and seeks by index. Longer videos are sent as fragmented
+MP4 (both headers merged into one file with two tracks, fragments in time order
+with rewritten track and sequence numbers), which needs a player with fragmented
+MP4 support. The file size is known up front, so the response has an exact
+`Content-Length` and supports `Range` requests; a few chunks are downloaded
+ahead. If muxing fails, the 360p stream is used.
+
+Limitation: without a PO token (generated by YouTube's BotGuard script in a
+browser, which this app cannot run), YouTube serves most adaptive stream URLs
+only for about the first minute and answers HTTP 403 beyond that. Before muxing,
+the proxy therefore checks that the end of both streams is reachable, trying
+several clients (older ANDROID_VR versions sometimes get complete files, but
+YouTube often answers them with a bot check). When no client gets complete
+streams, the video plays in 360p instead of stopping after a minute. Diagnostics are logged under
+the `Mp4Mux` tag (`adb logcat -s Mp4Mux VideoRedirect`). Redirects use `302` with
+`Cache-Control: no-store` so players do not reuse a previous format's stream. Player responses
+are kept in a bounded in-memory cache and cleared when the app task is removed
+or the proxy service stops; they are not written to disk.
+
+Feeds wait at most two seconds for extra metadata (full descriptions, publish
+dates, categories, like counts). Lookups still running after that finish in the
+background and are cached (feed metadata for 24 hours, without stream URLs), so
+the next request for the same videos is answered with complete data at once.
+HTTPS connections are kept alive and responses are gzip-compressed. All dates
+are written as UTC timestamps with milliseconds (`2024-05-01T15:00:00.000Z`),
+the form legacy clients parse.
 
 ## Configuration
 
