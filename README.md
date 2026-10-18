@@ -11,6 +11,8 @@ YouTube; the app does not download or transcode video.
   and comments.
 - YouTube Data API v3-backed popular feeds and optional upload metadata.
 - Playback redirects for supported progressive MP4 formats.
+- A second API for the 2015-2016 YouTube Android apps: the protobuf Innertube
+  API (`/youtubei/v1/...`), see below.
 - Local HTTP server on port `8080`, with an optional rooted-device redirect
   from port `80`.
 - English app interface.
@@ -90,13 +92,6 @@ the device. The HTTPS host can see the sender's IP address while handling an
 upload.
 
 ## Crash report receiver
-
-The Node.js receiver is in `crash-log-server/` and requires Node.js 18 or newer.
-Run it with `cd crash-log-server && npm start`; by default it listens on
-`127.0.0.1:3000/ytproxy`. Put it behind HTTPS at
-`crashlogs.truehosting.net/ytproxy` and review `crash-log-server/README.md` for
-deployment details. Reports are organized in date directories and contain a
-JSON payload plus a readable crash summary. Keep the report directory private.
 
 Video search (`/feeds/api/videos?q=`) supports `start-index` and `max-results`
 (default 20, up to 50) and links the next page; while one page is shown, the
@@ -204,6 +199,65 @@ HTTPS connections are kept alive and responses are gzip-compressed. All dates
 are written as UTC timestamps with milliseconds (`2024-05-01T15:00:00.000Z`),
 the form legacy clients parse.
 
+## Protobuf Innertube API (2015-2016 YouTube apps)
+
+YouTube apps from about version 10 onwards no longer use the GData feeds; they
+send protobuf requests to `/youtubei/v1/...`. The proxy answers these on the same
+port, with the same data as the GData feeds:
+
+| Request | Answer |
+| --- | --- |
+| `POST /youtubei/v1/browse` `FEwhat_to_watch` | Home. Apps from version 11 get Home, Trending and Account tabs; older apps get Home and Music. |
+| `browse` `FEtrending`, `FEmusic` | The popular chart and the region's music chart. |
+| `browse` `UC...` (or `@handle`) | Channel header (avatar, banner, subscribers), latest uploads, Videos and Playlists tabs. |
+| `browse` `VL...` | Playlist header and up to 100 videos. |
+| `POST /youtubei/v1/next` | Watch page: title, views, date, likes, description, channel with avatar and subscribers, related videos. |
+| `POST /youtubei/v1/player` | Video details and the 360p MP4 stream (direct googlevideo.com URL). With the experimental 720p mode, the stream muxed by the proxy is added as itag 22. |
+| `POST /youtubei/v1/search` | 20 video results per page; `SearchRequestParams.index` selects the page. |
+| `POST /youtubei/v1/guide`, `navigation/resolve_url` | Side menu; links to videos, channels, handles, playlists and searches. |
+| `config`, `deviceregistration/v1/devices`, `c2dm/register3`, `device_204` | Start-up stubs. |
+
+The message layouts come from the gdatav2innertube server. Its `.proto` files are
+in `app/src/main/proto/`, and `tools/protoc_java.py` compiles them to plain Java
+classes in `com.viitube.proxy.proto` (no protobuf library, so they run on Android
+2.3). After changing a `.proto` file, run `python3 tools/protoc_java.py` and
+commit the generated files. The encoding matches google-protobuf's: fields in
+declaration order, proto3 defaults omitted, `optional` fields written when set.
+
+Answers are cached for 10 minutes (watch pages) to an hour (home and charts).
+Continuation requests (`browse` with a continuation token) get an empty answer,
+because the reference server has no message for them. Signing in, subscribing
+and rating are not supported.
+
+## HTTPS on rooted devices
+
+Newer YouTube apps refuse plain HTTP, so the proxy can also serve HTTPS on the
+loopback interface. This only happens on a rooted device; without root nothing
+is attempted and nothing on the device changes (the plain HTTP server runs as
+before).
+
+When `https_enabled` is set and root is available, on start the proxy:
+
+- generates a self-signed certificate for `localhost` (SAN `localhost` and
+  `127.0.0.1`) on first run, kept in the app's private storage. The key pair is
+  created on the device, is never shipped in the APK, and never leaves the phone;
+- runs an HTTPS server on `https_port` (default `8443`) using that certificate;
+- redirects port `443` to `https_port` with `iptables`, so patched apps can reach
+  `https://localhost`;
+- copies the certificate into the system trust store as
+  `/system/etc/security/cacerts/<hash>.0` so the app trusts the local server.
+
+On stop it removes the `iptables` rule, stops the HTTPS server, and deletes the
+certificate from the system trust store. Every install and removal is logged
+under the `SystemCertStore` tag (`adb logcat -s SystemCertStore ProxyService`).
+Start the proxy before opening YouTube so the app picks up the certificate.
+
+Security notes: the certificate is a trust anchor while it is installed, so it is
+removed again when the proxy stops rather than left on the device. The private
+key stays in app-private storage; keep the device's root access trusted. On
+Android 10+ the `/system` partition may be read-only even with root, so the
+install can fail; the proxy then logs the failure and serves plain HTTP only.
+
 ## Configuration
 
 The app copies `app/src/main/assets/config.json` into its private app storage on
@@ -232,6 +286,9 @@ or commit them to GitHub.
 
 - `app/src/main/java/` — Android app and proxy implementation.
 - `app/src/main/assets/` — default configuration and XML feed templates.
+- `app/src/main/proto/` — protobuf messages of the Innertube API.
+- `app/src/main/java/com/viitube/proxy/proto/` — Java code generated from them.
+- `tools/protoc_java.py` — the generator.
 - `gradle/wrapper/` — pinned Gradle Wrapper.
 
 ## License

@@ -81,7 +81,7 @@ public class ChannelEndpoint implements Endpoint {
         if ("channel".equals(mode)) {
             // Profiles are requested often (search results, video pages) and change slowly;
             // the browse response behind them is large, so the finished entry is cached.
-            java.io.File cache = HttpClient.cacheFile(context.getCacheDir(), "channel_entry_v1",
+            java.io.File cache = HttpClient.cacheFile(context.getCacheDir(), "channel_entry_v2",
                     channelId + "_" + host(session));
             if (HttpClient.isFresh(cache, 60L * 60 * 1000)) return response(HttpClient.readFile(cache));
             JSONObject browse = fetchBrowse(resolveChannelId(channelId, config), mode, config);
@@ -112,7 +112,7 @@ public class ChannelEndpoint implements Endpoint {
         return user;
     }
 
-    private static final class Uploads {
+    static final class Uploads {
         final List<InnertubeEndpoint.Video> videos = new ArrayList<InnertubeEndpoint.Video>();
         String channelName = "";
         boolean hasMore;
@@ -123,7 +123,7 @@ public class ChannelEndpoint implements Endpoint {
      * public upload - regular videos, Shorts and past live streams - newest first, so it is
      * preferred over the Videos tab, which leaves Shorts out.
      */
-    private static Uploads loadUploads(String channelId, int limit, Config config) throws Exception {
+    static Uploads loadUploads(String channelId, int limit, Config config) throws Exception {
         Uploads uploads = new Uploads();
         if (isChannelId(channelId)) {
             try {
@@ -262,7 +262,41 @@ public class ChannelEndpoint implements Endpoint {
         return xml.append("</feed>").toString();
     }
 
-    private static String channelEntry(JSONObject root, String requestedId, String baseUrl) {
+    /** Channel page details shared by the GData profile entry and the protobuf channel page. */
+    static final class ChannelInfo {
+        String id = "";
+        String name = "";
+        String description = "";
+        String avatar = "";
+        String banner = "";
+        String subscribers = "";
+        String uploads = "";
+    }
+
+    /** Channel details from the channel's browse page (cached for an hour, like the profile). */
+    static ChannelInfo fetchChannelInfo(String channelId, Config config) throws Exception {
+        synchronized (CHANNEL_INFO) {
+            Object[] cached = CHANNEL_INFO.get(channelId);
+            if (cached != null && System.currentTimeMillis() - (Long) cached[1] < 60L * 60 * 1000) {
+                return (ChannelInfo) cached[0];
+            }
+        }
+        ChannelInfo info = readChannelInfo(fetchBrowse(channelId, "channel", config), channelId);
+        synchronized (CHANNEL_INFO) {
+            CHANNEL_INFO.put(channelId, new Object[]{info, System.currentTimeMillis()});
+        }
+        return info;
+    }
+
+    private static final java.util.Map<String, Object[]> CHANNEL_INFO =
+            new java.util.LinkedHashMap<String, Object[]>(16, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(java.util.Map.Entry<String, Object[]> eldest) {
+                    return size() > 32;
+                }
+            };
+
+    static ChannelInfo readChannelInfo(JSONObject root, String requestedId) {
         JSONObject metadata = findObject(root, "channelMetadataRenderer");
         JSONObject header = findObject(root, "pageHeaderRenderer");
         if (header == null) header = findObject(root, "c4TabbedHeaderRenderer");
@@ -317,6 +351,40 @@ public class ChannelEndpoint implements Endpoint {
                 }
             }
         }
+        ChannelInfo info = new ChannelInfo();
+        info.id = id;
+        info.name = name;
+        info.description = description;
+        info.avatar = InnertubeEndpoint.absoluteUrl(avatar);
+        info.banner = InnertubeEndpoint.absoluteUrl(findBanner(root));
+        info.subscribers = subscriberCount;
+        info.uploads = uploadsCount;
+        return info;
+    }
+
+    /** Largest banner image (view-model header or the older c4TabbedHeaderRenderer). */
+    private static String findBanner(JSONObject root) {
+        JSONObject banner = findObject(root, "imageBannerViewModel");
+        JSONObject image = banner == null ? null : banner.optJSONObject("image");
+        JSONArray sources = image == null ? null : image.optJSONArray("sources");
+        if (sources == null) {
+            JSONObject header = findObject(root, "c4TabbedHeaderRenderer");
+            JSONObject classic = header == null ? null : header.optJSONObject("banner");
+            sources = classic == null ? null : classic.optJSONArray("thumbnails");
+        }
+        if (sources == null || sources.length() == 0) return "";
+        JSONObject last = sources.optJSONObject(sources.length() - 1);
+        return last == null ? "" : last.optString("url", "");
+    }
+
+    private static String channelEntry(JSONObject root, String requestedId, String baseUrl) {
+        ChannelInfo info = readChannelInfo(root, requestedId);
+        String id = info.id;
+        String name = info.name;
+        String description = info.description;
+        String avatar = info.avatar;
+        String subscriberCount = info.subscribers;
+        String uploadsCount = info.uploads;
         String now = InnertubeEndpoint.utcNow();
         String safeId = XmlUtil.escape(id);
         String safeName = XmlUtil.escape(name);
@@ -333,6 +401,7 @@ public class ChannelEndpoint implements Endpoint {
                 .append("<updated>").append(now).append("</updated>")
                 .append("<category scheme='http://schemas.google.com/g/2005#kind' term='http://gdata.youtube.com/schemas/2007#userProfile'/>")
                 .append("<title type='text'>").append(safeName).append("</title>")
+                .append("<summary>").append(safeDescription).append("</summary>")
                 .append("<content type='text'>").append(safeDescription).append("</content>")
                 .append("<link rel='alternate' type='text/html' href='https://www.youtube.com/channel/").append(safeId).append("'/>")
                 .append("<link rel='self' type='application/atom+xml' href='").append(safeUrl)
@@ -348,7 +417,13 @@ public class ChannelEndpoint implements Endpoint {
         xml.append("<yt:maxUploadDuration seconds='0'/>")
                 .append("<yt:statistics lastWebAccess='").append(now)
                 .append("' subscriberCount='").append(XmlUtil.escape(numericCount(subscriberCount)))
-                .append("' videoWatchCount='0' viewCount='0' totalUploadViews='0'/>");
+                .append("' videoWatchCount='0' viewCount='0' totalUploadViews='0'/>")
+                // 5.x apps read the channel id from the profile (subscribe button, channel page:
+                // /feeds/api/channels/ID) and crash on an empty one; the channel parser reads
+                // the subscriber count from yt:channelStatistics.
+                .append("<yt:channelId>").append(safeId).append("</yt:channelId>")
+                .append("<yt:channelStatistics subscriberCount='")
+                .append(XmlUtil.escape(numericCount(subscriberCount))).append("' viewCount='0'/>");
         if (!avatar.isEmpty()) xml.append("<media:thumbnail url='").append(XmlUtil.escape(avatar)).append("'/>");
         xml.append("<yt:username display='").append(safeName).append("'>").append(safeId)
                 .append("</yt:username></entry>");
@@ -446,7 +521,30 @@ public class ChannelEndpoint implements Endpoint {
         }
     }
 
-    private static final class PlaylistSummary {
+    static final class ChannelPlaylists {
+        final List<PlaylistSummary> playlists = new ArrayList<PlaylistSummary>();
+        String channelName = "";
+        String continuation = "";
+    }
+
+    /** At least {@code limit} playlists of the channel's Playlists tab (when it has that many). */
+    static ChannelPlaylists loadPlaylists(String channelId, int limit, Config config) throws Exception {
+        ChannelPlaylists loaded = new ChannelPlaylists();
+        JSONObject page = fetchBrowse(channelId, "playlists", config);
+        JSONObject metadata = findObject(page, "channelMetadataRenderer");
+        if (metadata != null) loaded.channelName = metadata.optString("title", "");
+        for (int i = 0; i < 10; i++) {
+            Object items = i == 0 ? page : uploadItems(page);
+            collectPlaylists(items, loaded.playlists);
+            loaded.continuation = findUploadContinuation(items);
+            if (loaded.continuation.isEmpty() || loaded.playlists.size() >= limit) break;
+            page = InnertubeEndpoint.request("browse",
+                    InnertubeEndpoint.context(config).put("continuation", loaded.continuation), config);
+        }
+        return loaded;
+    }
+
+    static final class PlaylistSummary {
         String id = "";
         String title = "";
         String count = "0";
@@ -458,20 +556,10 @@ public class ChannelEndpoint implements Endpoint {
     private static String playlistsFeed(String channelId, String baseUrl, int startIndex,
                                         int maxResults, Config config) throws Exception {
         int endIndex = startIndex + maxResults - 1;
-        JSONObject page = fetchBrowse(channelId, "playlists", config);
-        String channelName = "";
-        JSONObject metadata = findObject(page, "channelMetadataRenderer");
-        if (metadata != null) channelName = metadata.optString("title", "");
-        List<PlaylistSummary> all = new ArrayList<PlaylistSummary>();
-        String continuation = "";
-        for (int i = 0; i < 10; i++) {
-            Object items = i == 0 ? page : uploadItems(page);
-            collectPlaylists(items, all);
-            continuation = findUploadContinuation(items);
-            if (continuation.isEmpty() || all.size() >= endIndex) break;
-            page = InnertubeEndpoint.request("browse",
-                    InnertubeEndpoint.context(config).put("continuation", continuation), config);
-        }
+        ChannelPlaylists loaded = loadPlaylists(channelId, endIndex, config);
+        List<PlaylistSummary> all = loaded.playlists;
+        String continuation = loaded.continuation;
+        String channelName = loaded.channelName;
         if (channelName.isEmpty()) channelName = channelId;
         int offset = Math.min(startIndex - 1, all.size());
         int limit = Math.min(maxResults, all.size() - offset);

@@ -5,3 +5,11 @@ app/build/
 local.properties
 *.iml
 .DS_Store
+
+# Build artifacts and signing material (never commit)
+*.apk
+*.idsig
+*.jks
+*.keystore
+__pycache__/
+*.pyc

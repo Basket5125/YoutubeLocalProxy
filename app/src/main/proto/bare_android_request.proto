@@ -1,0 +1,20 @@
+syntax = "proto3";
+package bare_android_request;
+
+message root {
+    message contextType {
+        message clientType {
+            int32 clientNumber = 16;
+            string clientVersion = 17;
+            // hl/gl as in android_player_request.proto (same client message).
+            string hl = 21;
+            string gl = 22;
+            int32 d = 46;
+        }
+        repeated clientType client = 1;
+    }
+    repeated contextType context = 1;
+    string browseId = 2;
+    string params = 3;
+    string continuation = 7;
+}

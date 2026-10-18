@@ -71,6 +71,18 @@ public class ProxyServer extends NanoHTTPD {
         register("/get_480", new VideoRedirectEndpoint());
         register("/exp_hd", new VideoRedirectEndpoint());
 
+        // --- second API: protobuf Innertube of the 2015-2016 YouTube apps (see YoutubeiEndpoint) ---
+        register("/youtubei/v1/browse", new YoutubeiEndpoint("browse"));
+        register("/youtubei/v1/next", new YoutubeiEndpoint("next"));
+        register("/youtubei/v1/player", new YoutubeiEndpoint("player"));
+        register("/youtubei/v1/search", new YoutubeiEndpoint("search"));
+        register("/youtubei/v1/guide", new YoutubeiEndpoint("guide"));
+        register("/youtubei/v1/navigation/resolve_url", new YoutubeiEndpoint("resolve_url"));
+        register("/youtubei/v1/config", new YoutubeiEndpoint("config"));
+        register("/deviceregistration/v1/devices", new YoutubeiEndpoint("deviceregistration"));
+        register("/c2dm/register3", new YoutubeiEndpoint("c2dm"));
+        register("/device_204", new YoutubeiEndpoint("device_204"));
+
         // --- reszta z oryginalnego skryptu: na razie "stub", dopisz wg wzorca z README ---
         StubEndpoint stub = new StubEndpoint();
         String[] notImplementedYet = {

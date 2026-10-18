@@ -120,8 +120,26 @@ public class InnertubeEndpoint implements Endpoint {
      */
     public static String fetchPopularFeed(String region, String category, int resultLimit,
                                           Config config, String baseUrl, Context context) throws Exception {
-        String gl = region == null || region.length() != 2 ? config.getString("gl", "US")
+        String gl = popularRegion(region, config);
+        boolean hasCategory = category != null && !category.isEmpty();
+        List<Video> videos = popularVideos(gl, category, resultLimit, config);
+        if (videos.isEmpty()) throw new IOException("YouTube returned no popular videos");
+        enrichVideos(videos, config, context);
+        String title = "YouTube Most Popular " + (hasCategory ? category : "Videos") + " in " + gl;
+        String feedId = baseUrl + "/feeds/api/standardfeeds/" + gl + "/most_popular"
+                + (hasCategory ? "?category=" + URLEncoder.encode(category, "UTF-8") : "");
+        return buildFeed(videos, title, feedId, baseUrl);
+    }
+
+    static String popularRegion(String region, Config config) {
+        return region == null || region.length() != 2 ? config.getString("gl", "US")
                 : region.toUpperCase(Locale.US);
+    }
+
+    /** The videos of the popular feed, without the extra metadata lookups. */
+    static List<Video> popularVideos(String region, String category, int resultLimit,
+                                     Config config) throws Exception {
+        String gl = popularRegion(region, config);
         boolean hasCategory = category != null && !category.isEmpty();
         boolean music = hasCategory && category.toLowerCase(Locale.US).contains("music");
         List<Video> videos = new ArrayList<Video>();
@@ -165,13 +183,8 @@ public class InnertubeEndpoint implements Endpoint {
         if (videos.size() > resultLimit) {
             videos = new ArrayList<Video>(videos.subList(0, resultLimit));
         }
-        if (videos.isEmpty()) throw new IOException("YouTube returned no popular videos");
         if (hasCategory) for (Video video : videos) video.category = category;
-        enrichVideos(videos, config, context);
-        String title = "YouTube Most Popular " + (hasCategory ? category : "Videos") + " in " + gl;
-        String feedId = baseUrl + "/feeds/api/standardfeeds/" + gl + "/most_popular"
-                + (hasCategory ? "?category=" + URLEncoder.encode(category, "UTF-8") : "");
-        return buildFeed(videos, title, feedId, baseUrl);
+        return videos;
     }
 
     private static List<Video> chartVideos(String gl, String chartTitle, int limit, Config config) {
@@ -310,6 +323,31 @@ public class InnertubeEndpoint implements Endpoint {
     private String searchFeed(String query, int startIndex, int limit,
                               NanoHTTPD.IHTTPSession session, Config config, Context context,
                               boolean[] complete) throws Exception {
+        SearchPage page = searchPage(query, startIndex, limit, config, context);
+        List<Video> videos = page.videos;
+        int count = videos.size();
+        complete[0] = enrichVideos(videos, config, context);
+        String baseUrl = "http://" + requestHost(session);
+        String feedUrl = baseUrl + "/feeds/api/videos?q=" + URLEncoder.encode(query, "UTF-8");
+        String nextLink = page.hasMore ? feedUrl + "&start-index=" + (startIndex + count)
+                + "&max-results=" + limit : "";
+        return buildFeed(videos, "Search results: " + query, feedUrl, baseUrl, startIndex,
+                nextLink, "", (int) page.total, false);
+    }
+
+    /** One page of search results (videos only), without the extra metadata lookups. */
+    static final class SearchPage {
+        List<Video> videos;
+        boolean hasMore;
+        long total;
+    }
+
+    /**
+     * Results {@code startIndex} (1-based) to {@code startIndex + limit - 1} of a search. Pages
+     * already loaded are reused and the following page is prefetched in the background.
+     */
+    static SearchPage searchPage(String query, int startIndex, int limit, Config config,
+                                 Context context) throws Exception {
         int endIndex = startIndex + limit - 1;
         LoadedSearch loaded;
         synchronized (SEARCHES) {
@@ -341,17 +379,13 @@ public class InnertubeEndpoint implements Endpoint {
             hasContinuation = !loaded.continuation.isEmpty();
             loadedCount = loaded.videos.size();
         }
-        complete[0] = enrichVideos(videos, config, context);
-        String baseUrl = "http://" + requestHost(session);
-        String feedUrl = baseUrl + "/feeds/api/videos?q=" + URLEncoder.encode(query, "UTF-8");
-        boolean more = count > 0 && (hasContinuation || loadedCount > offset + count);
-        String nextLink = more ? feedUrl + "&start-index=" + (startIndex + count)
-                + "&max-results=" + limit : "";
+        SearchPage page = new SearchPage();
+        page.videos = videos;
+        page.hasMore = count > 0 && (hasContinuation || loadedCount > offset + count);
         long known = loadedCount + (hasContinuation ? limit : 0);
-        long total = !hasContinuation ? loadedCount
+        page.total = !hasContinuation ? loadedCount
                 : Math.max(known, Math.min(loaded.estimatedResults, 1000));
-        return buildFeed(videos, "Search results: " + query, feedUrl, baseUrl, startIndex,
-                nextLink, "", (int) total, false);
+        return page;
     }
 
     /** Loads result pages until {@code endIndex} results are known. Caller holds the lock. */
@@ -478,6 +512,96 @@ public class InnertubeEndpoint implements Endpoint {
         String baseUrl = "http://" + requestHost(session);
         return buildFeed(videos, "Related videos",
             baseUrl + "/feeds/api/videos/" + videoId + "/related", baseUrl);
+    }
+
+    /** What the watch page shows: the video, its channel and the related videos. */
+    static final class WatchPage {
+        final Video video = new Video();
+        String ownerAvatar = "";
+        String subscribers = "";
+        /** YouTube's own date label, for example "Oct 3, 2024". */
+        String dateText = "";
+        final List<Video> related = new ArrayList<Video>();
+    }
+
+    /**
+     * Loads the watch page of a video: /next gives the channel (with its avatar) and the related
+     * videos, while the description, exact counts and likes come from the cached metadata
+     * lookups, which run in parallel.
+     */
+    static WatchPage watchPage(String videoId, int relatedLimit, Config config, Context context)
+            throws Exception {
+        WatchPage page = new WatchPage();
+        page.video.id = videoId;
+        Future<Runnable> metadata = ENRICH_POOL.submit(new MetadataTask(page.video, config, context));
+        Future<Runnable> likes = config.getYouTubeApiKey().isEmpty()
+                ? ENRICH_POOL.submit(new LikesTask(page.video, context)) : null;
+
+        JSONObject payload = InnertubeEndpoint.context(config)
+                .put("videoId", videoId)
+                .put("autonavState", "STATE_OFF")
+                .put("captionsRequested", false)
+                .put("contentCheckOk", true)
+                .put("racyCheckOk", true);
+        payload.getJSONObject("context").getJSONObject("client")
+                .put("clientScreen", "WATCH")
+                .put("originalUrl", "https://www.youtube.com/watch?v=" + videoId);
+        JSONObject response = post("next", payload, config);
+
+        JSONObject primary = firstObject(response, "videoPrimaryInfoRenderer");
+        if (primary != null) {
+            page.video.title = runs(primary.optJSONObject("title"));
+            JSONObject viewCount = primary.optJSONObject("viewCount");
+            JSONObject viewRenderer = viewCount == null
+                    ? null : viewCount.optJSONObject("videoViewCountRenderer");
+            if (viewRenderer != null) {
+                String views = runs(viewRenderer.optJSONObject("viewCount"));
+                if (!views.isEmpty()) page.video.views = numericCount(views);
+            }
+            page.dateText = runs(primary.optJSONObject("dateText"));
+        }
+        JSONObject owner = firstObject(response, "videoOwnerRenderer");
+        if (owner != null) {
+            page.video.channel = runs(owner.optJSONObject("title"));
+            page.video.channelId = findFirst(owner.optJSONObject("navigationEndpoint"), "browseId");
+            page.ownerAvatar = absoluteUrl(thumbnail(owner));
+            page.subscribers = runs(owner.optJSONObject("subscriberCountText"));
+        }
+        for (Video candidate : collectVideos(response, relatedLimit + 1)) {
+            if (!videoId.equals(candidate.id) && page.related.size() < relatedLimit) {
+                page.related.add(candidate);
+            }
+        }
+
+        // Applied here, on the request thread; a lookup that is too slow keeps filling the cache.
+        try {
+            metadata.get(4, TimeUnit.SECONDS).run();
+        } catch (Exception e) {
+            android.util.Log.w("InnertubeEndpoint", "Watch metadata unavailable for " + videoId + ": " + e);
+        }
+        if (likes != null) {
+            try {
+                likes.get(2, TimeUnit.SECONDS).run();
+            } catch (Exception e) {
+                android.util.Log.w("InnertubeEndpoint", "Likes unavailable for " + videoId + ": " + e);
+            }
+        }
+        if (page.video.thumbnail.isEmpty()) {
+            page.video.thumbnail = "https://i.ytimg.com/vi/" + videoId + "/hqdefault.jpg";
+        }
+        return page;
+    }
+
+    private static JSONObject firstObject(Object node, String key) {
+        List<JSONObject> found = new ArrayList<JSONObject>(1);
+        collectObjects(node, key, found, 1);
+        return found.isEmpty() ? null : found.get(0);
+    }
+
+    /** Image URLs on YouTube pages are often protocol-relative ("//yt3.ggpht.com/..."). */
+    static String absoluteUrl(String url) {
+        if (url == null) return "";
+        return url.startsWith("//") ? "https:" + url : url;
     }
 
     private String commentsFeed(String videoId, NanoHTTPD.IHTTPSession session,
