@@ -4,5 +4,7 @@ import "search_request_params.proto";
 
 message root {
     string query = 2;
+    /** Set instead of the query when the app asks for the next page of results. */
+    string continuation = 8;
     optional com.youtube.innertube.request.SearchRequestParams params = 11;
 }

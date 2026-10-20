@@ -17,4 +17,6 @@ message root {
     string browseId = 2;
     string params = 3;
     string continuation = 7;
+    /** The /next requests of the apps carry their continuation token here instead. */
+    string nextContinuation = 8;
 }

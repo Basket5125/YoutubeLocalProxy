@@ -112,6 +112,13 @@ public class ChannelEndpoint implements Endpoint {
         return user;
     }
 
+    /** Forgets the channel profiles kept in memory (the Clear cache button). */
+    static void clearMemory() {
+        synchronized (CHANNEL_INFO) {
+            CHANNEL_INFO.clear();
+        }
+    }
+
     static final class Uploads {
         final List<InnertubeEndpoint.Video> videos = new ArrayList<InnertubeEndpoint.Video>();
         String channelName = "";

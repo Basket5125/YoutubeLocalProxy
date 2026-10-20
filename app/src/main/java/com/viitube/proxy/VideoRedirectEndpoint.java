@@ -44,15 +44,32 @@ public class VideoRedirectEndpoint implements Endpoint {
 
     private static NanoHTTPD.Response muxed(NanoHTTPD.IHTTPSession session, String videoId,
                                             Config config) throws Exception {
+        return muxed(session, videoId, config, 720);
+    }
+
+    private static NanoHTTPD.Response muxed(NanoHTTPD.IHTTPSession session, String videoId,
+                                            Config config, int maxHeight) throws Exception {
+        String planKey = videoId + "|" + maxHeight;
         Mp4Mux.Plan plan;
         synchronized (PLANS) {
-            plan = PLANS.get(videoId);
+            plan = PLANS.get(planKey);
         }
         if (plan == null || System.currentTimeMillis() - plan.createdAt > PLAN_MAX_AGE_MS) {
             long started = System.currentTimeMillis();
             JSONObject[] formats = null;
-            for (JSONObject player : PlayerLookup.fetchPlaybackCandidatesForMux(videoId, config)) {
-                JSONObject[] candidate = PlayerLookup.findMuxFormats(player, 720);
+            String[] urls = null;
+            // An Invidious instance serves the two 720p streams itself, so they stay reachable
+            // past the first minute; YouTube's own links do not without a PO token.
+            InvidiousLookup.Streams instance = InvidiousLookup.streams(videoId, config);
+            InvidiousLookup.Pair pair = instance == null ? null : instance.pair(maxHeight);
+            if (pair != null) {
+                formats = new JSONObject[]{pair.video, pair.audio};
+                urls = new String[]{pair.videoUrl, pair.audioUrl};
+            }
+            for (JSONObject player : formats != null
+                    ? java.util.Collections.<JSONObject>emptyList()
+                    : PlayerLookup.fetchPlaybackCandidatesForMux(videoId, config)) {
+                JSONObject[] candidate = PlayerLookup.findMuxFormats(player, maxHeight);
                 if (candidate != null && endReachable(candidate[0]) && endReachable(candidate[1])) {
                     formats = candidate;
                     break;
@@ -62,15 +79,18 @@ public class VideoRedirectEndpoint implements Endpoint {
                 throw new java.io.IOException("YouTube serves only the first minute of the 720p "
                         + "streams without a PO token");
             }
-            plan = Mp4Mux.prepareBest(formats[0], formats[1], PlayerLookup.formatUrl(formats[0]),
-                    PlayerLookup.formatUrl(formats[1]));
+            if (urls == null) {
+                urls = new String[]{PlayerLookup.formatUrl(formats[0]),
+                        PlayerLookup.formatUrl(formats[1])};
+            }
+            plan = Mp4Mux.prepareBest(formats[0], formats[1], urls[0], urls[1]);
             android.util.Log.i("Mp4Mux", videoId + ": " + (plan.classic ? "classic" : "fragmented")
                     + " MP4, video itag " + formats[0].optInt("itag") + " + audio itag "
                     + formats[1].optInt("itag") + ", " + plan.pieces.size() + " chunks, "
                     + plan.length / (1024 * 1024) + " MB, prepared in "
                     + (System.currentTimeMillis() - started) + "ms");
             synchronized (PLANS) {
-                PLANS.put(videoId, plan);
+                PLANS.put(planKey, plan);
             }
         }
 
@@ -129,6 +149,28 @@ public class VideoRedirectEndpoint implements Endpoint {
 
         // Read on every request so a format change in the app applies to the next video.
         String mode = config.getString("playback_mode", "360p");
+        // A request can name the quality it wants: "q" for the links this proxy writes, "fmt"
+        // for the legacy clients, which ask for a format number.
+        int wanted = requestedHeight(qs);
+        if (wanted == 360) {
+            // 360p plays straight from YouTube, with no instance in between.
+            JSONObject direct = PlayerLookup.fetchPlaybackPlayer(videoId, config, "360p");
+            String url360 = PlayerLookup.findProgressive360pUrl(direct);
+            if (url360 != null) return redirectTo(url360);
+        }
+        // The other formats are muxed from the streams of the Invidious instance, whose links
+        // keep working past the first minute.
+        if ((wanted > 360 || (wanted == 0 && !"360p".equals(mode)))
+                && !InvidiousLookup.instance(config).isEmpty()) {
+            try {
+                return muxed(session, videoId, config, wanted > 0 ? wanted : 720);
+            } catch (Exception e) {
+                android.util.Log.w("VideoRedirect", "No 720p from the Invidious instance for "
+                        + videoId + ": " + e);
+            }
+            String single = InvidiousLookup.progressiveUrl(videoId, config);
+            if (single != null) return redirectTo(single);
+        }
         if ("mux720".equals(mode)) {
             try {
                 return muxed(session, videoId, config);
@@ -174,8 +216,42 @@ public class VideoRedirectEndpoint implements Endpoint {
                     reason);
         }
 
-        // 302, not 301: a permanent redirect is cached by players and HTTP stacks, which kept
-        // serving the stream of the previously selected format (and expired stream URLs).
+        return redirectTo(url);
+    }
+
+    /**
+     * The height a request asks for: "q=720" from the links this proxy writes, or the format
+     * number of the legacy clients ("fmt=22"). 0 when the request does not say.
+     */
+    private static int requestedHeight(Map<String, String> query) {
+        int height = parseHeight(query.get("q"));
+        if (height > 0) return height;
+        String fmt = query.get("fmt");
+        if (fmt == null) return 0;
+        String value = fmt.trim();
+        if ("37".equals(value)) return 1080;
+        if ("22".equals(value)) return 720;
+        if ("35".equals(value)) return 480;
+        if ("34".equals(value) || "18".equals(value) || "3".equals(value)) return 360;
+        if ("5".equals(value) || "6".equals(value) || "1".equals(value)) return 360;
+        return parseHeight(value);
+    }
+
+    private static int parseHeight(String value) {
+        if (value == null) return 0;
+        try {
+            int height = Integer.parseInt(value.trim().replace("p", ""));
+            return height >= 144 && height <= 2160 ? height : 0;
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    /**
+     * 302, not 301: a permanent redirect is cached by players and HTTP stacks, which kept
+     * serving the stream of the previously selected format (and expired stream URLs).
+     */
+    private static NanoHTTPD.Response redirectTo(String url) {
         NanoHTTPD.Response resp = NanoHTTPD.newFixedLengthResponse(
                 NanoHTTPD.Response.Status.FOUND, "text/plain", "");
         resp.addHeader("Location", url);

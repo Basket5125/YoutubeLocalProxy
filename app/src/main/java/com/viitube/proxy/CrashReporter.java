@@ -37,6 +37,13 @@ public final class CrashReporter {
     public static void recordCrash(Thread thread, Throwable error) {
         Context context = appContext;
         if (context == null) return;
+        // The events closest to the crash are the interesting ones, so the log is given a moment
+        // to catch up before the report is written. The app is going down anyway.
+        try {
+            LOG_WRITER.shutdown();
+            LOG_WRITER.awaitTermination(1, java.util.concurrent.TimeUnit.SECONDS);
+        } catch (Exception ignored) {
+        }
         try {
             JSONObject crash = new JSONObject();
             crash.put("time", timestamp());
@@ -54,21 +61,53 @@ public final class CrashReporter {
         }
     }
 
-    public static synchronized void logHttpRequest(String method, String url, String body) {
-        appendEvent("request", method, url, body, null, null);
+    /**
+     * The request log is written by one background thread. Sanitizing and appending a response of
+     * tens of kilobytes used to happen on the thread that made the request, under one lock, so
+     * every YouTube call waited for the previous one's log to reach the flash storage. Only the
+     * clipping stays here, so a queued event cannot hold a whole response in memory; when the
+     * queue is full the event is dropped, because a log is worth less than a fast answer.
+     */
+    private static final java.util.concurrent.ThreadPoolExecutor LOG_WRITER =
+            new java.util.concurrent.ThreadPoolExecutor(0, 1, 30, java.util.concurrent.TimeUnit.SECONDS,
+                    new java.util.concurrent.ArrayBlockingQueue<Runnable>(32),
+                    new java.util.concurrent.ThreadFactory() {
+                        @Override
+                        public Thread newThread(Runnable task) {
+                            Thread thread = new Thread(task, "crash-log");
+                            thread.setDaemon(true);
+                            thread.setPriority(Thread.MIN_PRIORITY);
+                            return thread;
+                        }
+                    },
+                    new java.util.concurrent.ThreadPoolExecutor.DiscardPolicy());
+
+    public static void logHttpRequest(String method, String url, String body) {
+        log("request", method, url, clip(body, MAX_EVENT_CHARS), null, null);
     }
 
-    public static synchronized void logHttpResponse(String method, String url, int status,
-                                                     String body) {
-        appendEvent("response", method, url, null, status, body);
+    public static void logHttpResponse(String method, String url, int status, String body) {
+        log("response", method, url, null, Integer.valueOf(status), clip(body, MAX_EVENT_CHARS));
     }
 
-    public static synchronized void logHttpFailure(String method, String url, Throwable error) {
-        appendEvent("failure", method, url, null, null, error.toString());
+    public static void logHttpFailure(String method, String url, Throwable error) {
+        log("failure", method, url, null, null, error.toString());
     }
 
-    private static void appendEvent(String type, String method, String url, String requestBody,
-                                    Integer status, String responseBody) {
+    private static void log(final String type, final String method, final String url,
+                            final String requestBody, final Integer status, final String responseBody) {
+        if (appContext == null) return;
+        LOG_WRITER.execute(new Runnable() {
+            @Override
+            public void run() {
+                appendEvent(type, method, url, requestBody, status, responseBody);
+            }
+        });
+    }
+
+    private static synchronized void appendEvent(String type, String method, String url,
+                                                 String requestBody, Integer status,
+                                                 String responseBody) {
         Context context = appContext;
         if (context == null) return;
         try {
@@ -85,9 +124,9 @@ public final class CrashReporter {
             event.put("type", type);
             event.put("method", method);
             event.put("url", sanitizeUrl(url));
-            if (requestBody != null) event.put("request", sanitize(clip(requestBody, MAX_EVENT_CHARS)));
+            if (requestBody != null) event.put("request", sanitize(requestBody));
             if (status != null) event.put("status", status);
-            if (responseBody != null) event.put("response", sanitize(clip(responseBody, MAX_EVENT_CHARS)));
+            if (responseBody != null) event.put("response", sanitize(responseBody));
             byte[] line = (event.toString() + "\n").getBytes("UTF-8");
             if (log.length() + line.length > MAX_LOG_BYTES) return;
             FileOutputStream out = new FileOutputStream(log, true);
@@ -232,6 +271,7 @@ public final class CrashReporter {
     }
 
     private static String clip(String value, int limit) {
+        if (value == null) return null;
         return value.length() <= limit ? value : value.substring(0, limit) + " [truncated]";
     }
 

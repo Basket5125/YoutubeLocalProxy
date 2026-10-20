@@ -82,6 +82,10 @@ public class ProxyServer extends NanoHTTPD {
         register("/deviceregistration/v1/devices", new YoutubeiEndpoint("deviceregistration"));
         register("/c2dm/register3", new YoutubeiEndpoint("c2dm"));
         register("/device_204", new YoutubeiEndpoint("device_204"));
+        // Everything else under /youtubei/v1 (liking, subscribing, notifications): answered with
+        // an empty protobuf message rather than a 404, which the apps show as an error.
+        register("/youtubei/v1/*", new YoutubeiEndpoint("unknown"));
+        register("/youtubei/v1/*/*", new YoutubeiEndpoint("unknown"));
 
         // --- reszta z oryginalnego skryptu: na razie "stub", dopisz wg wzorca z README ---
         StubEndpoint stub = new StubEndpoint();

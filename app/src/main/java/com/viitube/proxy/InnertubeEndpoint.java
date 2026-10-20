@@ -146,6 +146,19 @@ public class InnertubeEndpoint implements Endpoint {
         if (music) {
             videos.addAll(chartVideos(gl, "Top 100 Music Videos", resultLimit, config));
         }
+        // Without a category the feed mixes the most viewed videos with the region's music
+        // chart. They are two independent lookups, so the chart is started here and collected
+        // below: the home feed then waits for the slower of the two instead of for both.
+        final String chartRegion = gl;
+        final Config chartConfig = config;
+        final int chartLimit = resultLimit / (MUSIC_VIDEO_EVERY + 1) + 1;
+        Future<List<Video>> localChart = hasCategory ? null
+                : ENRICH_POOL.submit(new java.util.concurrent.Callable<List<Video>>() {
+                    @Override
+                    public List<Video> call() {
+                        return chartVideos(chartRegion, "Trending 20", chartLimit, chartConfig);
+                    }
+                });
         if (videos.size() < resultLimit) {
             List<Video> found = new ArrayList<Video>();
             collectPopular(hasCategory ? category : "", hasCategory ? POPULAR_THIS_MONTH : POPULAR_THIS_WEEK,
@@ -163,8 +176,7 @@ public class InnertubeEndpoint implements Endpoint {
             } else {
                 // Mostly regular videos; every fifth entry is a music video from the region's
                 // trending chart, which also gives the global view-count ranking a local touch.
-                List<Video> local = chartVideos(gl, "Trending 20",
-                        resultLimit / (MUSIC_VIDEO_EVERY + 1) + 1, config);
+                List<Video> local = awaitVideos(localChart, "Trending 20 chart");
                 int nextLocal = 0;
                 for (Video video : found) {
                     if (videos.size() % (MUSIC_VIDEO_EVERY + 1) == MUSIC_VIDEO_EVERY) {
@@ -185,6 +197,17 @@ public class InnertubeEndpoint implements Endpoint {
         }
         if (hasCategory) for (Video video : videos) video.category = category;
         return videos;
+    }
+
+    /** The result of a lookup started earlier; an empty list when it failed or took too long. */
+    private static List<Video> awaitVideos(Future<List<Video>> pending, String what) {
+        if (pending == null) return new ArrayList<Video>();
+        try {
+            return pending.get(15, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            android.util.Log.w("InnertubeEndpoint", what + " unavailable: " + e);
+            return new ArrayList<Video>();
+        }
     }
 
     private static List<Video> chartVideos(String gl, String chartTitle, int limit, Config config) {
@@ -305,8 +328,31 @@ public class InnertubeEndpoint implements Endpoint {
     private static final long SEARCH_MAX_AGE_MS = 30L * 60 * 1000;
 
     /** Search results loaded so far for a query, so later pages continue from the stored token. */
+    /** A playlist among the search results. */
+    static final class SearchPlaylist {
+        String id = "";
+        String title = "";
+        String author = "";
+        String authorId = "";
+        /** Number of videos as YouTube wrote it, empty when the card does not say. */
+        String count = "";
+        String firstVideoId = "";
+        String thumbnail = "";
+    }
+
+    /** A channel among the search results. */
+    static final class SearchChannel {
+        String id = "";
+        String name = "";
+        String handle = "";
+        String subscribers = "";
+        String avatar = "";
+    }
+
     private static final class LoadedSearch {
         final List<Video> videos = new ArrayList<Video>();
+        final List<SearchPlaylist> playlists = new ArrayList<SearchPlaylist>();
+        final List<SearchChannel> channels = new ArrayList<SearchChannel>();
         String continuation = "";
         long estimatedResults;
         long loadedAt;
@@ -338,6 +384,9 @@ public class InnertubeEndpoint implements Endpoint {
     /** One page of search results (videos only), without the extra metadata lookups. */
     static final class SearchPage {
         List<Video> videos;
+        /** Channels and playlists YouTube mixed into the results; only on the first page. */
+        List<SearchChannel> channels = new ArrayList<SearchChannel>();
+        List<SearchPlaylist> playlists = new ArrayList<SearchPlaylist>();
         boolean hasMore;
         long total;
     }
@@ -381,6 +430,13 @@ public class InnertubeEndpoint implements Endpoint {
         }
         SearchPage page = new SearchPage();
         page.videos = videos;
+        // The cards YouTube puts between the first results; later pages are videos only.
+        if (startIndex <= 1) {
+            synchronized (loaded) {
+                page.channels = new ArrayList<SearchChannel>(loaded.channels);
+                page.playlists = new ArrayList<SearchPlaylist>(loaded.playlists);
+            }
+        }
         page.hasMore = count > 0 && (hasContinuation || loadedCount > offset + count);
         long known = loadedCount + (hasContinuation ? limit : 0);
         page.total = !hasContinuation ? loadedCount
@@ -467,7 +523,180 @@ public class InnertubeEndpoint implements Endpoint {
         List<Video> found = new ArrayList<Video>(loaded.videos);
         collectVideoObjects(page, found, Integer.MAX_VALUE);
         for (int i = loaded.videos.size(); i < found.size(); i++) loaded.videos.add(found.get(i));
+        // Only the first answer is searched for channel and playlist cards: they are shown with
+        // the first page of results, and walking every later answer for them would be wasted.
+        if (loaded.loadedAt == 0) collectSearchCards(page, loaded);
         loaded.continuation = PlaylistEndpoint.findContinuation(page);
+    }
+
+    /**
+     * The channel and playlist cards of a search answer. YouTube sends channels as
+     * channelRenderer and playlists either as playlistRenderer or, since the move to view
+     * models, as a lockupViewModel of type LOCKUP_CONTENT_TYPE_PLAYLIST.
+     */
+    private static void collectSearchCards(Object node, LoadedSearch loaded) {
+        if (node instanceof JSONObject) {
+            JSONObject object = (JSONObject) node;
+            JSONArray names = object.names();
+            if (names == null) return;
+            for (int i = 0; i < names.length(); i++) {
+                String key = names.optString(i);
+                Object value = object.opt(key);
+                if (value instanceof JSONObject) {
+                    JSONObject renderer = (JSONObject) value;
+                    if ("channelRenderer".equals(key) || "gridChannelRenderer".equals(key)) {
+                        addSearchChannel(renderer, loaded);
+                        continue;
+                    }
+                    if ("playlistRenderer".equals(key) || "gridPlaylistRenderer".equals(key)
+                            || "radioRenderer".equals(key)) {
+                        addSearchPlaylist(parsePlaylistRenderer(renderer), loaded);
+                        continue;
+                    }
+                    if ("lockupViewModel".equals(key)
+                            && "LOCKUP_CONTENT_TYPE_PLAYLIST".equals(renderer.optString("contentType", ""))) {
+                        addSearchPlaylist(parseLockupPlaylist(renderer), loaded);
+                        continue;
+                    }
+                }
+                collectSearchCards(value, loaded);
+            }
+        } else if (node instanceof JSONArray) {
+            JSONArray array = (JSONArray) node;
+            for (int i = 0; i < array.length(); i++) collectSearchCards(array.opt(i), loaded);
+        }
+    }
+
+    private static void addSearchChannel(JSONObject renderer, LoadedSearch loaded) {
+        SearchChannel channel = new SearchChannel();
+        channel.id = renderer.optString("channelId", "");
+        if (channel.id.isEmpty()) channel.id = findFirst(renderer, "browseId");
+        if (!channel.id.matches("UC[A-Za-z0-9_-]{22}")) return;
+        for (SearchChannel known : loaded.channels) {
+            if (known.id.equals(channel.id)) return;
+        }
+        channel.name = text(renderer.optJSONObject("title"));
+        if (channel.name.isEmpty()) channel.name = runs(renderer.optJSONObject("title"));
+        // YouTube fills these cards by position: the handle and the subscriber count swap places,
+        // so each value is sorted by what it contains.
+        for (String key : new String[]{"subscriberCountText", "videoCountText", "shortBylineText"}) {
+            String value = text(renderer.optJSONObject(key)).trim();
+            if (value.isEmpty()) value = runs(renderer.optJSONObject(key)).trim();
+            if (value.isEmpty()) continue;
+            if (value.startsWith("@")) {
+                if (channel.handle.isEmpty()) channel.handle = value;
+            } else if (value.toLowerCase(Locale.US).contains("subscriber")) {
+                if (channel.subscribers.isEmpty()) channel.subscribers = value;
+            }
+        }
+        channel.avatar = absoluteUrl(thumbnail(renderer));
+        if (channel.name.isEmpty()) return;
+        loaded.channels.add(channel);
+    }
+
+    private static void addSearchPlaylist(SearchPlaylist playlist, LoadedSearch loaded) {
+        if (playlist == null || playlist.id.isEmpty() || playlist.title.isEmpty()) return;
+        // A mix (RD...) is not a playlist: asking YouTube to browse it answers with an alert and
+        // no videos, so such a card would lead nowhere.
+        if (playlist.id.startsWith("RD")) return;
+        for (SearchPlaylist known : loaded.playlists) {
+            if (known.id.equals(playlist.id)) return;
+        }
+        loaded.playlists.add(playlist);
+    }
+
+    private static SearchPlaylist parsePlaylistRenderer(JSONObject renderer) {
+        SearchPlaylist playlist = new SearchPlaylist();
+        playlist.id = renderer.optString("playlistId", "");
+        playlist.title = text(renderer.optJSONObject("title"));
+        if (playlist.title.isEmpty()) playlist.title = runs(renderer.optJSONObject("title"));
+        playlist.author = runs(renderer.optJSONObject("shortBylineText"));
+        if (playlist.author.isEmpty()) playlist.author = runs(renderer.optJSONObject("longBylineText"));
+        playlist.authorId = findFirst(renderer.optJSONObject("shortBylineText"), "browseId");
+        playlist.count = numericCount(text(renderer.optJSONObject("videoCountText")));
+        if (playlist.count.isEmpty()) playlist.count = renderer.optString("videoCount", "");
+        playlist.thumbnail = absoluteUrl(thumbnail(renderer));
+        playlist.firstVideoId = findFirst(renderer.opt("navigationEndpoint"), "videoId");
+        return playlist;
+    }
+
+    private static SearchPlaylist parseLockupPlaylist(JSONObject renderer) {
+        SearchPlaylist playlist = new SearchPlaylist();
+        playlist.id = renderer.optString("contentId", "");
+        JSONObject metadata = renderer.optJSONObject("metadata");
+        JSONObject lockupMetadata = metadata == null
+                ? null : metadata.optJSONObject("lockupMetadataViewModel");
+        JSONObject titleModel = lockupMetadata == null ? null : lockupMetadata.optJSONObject("title");
+        playlist.title = titleModel == null ? "" : titleModel.optString("content", "");
+        JSONObject contentMetadata = lockupMetadata == null
+                ? null : lockupMetadata.optJSONObject("metadata");
+        JSONObject metadataView = contentMetadata == null
+                ? null : contentMetadata.optJSONObject("contentMetadataViewModel");
+        JSONArray rows = metadataView == null ? null : metadataView.optJSONArray("metadataRows");
+        if (rows != null) {
+            for (int i = 0; i < rows.length(); i++) {
+                JSONObject row = rows.optJSONObject(i);
+                JSONArray parts = row == null ? null : row.optJSONArray("metadataParts");
+                if (parts == null) continue;
+                for (int j = 0; j < parts.length(); j++) {
+                    JSONObject part = parts.optJSONObject(j);
+                    JSONObject textModel = part == null ? null : part.optJSONObject("text");
+                    if (textModel == null) continue;
+                    String value = textModel.optString("content", "");
+                    if (value.isEmpty()) continue;
+                    String linkedChannel = findFirst(textModel.opt("commandRuns"), "browseId");
+                    if (playlist.author.isEmpty() && linkedChannel.startsWith("UC")) {
+                        playlist.author = value;
+                        playlist.authorId = linkedChannel;
+                    } else if (playlist.author.isEmpty() && !value.equalsIgnoreCase("Playlist")
+                            && !value.equalsIgnoreCase("Mix")) {
+                        playlist.author = value;
+                    }
+                }
+            }
+        }
+        playlist.firstVideoId = findFirst(renderer.opt("rendererContext"), "videoId");
+        if (playlist.firstVideoId.isEmpty()) playlist.firstVideoId = findFirst(renderer, "videoId");
+        JSONObject contentImage = renderer.optJSONObject("contentImage");
+        JSONObject collection = contentImage == null
+                ? null : contentImage.optJSONObject("collectionThumbnailViewModel");
+        JSONObject primary = collection == null ? null : collection.optJSONObject("primaryThumbnail");
+        JSONObject thumbnailModel = primary == null
+                ? null : primary.optJSONObject("thumbnailViewModel");
+        if (thumbnailModel == null && contentImage != null) {
+            thumbnailModel = contentImage.optJSONObject("thumbnailViewModel");
+        }
+        JSONObject image = thumbnailModel == null ? null : thumbnailModel.optJSONObject("image");
+        JSONArray sources = image == null ? null : image.optJSONArray("sources");
+        if (sources != null && sources.length() > 0) {
+            JSONObject last = sources.optJSONObject(sources.length() - 1);
+            if (last != null) playlist.thumbnail = absoluteUrl(last.optString("url", ""));
+        }
+        playlist.count = lockupBadgeCount(thumbnailModel);
+        return playlist;
+    }
+
+    /** "186 videos" from the badge over a playlist card, as the number alone. */
+    private static String lockupBadgeCount(JSONObject thumbnailModel) {
+        JSONArray overlays = thumbnailModel == null ? null : thumbnailModel.optJSONArray("overlays");
+        if (overlays == null) return "";
+        for (int i = 0; i < overlays.length(); i++) {
+            JSONObject overlay = overlays.optJSONObject(i);
+            JSONObject badgeModel = overlay == null
+                    ? null : overlay.optJSONObject("thumbnailOverlayBadgeViewModel");
+            JSONArray badges = badgeModel == null ? null : badgeModel.optJSONArray("thumbnailBadges");
+            if (badges == null) continue;
+            for (int j = 0; j < badges.length(); j++) {
+                JSONObject badge = badges.optJSONObject(j);
+                JSONObject view = badge == null ? null : badge.optJSONObject("thumbnailBadgeViewModel");
+                String text = view == null ? "" : view.optString("text", "");
+                if (text.toLowerCase(Locale.US).contains("video")) {
+                    String count = numericCount(text);
+                    if (!count.isEmpty() && !"0".equals(count)) return count;
+                }
+            }
+        }
+        return "";
     }
 
     private static long parseLong(String value) {
@@ -537,16 +766,7 @@ public class InnertubeEndpoint implements Endpoint {
         Future<Runnable> likes = config.getYouTubeApiKey().isEmpty()
                 ? ENRICH_POOL.submit(new LikesTask(page.video, context)) : null;
 
-        JSONObject payload = InnertubeEndpoint.context(config)
-                .put("videoId", videoId)
-                .put("autonavState", "STATE_OFF")
-                .put("captionsRequested", false)
-                .put("contentCheckOk", true)
-                .put("racyCheckOk", true);
-        payload.getJSONObject("context").getJSONObject("client")
-                .put("clientScreen", "WATCH")
-                .put("originalUrl", "https://www.youtube.com/watch?v=" + videoId);
-        JSONObject response = post("next", payload, config);
+        JSONObject response = post("next", watchNextPayload(videoId, config), config);
 
         JSONObject primary = firstObject(response, "videoPrimaryInfoRenderer");
         if (primary != null) {
@@ -567,11 +787,17 @@ public class InnertubeEndpoint implements Endpoint {
             page.ownerAvatar = absoluteUrl(thumbnail(owner));
             page.subscribers = runs(owner.optJSONObject("subscriberCountText"));
         }
-        for (Video candidate : collectVideos(response, relatedLimit + 1)) {
+        // The list next to the player, found once: walking the whole answer again for the
+        // continuation token would cost as much as collecting the videos did.
+        JSONObject secondary = firstObject(response, "secondaryResults");
+        for (Video candidate : collectVideos(secondary != null ? secondary : response, relatedLimit + 1)) {
             if (!videoId.equals(candidate.id) && page.related.size() < relatedLimit) {
                 page.related.add(candidate);
             }
         }
+        // The same answer holds the token for the videos after them, so a later page costs one
+        // request instead of two.
+        rememberRelated(videoId, secondary, page.related);
 
         // Applied here, on the request thread; a lookup that is too slow keeps filling the cache.
         try {
@@ -592,6 +818,110 @@ public class InnertubeEndpoint implements Endpoint {
         return page;
     }
 
+    private static JSONObject watchNextPayload(String videoId, Config config) throws Exception {
+        JSONObject payload = InnertubeEndpoint.context(config)
+                .put("videoId", videoId)
+                .put("autonavState", "STATE_OFF")
+                .put("captionsRequested", false)
+                .put("contentCheckOk", true)
+                .put("racyCheckOk", true);
+        payload.getJSONObject("context").getJSONObject("client")
+                .put("clientScreen", "WATCH")
+                .put("originalUrl", "https://www.youtube.com/watch?v=" + videoId);
+        return payload;
+    }
+
+    // ------------------------------------------------------------------ related videos, by page
+
+    private static final long RELATED_MAX_AGE_MS = 15L * 60 * 1000;
+
+    private static final class LoadedRelated {
+        final List<Video> videos = new ArrayList<Video>();
+        String continuation = "";
+        long loadedAt;
+    }
+
+    private static final java.util.Map<String, LoadedRelated> RELATED =
+            new java.util.LinkedHashMap<String, LoadedRelated>(16, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(java.util.Map.Entry<String, LoadedRelated> eldest) {
+                    return size() > 16;
+                }
+            };
+
+    static final class RelatedPage {
+        List<Video> videos = new ArrayList<Video>();
+        boolean hasMore;
+    }
+
+    private static LoadedRelated relatedEntry(String videoId) {
+        synchronized (RELATED) {
+            LoadedRelated loaded = RELATED.get(videoId);
+            if (loaded == null || System.currentTimeMillis() - loaded.loadedAt > RELATED_MAX_AGE_MS) {
+                loaded = new LoadedRelated();
+                RELATED.put(videoId, loaded);
+            }
+            return loaded;
+        }
+    }
+
+    /**
+     * Keeps the related videos of a watch page, with YouTube's token for the ones after them.
+     * The token is looked for in the list next to the player only, so the continuation of the
+     * comments is not mistaken for it.
+     */
+    private static void rememberRelated(String videoId, JSONObject secondaryResults, List<Video> related) {
+        if (secondaryResults == null) return;
+        LoadedRelated loaded = relatedEntry(videoId);
+        synchronized (loaded) {
+            if (loaded.loadedAt != 0) return;
+            for (Video video : related) loaded.videos.add(video.copy());
+            loaded.continuation = PlaylistEndpoint.findContinuation(secondaryResults);
+            loaded.loadedAt = System.currentTimeMillis();
+        }
+    }
+
+    /**
+     * Related videos {@code offset} and after, following YouTube's continuations when the page
+     * reaches past what is loaded. Used for the endless list under a video.
+     */
+    static RelatedPage relatedPage(String videoId, int offset, int limit, Config config)
+            throws Exception {
+        LoadedRelated loaded = relatedEntry(videoId);
+        RelatedPage page = new RelatedPage();
+        synchronized (loaded) {
+            if (loaded.loadedAt == 0) {
+                JSONObject response = post("next", watchNextPayload(videoId, config), config);
+                JSONObject secondary = firstObject(response, "secondaryResults");
+                JSONObject list = secondary != null ? secondary : response;
+                for (Video candidate : collectVideos(list, limit + offset + 1)) {
+                    if (!videoId.equals(candidate.id)) loaded.videos.add(candidate);
+                }
+                loaded.continuation = PlaylistEndpoint.findContinuation(list);
+                loaded.loadedAt = System.currentTimeMillis();
+            }
+            for (int request = 0; request < 5 && loaded.videos.size() < offset + limit
+                    && !loaded.continuation.isEmpty(); request++) {
+                JSONObject next = post("next", InnertubeEndpoint.context(config)
+                        .put("continuation", loaded.continuation), config);
+                int before = loaded.videos.size();
+                for (Video candidate : collectVideos(next, offset + limit + 1)) {
+                    if (!videoId.equals(candidate.id) && !containsVideo(loaded.videos, candidate.id)) {
+                        loaded.videos.add(candidate);
+                    }
+                }
+                loaded.continuation = PlaylistEndpoint.findContinuation(next);
+                if (loaded.videos.size() == before) loaded.continuation = "";
+            }
+            int start = Math.min(offset, loaded.videos.size());
+            int count = Math.min(limit, loaded.videos.size() - start);
+            for (int i = start; i < start + count; i++) page.videos.add(loaded.videos.get(i).copy());
+            page.hasMore = count > 0
+                    && (!loaded.continuation.isEmpty() || loaded.videos.size() > start + count);
+        }
+        return page;
+    }
+
     private static JSONObject firstObject(Object node, String key) {
         List<JSONObject> found = new ArrayList<JSONObject>(1);
         collectObjects(node, key, found, 1);
@@ -604,8 +934,21 @@ public class InnertubeEndpoint implements Endpoint {
         return url.startsWith("//") ? "https:" + url : url;
     }
 
-    private String commentsFeed(String videoId, NanoHTTPD.IHTTPSession session,
-                                Config config, Context context) throws Exception {
+    /** One comment as the feeds and the protobuf answers need it. */
+    static final class Comment {
+        String id = "";
+        String author = "";
+        String authorId = "";
+        String avatar = "";
+        String text = "";
+        /** The time as an Atom date, which the feeds print and the apps turn into "3 days ago". */
+        String published = "";
+    }
+
+    /** The comment threads YouTube answers with, newest first. */
+    private static List<JSONObject> loadCommentThreads(String videoId, int limit, Config config)
+            throws Exception {
+        final int wanted = limit <= 0 ? 20 : limit;
         List<JSONObject> comments = new ArrayList<JSONObject>();
         JSONObject requestContext = commentRequestContext(config, videoId);
         String continuation = initialCommentsContinuation(videoId);
@@ -613,45 +956,35 @@ public class InnertubeEndpoint implements Endpoint {
                 .put("context", requestContext.getJSONObject("context"))
                 .put("continuation", continuation), config);
 
-        collectCommentEntities(response, comments, 20);
-        if (comments.isEmpty()) collectObjects(response, "commentThreadRenderer", comments, 20);
-        if (comments.isEmpty()) collectObjects(response, "commentViewModel", comments, 20);
+        collectCommentEntities(response, comments, wanted);
+        if (comments.isEmpty()) collectObjects(response, "commentThreadRenderer", comments, wanted);
+        if (comments.isEmpty()) collectObjects(response, "commentViewModel", comments, wanted);
         continuation = findCommentsContinuation(response);
 
         int continuationRequests = 0;
-        while (!continuation.isEmpty() && comments.size() < 20 && continuationRequests < 2) {
+        while (!continuation.isEmpty() && comments.size() < wanted && continuationRequests < 2) {
             response = post("next", new JSONObject()
                     .put("context", requestContext.getJSONObject("context"))
                     .put("continuation", continuation), config);
             int previousCount = comments.size();
-            collectCommentEntities(response, comments, 20);
-            if (comments.isEmpty()) collectObjects(response, "commentThreadRenderer", comments, 20);
-            if (comments.isEmpty()) collectObjects(response, "commentViewModel", comments, 20);
+            collectCommentEntities(response, comments, wanted);
+            if (comments.isEmpty()) collectObjects(response, "commentThreadRenderer", comments, wanted);
+            if (comments.isEmpty()) collectObjects(response, "commentViewModel", comments, wanted);
             String nextContinuation = findCommentsContinuation(response);
             if (comments.size() == previousCount || continuation.equals(nextContinuation)) break;
             continuation = nextContinuation;
             continuationRequests++;
         }
-        String host = requestHost(session);
-        String baseUrl = "http://" + host;
-        String videoUrl = baseUrl + "/feeds/api/videos/" + videoId;
-        String timestamp = utcNow();
-        StringBuilder xml = new StringBuilder("<?xml version='1.0' encoding='UTF-8'?>")
-                .append("<feed xmlns='http://www.w3.org/2005/Atom'")
-                .append(" xmlns:yt='http://gdata.youtube.com/schemas/2007'")
-                .append(" xmlns:gd='http://schemas.google.com/g/2005'")
-                .append(" xmlns:openSearch='http://a9.com/-/spec/opensearch/1.1/'>")
-                .append("<id>").append(XmlUtil.escape(videoUrl)).append("/comments</id>")
-                .append("<updated>").append(timestamp).append("</updated>")
-                .append("<title type='text'>Comments on Video</title>")
-                .append("<openSearch:totalResults>").append(comments.size()).append("</openSearch:totalResults>")
-                .append("<openSearch:startIndex>1</openSearch:startIndex>")
-                .append("<openSearch:itemsPerPage>25</openSearch:itemsPerPage>");
-        for (JSONObject thread : comments) {
+        return comments;
+    }
+
+    /** The fields of one thread, whichever of the three shapes YouTube used for it. */
+    private static Comment parseComment(JSONObject thread) {
+        Comment comment = new Comment();
             JSONObject renderer = thread.optJSONObject("comment");
             if (renderer == null && thread.has("commentId")) renderer = thread;
             if (renderer == null) renderer = thread.optJSONObject("commentViewModel");
-            if (renderer == null) continue;
+            if (renderer == null) return comment;
             JSONObject commentRenderer = renderer.optJSONObject("commentRenderer");
             if (commentRenderer != null) renderer = commentRenderer;
             JSONObject commentViewModel = renderer.optJSONObject("commentViewModel");
@@ -681,7 +1014,59 @@ public class InnertubeEndpoint implements Endpoint {
             if (publishedAt.isEmpty()) publishedAt = runs(publishedText);
             publishedAt = toAtomDate(publishedAt);
             if (id.isEmpty()) id = authorId;
-            String shownAuthor = author.startsWith("@") ? author : "@" + author;
+        comment.id = id;
+        comment.author = author;
+        comment.authorId = authorId;
+        comment.text = body;
+        comment.published = publishedAt;
+        comment.avatar = absoluteUrl(thumbnail(renderer));
+        if (comment.avatar.isEmpty() && authorData != null) {
+            // The entities of today's answers keep the picture as a plain link.
+            String direct = authorData.optString("avatarThumbnailUrl", "");
+            comment.avatar = direct.isEmpty() ? absoluteUrl(thumbnail(authorData)) : absoluteUrl(direct);
+        }
+        if (comment.avatar.isEmpty()) {
+            comment.avatar = absoluteUrl(thumbnailUrl(renderer.optJSONObject("authorThumbnail")));
+        }
+        return comment;
+    }
+
+    /** The comments of a video, for the protobuf API of the 2015-2017 apps. */
+    static List<Comment> comments(String videoId, int limit, Config config) throws Exception {
+        List<Comment> out = new ArrayList<Comment>();
+        for (JSONObject thread : loadCommentThreads(videoId, limit, config)) {
+            Comment comment = parseComment(thread);
+            if (!comment.text.isEmpty() || !comment.author.isEmpty()) out.add(comment);
+        }
+        return out;
+    }
+
+    private String commentsFeed(String videoId, NanoHTTPD.IHTTPSession session,
+                                Config config, Context context) throws Exception {
+        List<JSONObject> comments = loadCommentThreads(videoId, 20, config);
+        String host = requestHost(session);
+        String baseUrl = "http://" + host;
+        String videoUrl = baseUrl + "/feeds/api/videos/" + videoId;
+        String timestamp = utcNow();
+        StringBuilder xml = new StringBuilder("<?xml version='1.0' encoding='UTF-8'?>")
+                .append("<feed xmlns='http://www.w3.org/2005/Atom'")
+                .append(" xmlns:yt='http://gdata.youtube.com/schemas/2007'")
+                .append(" xmlns:gd='http://schemas.google.com/g/2005'")
+                .append(" xmlns:openSearch='http://a9.com/-/spec/opensearch/1.1/'>")
+                .append("<id>").append(XmlUtil.escape(videoUrl)).append("/comments</id>")
+                .append("<updated>").append(timestamp).append("</updated>")
+                .append("<title type='text'>Comments on Video</title>")
+                .append("<openSearch:totalResults>").append(comments.size()).append("</openSearch:totalResults>")
+                .append("<openSearch:startIndex>1</openSearch:startIndex>")
+                .append("<openSearch:itemsPerPage>25</openSearch:itemsPerPage>");
+        for (JSONObject thread : comments) {
+            Comment comment = parseComment(thread);
+            if (comment.text.isEmpty() && comment.author.isEmpty()) continue;
+            String id = comment.id;
+            String body = comment.text;
+            String authorId = comment.authorId;
+            String publishedAt = comment.published;
+            String shownAuthor = comment.author.startsWith("@") ? comment.author : "@" + comment.author;
             xml.append("<entry><id>tag:youtube.com,2008:comment:")
                     .append(XmlUtil.escape(videoId)).append(":").append(XmlUtil.escape(id)).append("</id>")
                     .append("<published>").append(XmlUtil.escape(publishedAt)).append("</published>")
@@ -1201,6 +1586,18 @@ public class InnertubeEndpoint implements Endpoint {
         }
     }
 
+    /** Forgets the lists and lookups kept in memory (the Clear cache button). */
+    static void clearMemory() {
+        synchronized (SEARCHES) {
+            SEARCHES.clear();
+        }
+        synchronized (RELATED) {
+            RELATED.clear();
+        }
+        MUSIC_CHARTS.clear();
+        RYD_MEMORY.clear();
+    }
+
     static Video parseVideo(JSONObject renderer) {
         Video video = new Video();
         JSONObject lockup = renderer.optJSONObject("lockupViewModel");
@@ -1235,9 +1632,37 @@ public class InnertubeEndpoint implements Endpoint {
             }
         }
         if (video.views.isEmpty()) video.views = "0";
+        video.channelAvatar = channelAvatar(renderer);
         video.thumbnail = thumbnail(renderer);
         video.description = video.description.replace("\n", " ");
         return video;
+    }
+
+    /**
+     * The channel picture a feed item carries: next to the video renderers as
+     * channelThumbnailWithLinkRenderer, and in the newer view models as an avatarViewModel. It
+     * is already in the answer, so the feeds need no lookup of their own for it.
+     */
+    private static String channelAvatar(JSONObject renderer) {
+        JSONObject link = firstObject(renderer, "channelThumbnailWithLinkRenderer");
+        String url = thumbnailUrl(link != null ? link.optJSONObject("thumbnail")
+                : renderer.optJSONObject("channelThumbnail"));
+        if (!url.isEmpty()) return url;
+        JSONObject avatar = firstObject(renderer, "avatarViewModel");
+        JSONObject image = avatar == null ? null : avatar.optJSONObject("image");
+        JSONArray sources = image == null ? null : image.optJSONArray("sources");
+        if (sources != null && sources.length() > 0) {
+            JSONObject last = sources.optJSONObject(sources.length() - 1);
+            if (last != null) return absoluteUrl(last.optString("url", ""));
+        }
+        return "";
+    }
+
+    private static String thumbnailUrl(JSONObject container) {
+        JSONArray list = container == null ? null : container.optJSONArray("thumbnails");
+        if (list == null || list.length() == 0) return "";
+        JSONObject last = list.optJSONObject(list.length() - 1);
+        return last == null ? "" : absoluteUrl(last.optString("url", ""));
     }
 
     static boolean isValidVideoId(String id) {
@@ -1322,6 +1747,7 @@ public class InnertubeEndpoint implements Endpoint {
             }
         }
         if (video.channelId.isEmpty()) video.channelId = findFirst(renderer, "browseId");
+        video.channelAvatar = channelAvatar(renderer);
         video.description = "";
         JSONObject contentImage = renderer.optJSONObject("contentImage");
         JSONObject thumbnailModel = contentImage == null
@@ -1763,6 +2189,8 @@ public class InnertubeEndpoint implements Endpoint {
         String published = "";
         String thumbnail = "";
         String category = "";
+        /** Picture of the channel, as the feed answer carried it. */
+        String channelAvatar = "";
 
         Video copy() {
             Video copy = new Video();
@@ -1772,6 +2200,7 @@ public class InnertubeEndpoint implements Endpoint {
             copy.channel = channel;
             copy.channelId = channelId;
             copy.views = views;
+            copy.channelAvatar = channelAvatar;
             copy.likes = likes;
             copy.duration = duration;
             copy.published = published;

@@ -110,6 +110,13 @@ public class PlayerLookup {
         deleteRecursively(new File(cacheDir, "playback_v2"));
     }
 
+    /** Forgets the feed metadata of videos; the player answers go with clearPlayerCache(). */
+    public static void clearMetadataCache() {
+        synchronized (METADATA_CACHE) {
+            METADATA_CACHE.clear();
+        }
+    }
+
     private static void deleteRecursively(File file) {
         File[] children = file.listFiles();
         if (children != null) for (File child : children) deleteRecursively(child);

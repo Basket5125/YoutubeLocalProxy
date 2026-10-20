@@ -700,20 +700,20 @@ public final class AndroidSearchProto {
     public static final class ChannelRenderer extends ProtoMessage {
         private String mId = "";
         private AndroidSearchProto.Thumbnails mAvatar;
-        private AndroidSearchProto.TextRuns mName;
+        private AndroidSearchProto.TextRuns mVideoCount;
         private AndroidSearchProto.TextRuns mSubCount;
         private AndroidSearchProto.TextRuns mHandle;
         private AndroidSearchProto.BrowseNavigation mNavigation;
-        private AndroidSearchProto.TextRuns mName2;
+        private AndroidSearchProto.TextRuns mName;
         private AndroidSearchProto.Thumbnails mAvatar2;
         public ChannelRenderer setId(String value) { mId = value == null ? "" : value; return this; }
         public String getId() { return mId; }
         public ChannelRenderer setAvatar(AndroidSearchProto.Thumbnails value) { mAvatar = value; return this; }
         public AndroidSearchProto.Thumbnails getAvatar() { return mAvatar; }
         public boolean hasAvatar() { return mAvatar != null; }
-        public ChannelRenderer setName(AndroidSearchProto.TextRuns value) { mName = value; return this; }
-        public AndroidSearchProto.TextRuns getName() { return mName; }
-        public boolean hasName() { return mName != null; }
+        public ChannelRenderer setVideoCount(AndroidSearchProto.TextRuns value) { mVideoCount = value; return this; }
+        public AndroidSearchProto.TextRuns getVideoCount() { return mVideoCount; }
+        public boolean hasVideoCount() { return mVideoCount != null; }
         public ChannelRenderer setSubCount(AndroidSearchProto.TextRuns value) { mSubCount = value; return this; }
         public AndroidSearchProto.TextRuns getSubCount() { return mSubCount; }
         public boolean hasSubCount() { return mSubCount != null; }
@@ -723,9 +723,9 @@ public final class AndroidSearchProto {
         public ChannelRenderer setNavigation(AndroidSearchProto.BrowseNavigation value) { mNavigation = value; return this; }
         public AndroidSearchProto.BrowseNavigation getNavigation() { return mNavigation; }
         public boolean hasNavigation() { return mNavigation != null; }
-        public ChannelRenderer setName2(AndroidSearchProto.TextRuns value) { mName2 = value; return this; }
-        public AndroidSearchProto.TextRuns getName2() { return mName2; }
-        public boolean hasName2() { return mName2 != null; }
+        public ChannelRenderer setName(AndroidSearchProto.TextRuns value) { mName = value; return this; }
+        public AndroidSearchProto.TextRuns getName() { return mName; }
+        public boolean hasName() { return mName != null; }
         public ChannelRenderer setAvatar2(AndroidSearchProto.Thumbnails value) { mAvatar2 = value; return this; }
         public AndroidSearchProto.Thumbnails getAvatar2() { return mAvatar2; }
         public boolean hasAvatar2() { return mAvatar2 != null; }
@@ -734,11 +734,11 @@ public final class AndroidSearchProto {
         public void writeTo(ProtoWriter writer) {
             if (mId.length() > 0) writer.writeString(1, mId);
             if (mAvatar != null) writer.writeMessage(2, mAvatar);
-            if (mName != null) writer.writeMessage(3, mName);
+            if (mVideoCount != null) writer.writeMessage(3, mVideoCount);
             if (mSubCount != null) writer.writeMessage(4, mSubCount);
             if (mHandle != null) writer.writeMessage(5, mHandle);
             if (mNavigation != null) writer.writeMessage(6, mNavigation);
-            if (mName2 != null) writer.writeMessage(9, mName2);
+            if (mName != null) writer.writeMessage(9, mName);
             if (mAvatar2 != null) writer.writeMessage(16, mAvatar2);
         }
 
@@ -758,8 +758,8 @@ public final class AndroidSearchProto {
                         break;
                     case 3:
                         if ((tag & 7) != 2) { reader.skip(tag); break; }
-                        if (mName == null) mName = new AndroidSearchProto.TextRuns();
-                        mName.mergeFrom(reader.readMessage());
+                        if (mVideoCount == null) mVideoCount = new AndroidSearchProto.TextRuns();
+                        mVideoCount.mergeFrom(reader.readMessage());
                         break;
                     case 4:
                         if ((tag & 7) != 2) { reader.skip(tag); break; }
@@ -778,8 +778,8 @@ public final class AndroidSearchProto {
                         break;
                     case 9:
                         if ((tag & 7) != 2) { reader.skip(tag); break; }
-                        if (mName2 == null) mName2 = new AndroidSearchProto.TextRuns();
-                        mName2.mergeFrom(reader.readMessage());
+                        if (mName == null) mName = new AndroidSearchProto.TextRuns();
+                        mName.mergeFrom(reader.readMessage());
                         break;
                     case 16:
                         if ((tag & 7) != 2) { reader.skip(tag); break; }
@@ -794,6 +794,78 @@ public final class AndroidSearchProto {
 
         public static ChannelRenderer parseFrom(byte[] data) throws java.io.IOException {
             ChannelRenderer message = new ChannelRenderer();
+            message.mergeFrom(new ProtoReader(data, 0, data.length));
+            return message;
+        }
+    }
+
+    /** proto: android_search.continuations */
+    public static final class Continuations extends ProtoMessage {
+
+        /** proto: android_search.continuations.nextContinuationData */
+        public static final class NextContinuationData extends ProtoMessage {
+            private String mToken = "";
+            public NextContinuationData setToken(String value) { mToken = value == null ? "" : value; return this; }
+            public String getToken() { return mToken; }
+
+            @Override
+            public void writeTo(ProtoWriter writer) {
+                if (mToken.length() > 0) writer.writeString(1, mToken);
+            }
+
+            @Override
+            public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                while (reader.hasMore()) {
+                    int tag = reader.readTag();
+                    switch (tag >>> 3) {
+                        case 1:
+                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                            mToken = reader.readString();
+                            break;
+                        default:
+                            reader.skip(tag);
+                    }
+                }
+            }
+
+            public static NextContinuationData parseFrom(byte[] data) throws java.io.IOException {
+                NextContinuationData message = new NextContinuationData();
+                message.mergeFrom(new ProtoReader(data, 0, data.length));
+                return message;
+            }
+        }
+        private final java.util.List<AndroidSearchProto.Continuations.NextContinuationData> mNext = new java.util.ArrayList<AndroidSearchProto.Continuations.NextContinuationData>();
+        public Continuations addNext(AndroidSearchProto.Continuations.NextContinuationData value) {
+            if (value == null) throw new NullPointerException("next");
+            mNext.add(value);
+            return this;
+        }
+        public java.util.List<AndroidSearchProto.Continuations.NextContinuationData> getNextList() { return mNext; }
+        public int getNextCount() { return mNext.size(); }
+        public AndroidSearchProto.Continuations.NextContinuationData getNext(int index) { return mNext.get(index); }
+
+        @Override
+        public void writeTo(ProtoWriter writer) {
+            for (int i = 0; i < mNext.size(); i++) writer.writeMessage(52047593, mNext.get(i));
+        }
+
+        @Override
+        public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+            while (reader.hasMore()) {
+                int tag = reader.readTag();
+                switch (tag >>> 3) {
+                    case 52047593:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        { AndroidSearchProto.Continuations.NextContinuationData item = new AndroidSearchProto.Continuations.NextContinuationData(); item.mergeFrom(reader.readMessage()); mNext.add(item); }
+                        break;
+                    default:
+                        reader.skip(tag);
+                }
+            }
+        }
+
+        public static Continuations parseFrom(byte[] data) throws java.io.IOException {
+            Continuations message = new Continuations();
             message.mergeFrom(new ProtoReader(data, 0, data.length));
             return message;
         }
@@ -953,6 +1025,7 @@ public final class AndroidSearchProto {
                     }
                 }
                 private final java.util.List<AndroidSearchProto.Root.Contents.SearchResults.SearchResultsContents> mContent = new java.util.ArrayList<AndroidSearchProto.Root.Contents.SearchResults.SearchResultsContents>();
+                private final java.util.List<AndroidSearchProto.Continuations> mContinuation = new java.util.ArrayList<AndroidSearchProto.Continuations>();
                 public SearchResults addContent(AndroidSearchProto.Root.Contents.SearchResults.SearchResultsContents value) {
                     if (value == null) throw new NullPointerException("content");
                     mContent.add(value);
@@ -961,10 +1034,19 @@ public final class AndroidSearchProto {
                 public java.util.List<AndroidSearchProto.Root.Contents.SearchResults.SearchResultsContents> getContentList() { return mContent; }
                 public int getContentCount() { return mContent.size(); }
                 public AndroidSearchProto.Root.Contents.SearchResults.SearchResultsContents getContent(int index) { return mContent.get(index); }
+                public SearchResults addContinuation(AndroidSearchProto.Continuations value) {
+                    if (value == null) throw new NullPointerException("continuation");
+                    mContinuation.add(value);
+                    return this;
+                }
+                public java.util.List<AndroidSearchProto.Continuations> getContinuationList() { return mContinuation; }
+                public int getContinuationCount() { return mContinuation.size(); }
+                public AndroidSearchProto.Continuations getContinuation(int index) { return mContinuation.get(index); }
 
                 @Override
                 public void writeTo(ProtoWriter writer) {
                     for (int i = 0; i < mContent.size(); i++) writer.writeMessage(1, mContent.get(i));
+                    for (int i = 0; i < mContinuation.size(); i++) writer.writeMessage(2, mContinuation.get(i));
                 }
 
                 @Override
@@ -975,6 +1057,10 @@ public final class AndroidSearchProto {
                             case 1:
                                 if ((tag & 7) != 2) { reader.skip(tag); break; }
                                 { AndroidSearchProto.Root.Contents.SearchResults.SearchResultsContents item = new AndroidSearchProto.Root.Contents.SearchResults.SearchResultsContents(); item.mergeFrom(reader.readMessage()); mContent.add(item); }
+                                break;
+                            case 2:
+                                if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                { AndroidSearchProto.Continuations item = new AndroidSearchProto.Continuations(); item.mergeFrom(reader.readMessage()); mContinuation.add(item); }
                                 break;
                             default:
                                 reader.skip(tag);
@@ -1024,7 +1110,47 @@ public final class AndroidSearchProto {
                 return message;
             }
         }
+
+        /** proto: android_search.root.continuationContents */
+        public static final class ContinuationContents extends ProtoMessage {
+            private final java.util.List<AndroidSearchProto.Root.Contents.SearchResults> mSectionListContinuation = new java.util.ArrayList<AndroidSearchProto.Root.Contents.SearchResults>();
+            public ContinuationContents addSectionListContinuation(AndroidSearchProto.Root.Contents.SearchResults value) {
+                if (value == null) throw new NullPointerException("sectionListContinuation");
+                mSectionListContinuation.add(value);
+                return this;
+            }
+            public java.util.List<AndroidSearchProto.Root.Contents.SearchResults> getSectionListContinuationList() { return mSectionListContinuation; }
+            public int getSectionListContinuationCount() { return mSectionListContinuation.size(); }
+            public AndroidSearchProto.Root.Contents.SearchResults getSectionListContinuation(int index) { return mSectionListContinuation.get(index); }
+
+            @Override
+            public void writeTo(ProtoWriter writer) {
+                for (int i = 0; i < mSectionListContinuation.size(); i++) writer.writeMessage(49399797, mSectionListContinuation.get(i));
+            }
+
+            @Override
+            public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                while (reader.hasMore()) {
+                    int tag = reader.readTag();
+                    switch (tag >>> 3) {
+                        case 49399797:
+                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                            { AndroidSearchProto.Root.Contents.SearchResults item = new AndroidSearchProto.Root.Contents.SearchResults(); item.mergeFrom(reader.readMessage()); mSectionListContinuation.add(item); }
+                            break;
+                        default:
+                            reader.skip(tag);
+                    }
+                }
+            }
+
+            public static ContinuationContents parseFrom(byte[] data) throws java.io.IOException {
+                ContinuationContents message = new ContinuationContents();
+                message.mergeFrom(new ProtoReader(data, 0, data.length));
+                return message;
+            }
+        }
         private final java.util.List<AndroidSearchProto.Root.Contents> mContent = new java.util.ArrayList<AndroidSearchProto.Root.Contents>();
+        private AndroidSearchProto.Root.ContinuationContents mContinuation;
         public Root addContent(AndroidSearchProto.Root.Contents value) {
             if (value == null) throw new NullPointerException("content");
             mContent.add(value);
@@ -1033,10 +1159,14 @@ public final class AndroidSearchProto {
         public java.util.List<AndroidSearchProto.Root.Contents> getContentList() { return mContent; }
         public int getContentCount() { return mContent.size(); }
         public AndroidSearchProto.Root.Contents getContent(int index) { return mContent.get(index); }
+        public Root setContinuation(AndroidSearchProto.Root.ContinuationContents value) { mContinuation = value; return this; }
+        public AndroidSearchProto.Root.ContinuationContents getContinuation() { return mContinuation; }
+        public boolean hasContinuation() { return mContinuation != null; }
 
         @Override
         public void writeTo(ProtoWriter writer) {
             for (int i = 0; i < mContent.size(); i++) writer.writeMessage(4, mContent.get(i));
+            if (mContinuation != null) writer.writeMessage(7, mContinuation);
         }
 
         @Override
@@ -1047,6 +1177,11 @@ public final class AndroidSearchProto {
                     case 4:
                         if ((tag & 7) != 2) { reader.skip(tag); break; }
                         { AndroidSearchProto.Root.Contents item = new AndroidSearchProto.Root.Contents(); item.mergeFrom(reader.readMessage()); mContent.add(item); }
+                        break;
+                    case 7:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mContinuation == null) mContinuation = new AndroidSearchProto.Root.ContinuationContents();
+                        mContinuation.mergeFrom(reader.readMessage());
                         break;
                     default:
                         reader.skip(tag);

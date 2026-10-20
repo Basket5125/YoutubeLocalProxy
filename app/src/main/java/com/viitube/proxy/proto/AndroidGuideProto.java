@@ -295,6 +295,153 @@ public final class AndroidGuideProto {
         }
     }
 
+    /** proto: android_guide.pivotBarItem */
+    public static final class PivotBarItem extends ProtoMessage {
+
+        /** proto: android_guide.pivotBarItem.pivotBarItemRenderer */
+        public static final class PivotBarItemRenderer extends ProtoMessage {
+
+            /** proto: android_guide.pivotBarItem.pivotBarItemRenderer.iconContainer */
+            public static final class IconContainer extends ProtoMessage {
+                private int mIconType = 0;
+                public IconContainer setIconType(int value) { mIconType = value; return this; }
+                public int getIconType() { return mIconType; }
+
+                @Override
+                public void writeTo(ProtoWriter writer) {
+                    if (mIconType != 0) writer.writeInt32(1, mIconType);
+                }
+
+                @Override
+                public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                    while (reader.hasMore()) {
+                        int tag = reader.readTag();
+                        switch (tag >>> 3) {
+                            case 1:
+                                if ((tag & 7) != 0) { reader.skip(tag); break; }
+                                mIconType = reader.readInt32();
+                                break;
+                            default:
+                                reader.skip(tag);
+                        }
+                    }
+                }
+
+                public static IconContainer parseFrom(byte[] data) throws java.io.IOException {
+                    IconContainer message = new IconContainer();
+                    message.mergeFrom(new ProtoReader(data, 0, data.length));
+                    return message;
+                }
+            }
+            private String mPivotIdentifier = "";
+            private final java.util.List<AndroidGuideProto.BrowseNavigation> mNavigation = new java.util.ArrayList<AndroidGuideProto.BrowseNavigation>();
+            private final java.util.List<AndroidGuideProto.TextRuns> mTitle = new java.util.ArrayList<AndroidGuideProto.TextRuns>();
+            private final java.util.List<AndroidGuideProto.PivotBarItem.PivotBarItemRenderer.IconContainer> mIcon = new java.util.ArrayList<AndroidGuideProto.PivotBarItem.PivotBarItemRenderer.IconContainer>();
+            public PivotBarItemRenderer setPivotIdentifier(String value) { mPivotIdentifier = value == null ? "" : value; return this; }
+            public String getPivotIdentifier() { return mPivotIdentifier; }
+            public PivotBarItemRenderer addNavigation(AndroidGuideProto.BrowseNavigation value) {
+                if (value == null) throw new NullPointerException("navigation");
+                mNavigation.add(value);
+                return this;
+            }
+            public java.util.List<AndroidGuideProto.BrowseNavigation> getNavigationList() { return mNavigation; }
+            public int getNavigationCount() { return mNavigation.size(); }
+            public AndroidGuideProto.BrowseNavigation getNavigation(int index) { return mNavigation.get(index); }
+            public PivotBarItemRenderer addTitle(AndroidGuideProto.TextRuns value) {
+                if (value == null) throw new NullPointerException("title");
+                mTitle.add(value);
+                return this;
+            }
+            public java.util.List<AndroidGuideProto.TextRuns> getTitleList() { return mTitle; }
+            public int getTitleCount() { return mTitle.size(); }
+            public AndroidGuideProto.TextRuns getTitle(int index) { return mTitle.get(index); }
+            public PivotBarItemRenderer addIcon(AndroidGuideProto.PivotBarItem.PivotBarItemRenderer.IconContainer value) {
+                if (value == null) throw new NullPointerException("icon");
+                mIcon.add(value);
+                return this;
+            }
+            public java.util.List<AndroidGuideProto.PivotBarItem.PivotBarItemRenderer.IconContainer> getIconList() { return mIcon; }
+            public int getIconCount() { return mIcon.size(); }
+            public AndroidGuideProto.PivotBarItem.PivotBarItemRenderer.IconContainer getIcon(int index) { return mIcon.get(index); }
+
+            @Override
+            public void writeTo(ProtoWriter writer) {
+                if (mPivotIdentifier.length() > 0) writer.writeString(1, mPivotIdentifier);
+                for (int i = 0; i < mNavigation.size(); i++) writer.writeMessage(2, mNavigation.get(i));
+                for (int i = 0; i < mTitle.size(); i++) writer.writeMessage(3, mTitle.get(i));
+                for (int i = 0; i < mIcon.size(); i++) writer.writeMessage(5, mIcon.get(i));
+            }
+
+            @Override
+            public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                while (reader.hasMore()) {
+                    int tag = reader.readTag();
+                    switch (tag >>> 3) {
+                        case 1:
+                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                            mPivotIdentifier = reader.readString();
+                            break;
+                        case 2:
+                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                            { AndroidGuideProto.BrowseNavigation item = new AndroidGuideProto.BrowseNavigation(); item.mergeFrom(reader.readMessage()); mNavigation.add(item); }
+                            break;
+                        case 3:
+                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                            { AndroidGuideProto.TextRuns item = new AndroidGuideProto.TextRuns(); item.mergeFrom(reader.readMessage()); mTitle.add(item); }
+                            break;
+                        case 5:
+                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                            { AndroidGuideProto.PivotBarItem.PivotBarItemRenderer.IconContainer item = new AndroidGuideProto.PivotBarItem.PivotBarItemRenderer.IconContainer(); item.mergeFrom(reader.readMessage()); mIcon.add(item); }
+                            break;
+                        default:
+                            reader.skip(tag);
+                    }
+                }
+            }
+
+            public static PivotBarItemRenderer parseFrom(byte[] data) throws java.io.IOException {
+                PivotBarItemRenderer message = new PivotBarItemRenderer();
+                message.mergeFrom(new ProtoReader(data, 0, data.length));
+                return message;
+            }
+        }
+        private final java.util.List<AndroidGuideProto.PivotBarItem.PivotBarItemRenderer> mItem = new java.util.ArrayList<AndroidGuideProto.PivotBarItem.PivotBarItemRenderer>();
+        public PivotBarItem addItem(AndroidGuideProto.PivotBarItem.PivotBarItemRenderer value) {
+            if (value == null) throw new NullPointerException("item");
+            mItem.add(value);
+            return this;
+        }
+        public java.util.List<AndroidGuideProto.PivotBarItem.PivotBarItemRenderer> getItemList() { return mItem; }
+        public int getItemCount() { return mItem.size(); }
+        public AndroidGuideProto.PivotBarItem.PivotBarItemRenderer getItem(int index) { return mItem.get(index); }
+
+        @Override
+        public void writeTo(ProtoWriter writer) {
+            for (int i = 0; i < mItem.size(); i++) writer.writeMessage(117501096, mItem.get(i));
+        }
+
+        @Override
+        public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+            while (reader.hasMore()) {
+                int tag = reader.readTag();
+                switch (tag >>> 3) {
+                    case 117501096:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        { AndroidGuideProto.PivotBarItem.PivotBarItemRenderer item = new AndroidGuideProto.PivotBarItem.PivotBarItemRenderer(); item.mergeFrom(reader.readMessage()); mItem.add(item); }
+                        break;
+                    default:
+                        reader.skip(tag);
+                }
+            }
+        }
+
+        public static PivotBarItem parseFrom(byte[] data) throws java.io.IOException {
+            PivotBarItem message = new PivotBarItem();
+            message.mergeFrom(new ProtoReader(data, 0, data.length));
+            return message;
+        }
+    }
+
     /** proto: android_guide.root */
     public static final class Root extends ProtoMessage {
 
@@ -386,7 +533,47 @@ public final class AndroidGuideProto {
                     return message;
                 }
             }
+
+            /** proto: android_guide.root.items.pivotBarRenderer */
+            public static final class PivotBarRenderer extends ProtoMessage {
+                private final java.util.List<AndroidGuideProto.PivotBarItem> mItems = new java.util.ArrayList<AndroidGuideProto.PivotBarItem>();
+                public PivotBarRenderer addItems(AndroidGuideProto.PivotBarItem value) {
+                    if (value == null) throw new NullPointerException("items");
+                    mItems.add(value);
+                    return this;
+                }
+                public java.util.List<AndroidGuideProto.PivotBarItem> getItemsList() { return mItems; }
+                public int getItemsCount() { return mItems.size(); }
+                public AndroidGuideProto.PivotBarItem getItems(int index) { return mItems.get(index); }
+
+                @Override
+                public void writeTo(ProtoWriter writer) {
+                    for (int i = 0; i < mItems.size(); i++) writer.writeMessage(1, mItems.get(i));
+                }
+
+                @Override
+                public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                    while (reader.hasMore()) {
+                        int tag = reader.readTag();
+                        switch (tag >>> 3) {
+                            case 1:
+                                if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                { AndroidGuideProto.PivotBarItem item = new AndroidGuideProto.PivotBarItem(); item.mergeFrom(reader.readMessage()); mItems.add(item); }
+                                break;
+                            default:
+                                reader.skip(tag);
+                        }
+                    }
+                }
+
+                public static PivotBarRenderer parseFrom(byte[] data) throws java.io.IOException {
+                    PivotBarRenderer message = new PivotBarRenderer();
+                    message.mergeFrom(new ProtoReader(data, 0, data.length));
+                    return message;
+                }
+            }
             private final java.util.List<AndroidGuideProto.Root.Items.GuideSectionRenderer> mGuideSection = new java.util.ArrayList<AndroidGuideProto.Root.Items.GuideSectionRenderer>();
+            private final java.util.List<AndroidGuideProto.Root.Items.PivotBarRenderer> mPivotBar = new java.util.ArrayList<AndroidGuideProto.Root.Items.PivotBarRenderer>();
             public Items addGuideSection(AndroidGuideProto.Root.Items.GuideSectionRenderer value) {
                 if (value == null) throw new NullPointerException("guideSection");
                 mGuideSection.add(value);
@@ -395,10 +582,19 @@ public final class AndroidGuideProto {
             public java.util.List<AndroidGuideProto.Root.Items.GuideSectionRenderer> getGuideSectionList() { return mGuideSection; }
             public int getGuideSectionCount() { return mGuideSection.size(); }
             public AndroidGuideProto.Root.Items.GuideSectionRenderer getGuideSection(int index) { return mGuideSection.get(index); }
+            public Items addPivotBar(AndroidGuideProto.Root.Items.PivotBarRenderer value) {
+                if (value == null) throw new NullPointerException("pivotBar");
+                mPivotBar.add(value);
+                return this;
+            }
+            public java.util.List<AndroidGuideProto.Root.Items.PivotBarRenderer> getPivotBarList() { return mPivotBar; }
+            public int getPivotBarCount() { return mPivotBar.size(); }
+            public AndroidGuideProto.Root.Items.PivotBarRenderer getPivotBar(int index) { return mPivotBar.get(index); }
 
             @Override
             public void writeTo(ProtoWriter writer) {
                 for (int i = 0; i < mGuideSection.size(); i++) writer.writeMessage(46887524, mGuideSection.get(i));
+                for (int i = 0; i < mPivotBar.size(); i++) writer.writeMessage(117866661, mPivotBar.get(i));
             }
 
             @Override
@@ -409,6 +605,10 @@ public final class AndroidGuideProto {
                         case 46887524:
                             if ((tag & 7) != 2) { reader.skip(tag); break; }
                             { AndroidGuideProto.Root.Items.GuideSectionRenderer item = new AndroidGuideProto.Root.Items.GuideSectionRenderer(); item.mergeFrom(reader.readMessage()); mGuideSection.add(item); }
+                            break;
+                        case 117866661:
+                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                            { AndroidGuideProto.Root.Items.PivotBarRenderer item = new AndroidGuideProto.Root.Items.PivotBarRenderer(); item.mergeFrom(reader.readMessage()); mPivotBar.add(item); }
                             break;
                         default:
                             reader.skip(tag);

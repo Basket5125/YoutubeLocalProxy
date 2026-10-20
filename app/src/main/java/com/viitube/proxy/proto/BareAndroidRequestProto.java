@@ -115,6 +115,7 @@ public final class BareAndroidRequestProto {
         private String mBrowseId = "";
         private String mParams = "";
         private String mContinuation = "";
+        private String mNextContinuation = "";
         public Root addContext(BareAndroidRequestProto.Root.ContextType value) {
             if (value == null) throw new NullPointerException("context");
             mContext.add(value);
@@ -129,6 +130,8 @@ public final class BareAndroidRequestProto {
         public String getParams() { return mParams; }
         public Root setContinuation(String value) { mContinuation = value == null ? "" : value; return this; }
         public String getContinuation() { return mContinuation; }
+        public Root setNextContinuation(String value) { mNextContinuation = value == null ? "" : value; return this; }
+        public String getNextContinuation() { return mNextContinuation; }
 
         @Override
         public void writeTo(ProtoWriter writer) {
@@ -136,6 +139,7 @@ public final class BareAndroidRequestProto {
             if (mBrowseId.length() > 0) writer.writeString(2, mBrowseId);
             if (mParams.length() > 0) writer.writeString(3, mParams);
             if (mContinuation.length() > 0) writer.writeString(7, mContinuation);
+            if (mNextContinuation.length() > 0) writer.writeString(8, mNextContinuation);
         }
 
         @Override
@@ -158,6 +162,10 @@ public final class BareAndroidRequestProto {
                     case 7:
                         if ((tag & 7) != 2) { reader.skip(tag); break; }
                         mContinuation = reader.readString();
+                        break;
+                    case 8:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        mNextContinuation = reader.readString();
                         break;
                     default:
                         reader.skip(tag);

@@ -99,12 +99,18 @@ public final class VideoListProto {
         /** proto: browse_proto.textRuns.textRun */
         public static final class TextRun extends ProtoMessage {
             private String mText = "";
+            private int mBold = 0;
+            private boolean hasBold;
             public TextRun setText(String value) { mText = value == null ? "" : value; return this; }
             public String getText() { return mText; }
+            public TextRun setBold(int value) { mBold = value; hasBold = true; return this; }
+            public int getBold() { return mBold; }
+            public boolean hasBold() { return hasBold; }
 
             @Override
             public void writeTo(ProtoWriter writer) {
                 if (mText.length() > 0) writer.writeString(1, mText);
+                if (hasBold) writer.writeInt32(2, mBold);
             }
 
             @Override
@@ -115,6 +121,11 @@ public final class VideoListProto {
                         case 1:
                             if ((tag & 7) != 2) { reader.skip(tag); break; }
                             mText = reader.readString();
+                            break;
+                        case 2:
+                            if ((tag & 7) != 0) { reader.skip(tag); break; }
+                            mBold = reader.readInt32();
+                            hasBold = true;
                             break;
                         default:
                             reader.skip(tag);
@@ -2052,6 +2063,296 @@ public final class VideoListProto {
         }
     }
 
+    /** proto: browse_proto.videoWithContextRenderer */
+    public static final class VideoWithContextRenderer extends ProtoMessage {
+
+        /** proto: browse_proto.videoWithContextRenderer.channelAvatar */
+        public static final class ChannelAvatar extends ProtoMessage {
+
+            /** proto: browse_proto.videoWithContextRenderer.channelAvatar.avatar */
+            public static final class Avatar extends ProtoMessage {
+                private VideoListProto.Thumbnails mThumbnail;
+                private VideoListProto.BrowseNavigation mNavigation;
+                public Avatar setThumbnail(VideoListProto.Thumbnails value) { mThumbnail = value; return this; }
+                public VideoListProto.Thumbnails getThumbnail() { return mThumbnail; }
+                public boolean hasThumbnail() { return mThumbnail != null; }
+                public Avatar setNavigation(VideoListProto.BrowseNavigation value) { mNavigation = value; return this; }
+                public VideoListProto.BrowseNavigation getNavigation() { return mNavigation; }
+                public boolean hasNavigation() { return mNavigation != null; }
+
+                @Override
+                public void writeTo(ProtoWriter writer) {
+                    if (mThumbnail != null) writer.writeMessage(1, mThumbnail);
+                    if (mNavigation != null) writer.writeMessage(2, mNavigation);
+                }
+
+                @Override
+                public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                    while (reader.hasMore()) {
+                        int tag = reader.readTag();
+                        switch (tag >>> 3) {
+                            case 1:
+                                if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                if (mThumbnail == null) mThumbnail = new VideoListProto.Thumbnails();
+                                mThumbnail.mergeFrom(reader.readMessage());
+                                break;
+                            case 2:
+                                if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                if (mNavigation == null) mNavigation = new VideoListProto.BrowseNavigation();
+                                mNavigation.mergeFrom(reader.readMessage());
+                                break;
+                            default:
+                                reader.skip(tag);
+                        }
+                    }
+                }
+
+                public static Avatar parseFrom(byte[] data) throws java.io.IOException {
+                    Avatar message = new Avatar();
+                    message.mergeFrom(new ProtoReader(data, 0, data.length));
+                    return message;
+                }
+            }
+            private final java.util.List<VideoListProto.VideoWithContextRenderer.ChannelAvatar.Avatar> mImage = new java.util.ArrayList<VideoListProto.VideoWithContextRenderer.ChannelAvatar.Avatar>();
+            public ChannelAvatar addImage(VideoListProto.VideoWithContextRenderer.ChannelAvatar.Avatar value) {
+                if (value == null) throw new NullPointerException("image");
+                mImage.add(value);
+                return this;
+            }
+            public java.util.List<VideoListProto.VideoWithContextRenderer.ChannelAvatar.Avatar> getImageList() { return mImage; }
+            public int getImageCount() { return mImage.size(); }
+            public VideoListProto.VideoWithContextRenderer.ChannelAvatar.Avatar getImage(int index) { return mImage.get(index); }
+
+            @Override
+            public void writeTo(ProtoWriter writer) {
+                for (int i = 0; i < mImage.size(); i++) writer.writeMessage(100346611, mImage.get(i));
+            }
+
+            @Override
+            public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                while (reader.hasMore()) {
+                    int tag = reader.readTag();
+                    switch (tag >>> 3) {
+                        case 100346611:
+                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                            { VideoListProto.VideoWithContextRenderer.ChannelAvatar.Avatar item = new VideoListProto.VideoWithContextRenderer.ChannelAvatar.Avatar(); item.mergeFrom(reader.readMessage()); mImage.add(item); }
+                            break;
+                        default:
+                            reader.skip(tag);
+                    }
+                }
+            }
+
+            public static ChannelAvatar parseFrom(byte[] data) throws java.io.IOException {
+                ChannelAvatar message = new ChannelAvatar();
+                message.mergeFrom(new ProtoReader(data, 0, data.length));
+                return message;
+            }
+        }
+
+        /** proto: browse_proto.videoWithContextRenderer.overlays */
+        public static final class Overlays extends ProtoMessage {
+
+            /** proto: browse_proto.videoWithContextRenderer.overlays.timeStatus */
+            public static final class TimeStatus extends ProtoMessage {
+                private final java.util.List<VideoListProto.TextRuns> mText = new java.util.ArrayList<VideoListProto.TextRuns>();
+                private int mLive = 0;
+                private boolean hasLive;
+                public TimeStatus addText(VideoListProto.TextRuns value) {
+                    if (value == null) throw new NullPointerException("text");
+                    mText.add(value);
+                    return this;
+                }
+                public java.util.List<VideoListProto.TextRuns> getTextList() { return mText; }
+                public int getTextCount() { return mText.size(); }
+                public VideoListProto.TextRuns getText(int index) { return mText.get(index); }
+                public TimeStatus setLive(int value) { mLive = value; hasLive = true; return this; }
+                public int getLive() { return mLive; }
+                public boolean hasLive() { return hasLive; }
+
+                @Override
+                public void writeTo(ProtoWriter writer) {
+                    for (int i = 0; i < mText.size(); i++) writer.writeMessage(1, mText.get(i));
+                    if (hasLive) writer.writeInt32(2, mLive);
+                }
+
+                @Override
+                public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                    while (reader.hasMore()) {
+                        int tag = reader.readTag();
+                        switch (tag >>> 3) {
+                            case 1:
+                                if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                { VideoListProto.TextRuns item = new VideoListProto.TextRuns(); item.mergeFrom(reader.readMessage()); mText.add(item); }
+                                break;
+                            case 2:
+                                if ((tag & 7) != 0) { reader.skip(tag); break; }
+                                mLive = reader.readInt32();
+                                hasLive = true;
+                                break;
+                            default:
+                                reader.skip(tag);
+                        }
+                    }
+                }
+
+                public static TimeStatus parseFrom(byte[] data) throws java.io.IOException {
+                    TimeStatus message = new TimeStatus();
+                    message.mergeFrom(new ProtoReader(data, 0, data.length));
+                    return message;
+                }
+            }
+            private final java.util.List<VideoListProto.VideoWithContextRenderer.Overlays.TimeStatus> mTime = new java.util.ArrayList<VideoListProto.VideoWithContextRenderer.Overlays.TimeStatus>();
+            public Overlays addTime(VideoListProto.VideoWithContextRenderer.Overlays.TimeStatus value) {
+                if (value == null) throw new NullPointerException("time");
+                mTime.add(value);
+                return this;
+            }
+            public java.util.List<VideoListProto.VideoWithContextRenderer.Overlays.TimeStatus> getTimeList() { return mTime; }
+            public int getTimeCount() { return mTime.size(); }
+            public VideoListProto.VideoWithContextRenderer.Overlays.TimeStatus getTime(int index) { return mTime.get(index); }
+
+            @Override
+            public void writeTo(ProtoWriter writer) {
+                for (int i = 0; i < mTime.size(); i++) writer.writeMessage(115279480, mTime.get(i));
+            }
+
+            @Override
+            public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                while (reader.hasMore()) {
+                    int tag = reader.readTag();
+                    switch (tag >>> 3) {
+                        case 115279480:
+                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                            { VideoListProto.VideoWithContextRenderer.Overlays.TimeStatus item = new VideoListProto.VideoWithContextRenderer.Overlays.TimeStatus(); item.mergeFrom(reader.readMessage()); mTime.add(item); }
+                            break;
+                        default:
+                            reader.skip(tag);
+                    }
+                }
+            }
+
+            public static Overlays parseFrom(byte[] data) throws java.io.IOException {
+                Overlays message = new Overlays();
+                message.mergeFrom(new ProtoReader(data, 0, data.length));
+                return message;
+            }
+        }
+        private VideoListProto.TextRuns mTitle;
+        private VideoListProto.TextRuns mContext;
+        private VideoListProto.Thumbnails mThumbnail;
+        private VideoListProto.TextRuns mByline;
+        private VideoListProto.TextRuns mDuration;
+        private VideoListProto.NavigationData mNavData;
+        private String mVideoId = "";
+        private VideoListProto.VideoWithContextRenderer.ChannelAvatar mAvatar;
+        private final java.util.List<VideoListProto.VideoWithContextRenderer.Overlays> mOverlay = new java.util.ArrayList<VideoListProto.VideoWithContextRenderer.Overlays>();
+        public VideoWithContextRenderer setTitle(VideoListProto.TextRuns value) { mTitle = value; return this; }
+        public VideoListProto.TextRuns getTitle() { return mTitle; }
+        public boolean hasTitle() { return mTitle != null; }
+        public VideoWithContextRenderer setContext(VideoListProto.TextRuns value) { mContext = value; return this; }
+        public VideoListProto.TextRuns getContext() { return mContext; }
+        public boolean hasContext() { return mContext != null; }
+        public VideoWithContextRenderer setThumbnail(VideoListProto.Thumbnails value) { mThumbnail = value; return this; }
+        public VideoListProto.Thumbnails getThumbnail() { return mThumbnail; }
+        public boolean hasThumbnail() { return mThumbnail != null; }
+        public VideoWithContextRenderer setByline(VideoListProto.TextRuns value) { mByline = value; return this; }
+        public VideoListProto.TextRuns getByline() { return mByline; }
+        public boolean hasByline() { return mByline != null; }
+        public VideoWithContextRenderer setDuration(VideoListProto.TextRuns value) { mDuration = value; return this; }
+        public VideoListProto.TextRuns getDuration() { return mDuration; }
+        public boolean hasDuration() { return mDuration != null; }
+        public VideoWithContextRenderer setNavData(VideoListProto.NavigationData value) { mNavData = value; return this; }
+        public VideoListProto.NavigationData getNavData() { return mNavData; }
+        public boolean hasNavData() { return mNavData != null; }
+        public VideoWithContextRenderer setVideoId(String value) { mVideoId = value == null ? "" : value; return this; }
+        public String getVideoId() { return mVideoId; }
+        public VideoWithContextRenderer setAvatar(VideoListProto.VideoWithContextRenderer.ChannelAvatar value) { mAvatar = value; return this; }
+        public VideoListProto.VideoWithContextRenderer.ChannelAvatar getAvatar() { return mAvatar; }
+        public boolean hasAvatar() { return mAvatar != null; }
+        public VideoWithContextRenderer addOverlay(VideoListProto.VideoWithContextRenderer.Overlays value) {
+            if (value == null) throw new NullPointerException("overlay");
+            mOverlay.add(value);
+            return this;
+        }
+        public java.util.List<VideoListProto.VideoWithContextRenderer.Overlays> getOverlayList() { return mOverlay; }
+        public int getOverlayCount() { return mOverlay.size(); }
+        public VideoListProto.VideoWithContextRenderer.Overlays getOverlay(int index) { return mOverlay.get(index); }
+
+        @Override
+        public void writeTo(ProtoWriter writer) {
+            if (mTitle != null) writer.writeMessage(1, mTitle);
+            if (mContext != null) writer.writeMessage(2, mContext);
+            if (mThumbnail != null) writer.writeMessage(3, mThumbnail);
+            if (mByline != null) writer.writeMessage(4, mByline);
+            if (mDuration != null) writer.writeMessage(5, mDuration);
+            if (mNavData != null) writer.writeMessage(7, mNavData);
+            if (mVideoId.length() > 0) writer.writeString(14, mVideoId);
+            if (mAvatar != null) writer.writeMessage(16, mAvatar);
+            for (int i = 0; i < mOverlay.size(); i++) writer.writeMessage(15, mOverlay.get(i));
+        }
+
+        @Override
+        public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+            while (reader.hasMore()) {
+                int tag = reader.readTag();
+                switch (tag >>> 3) {
+                    case 1:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mTitle == null) mTitle = new VideoListProto.TextRuns();
+                        mTitle.mergeFrom(reader.readMessage());
+                        break;
+                    case 2:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mContext == null) mContext = new VideoListProto.TextRuns();
+                        mContext.mergeFrom(reader.readMessage());
+                        break;
+                    case 3:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mThumbnail == null) mThumbnail = new VideoListProto.Thumbnails();
+                        mThumbnail.mergeFrom(reader.readMessage());
+                        break;
+                    case 4:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mByline == null) mByline = new VideoListProto.TextRuns();
+                        mByline.mergeFrom(reader.readMessage());
+                        break;
+                    case 5:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mDuration == null) mDuration = new VideoListProto.TextRuns();
+                        mDuration.mergeFrom(reader.readMessage());
+                        break;
+                    case 7:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mNavData == null) mNavData = new VideoListProto.NavigationData();
+                        mNavData.mergeFrom(reader.readMessage());
+                        break;
+                    case 14:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        mVideoId = reader.readString();
+                        break;
+                    case 16:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mAvatar == null) mAvatar = new VideoListProto.VideoWithContextRenderer.ChannelAvatar();
+                        mAvatar.mergeFrom(reader.readMessage());
+                        break;
+                    case 15:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        { VideoListProto.VideoWithContextRenderer.Overlays item = new VideoListProto.VideoWithContextRenderer.Overlays(); item.mergeFrom(reader.readMessage()); mOverlay.add(item); }
+                        break;
+                    default:
+                        reader.skip(tag);
+                }
+            }
+        }
+
+        public static VideoWithContextRenderer parseFrom(byte[] data) throws java.io.IOException {
+            VideoWithContextRenderer message = new VideoWithContextRenderer();
+            message.mergeFrom(new ProtoReader(data, 0, data.length));
+            return message;
+        }
+    }
+
     /** proto: browse_proto.itemSectionRenderer */
     public static final class ItemSectionRenderer extends ProtoMessage {
 
@@ -2062,6 +2363,7 @@ public final class VideoListProto {
             private final java.util.List<VideoListProto.AboutRenderer> mAbout = new java.util.ArrayList<VideoListProto.AboutRenderer>();
             private final java.util.List<VideoListProto.ChannelRenderer> mChannel = new java.util.ArrayList<VideoListProto.ChannelRenderer>();
             private final java.util.List<VideoListProto.AccountTabLink> mAccountLink = new java.util.ArrayList<VideoListProto.AccountTabLink>();
+            private final java.util.List<VideoListProto.VideoWithContextRenderer> mFeedVideo = new java.util.ArrayList<VideoListProto.VideoWithContextRenderer>();
             public IcsContents addVideo(VideoListProto.CompactVideoRenderer value) {
                 if (value == null) throw new NullPointerException("video");
                 mVideo.add(value);
@@ -2102,6 +2404,14 @@ public final class VideoListProto {
             public java.util.List<VideoListProto.AccountTabLink> getAccountLinkList() { return mAccountLink; }
             public int getAccountLinkCount() { return mAccountLink.size(); }
             public VideoListProto.AccountTabLink getAccountLink(int index) { return mAccountLink.get(index); }
+            public IcsContents addFeedVideo(VideoListProto.VideoWithContextRenderer value) {
+                if (value == null) throw new NullPointerException("feedVideo");
+                mFeedVideo.add(value);
+                return this;
+            }
+            public java.util.List<VideoListProto.VideoWithContextRenderer> getFeedVideoList() { return mFeedVideo; }
+            public int getFeedVideoCount() { return mFeedVideo.size(); }
+            public VideoListProto.VideoWithContextRenderer getFeedVideo(int index) { return mFeedVideo.get(index); }
 
             @Override
             public void writeTo(ProtoWriter writer) {
@@ -2110,6 +2420,7 @@ public final class VideoListProto {
                 for (int i = 0; i < mAbout.size(); i++) writer.writeMessage(52191200, mAbout.get(i));
                 for (int i = 0; i < mChannel.size(); i++) writer.writeMessage(50794305, mChannel.get(i));
                 for (int i = 0; i < mAccountLink.size(); i++) writer.writeMessage(79129962, mAccountLink.get(i));
+                for (int i = 0; i < mFeedVideo.size(); i++) writer.writeMessage(89018663, mFeedVideo.get(i));
             }
 
             @Override
@@ -2136,6 +2447,10 @@ public final class VideoListProto {
                         case 79129962:
                             if ((tag & 7) != 2) { reader.skip(tag); break; }
                             { VideoListProto.AccountTabLink item = new VideoListProto.AccountTabLink(); item.mergeFrom(reader.readMessage()); mAccountLink.add(item); }
+                            break;
+                        case 89018663:
+                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                            { VideoListProto.VideoWithContextRenderer item = new VideoListProto.VideoWithContextRenderer(); item.mergeFrom(reader.readMessage()); mFeedVideo.add(item); }
                             break;
                         default:
                             reader.skip(tag);
@@ -2434,6 +2749,39 @@ public final class VideoListProto {
                                 /** proto: browse_proto.root.responseBody.singleColumnBrowseResultsRenderer.tabs.tabRenderer.contentEntry.contentData.loadData */
                                 public static final class LoadData extends ProtoMessage {
 
+                                    /** proto: browse_proto.root.responseBody.singleColumnBrowseResultsRenderer.tabs.tabRenderer.contentEntry.contentData.loadData.nextContinuationData */
+                                    public static final class NextContinuationData extends ProtoMessage {
+                                        private String mToken = "";
+                                        public NextContinuationData setToken(String value) { mToken = value == null ? "" : value; return this; }
+                                        public String getToken() { return mToken; }
+
+                                        @Override
+                                        public void writeTo(ProtoWriter writer) {
+                                            if (mToken.length() > 0) writer.writeString(1, mToken);
+                                        }
+
+                                        @Override
+                                        public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                                            while (reader.hasMore()) {
+                                                int tag = reader.readTag();
+                                                switch (tag >>> 3) {
+                                                    case 1:
+                                                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                                        mToken = reader.readString();
+                                                        break;
+                                                    default:
+                                                        reader.skip(tag);
+                                                }
+                                            }
+                                        }
+
+                                        public static NextContinuationData parseFrom(byte[] data) throws java.io.IOException {
+                                            NextContinuationData message = new NextContinuationData();
+                                            message.mergeFrom(new ProtoReader(data, 0, data.length));
+                                            return message;
+                                        }
+                                    }
+
                                     /** proto: browse_proto.root.responseBody.singleColumnBrowseResultsRenderer.tabs.tabRenderer.contentEntry.contentData.loadData.contents */
                                     public static final class Contents extends ProtoMessage {
                                         private String mId = "";
@@ -2466,7 +2814,16 @@ public final class VideoListProto {
                                             return message;
                                         }
                                     }
+                                    private final java.util.List<VideoListProto.Root.ResponseBody.SingleColumnBrowseResultsRenderer.Tabs.TabRenderer.ContentEntry.ContentData.LoadData.NextContinuationData> mNext = new java.util.ArrayList<VideoListProto.Root.ResponseBody.SingleColumnBrowseResultsRenderer.Tabs.TabRenderer.ContentEntry.ContentData.LoadData.NextContinuationData>();
                                     private final java.util.List<VideoListProto.Root.ResponseBody.SingleColumnBrowseResultsRenderer.Tabs.TabRenderer.ContentEntry.ContentData.LoadData.Contents> mContent = new java.util.ArrayList<VideoListProto.Root.ResponseBody.SingleColumnBrowseResultsRenderer.Tabs.TabRenderer.ContentEntry.ContentData.LoadData.Contents>();
+                                    public LoadData addNext(VideoListProto.Root.ResponseBody.SingleColumnBrowseResultsRenderer.Tabs.TabRenderer.ContentEntry.ContentData.LoadData.NextContinuationData value) {
+                                        if (value == null) throw new NullPointerException("next");
+                                        mNext.add(value);
+                                        return this;
+                                    }
+                                    public java.util.List<VideoListProto.Root.ResponseBody.SingleColumnBrowseResultsRenderer.Tabs.TabRenderer.ContentEntry.ContentData.LoadData.NextContinuationData> getNextList() { return mNext; }
+                                    public int getNextCount() { return mNext.size(); }
+                                    public VideoListProto.Root.ResponseBody.SingleColumnBrowseResultsRenderer.Tabs.TabRenderer.ContentEntry.ContentData.LoadData.NextContinuationData getNext(int index) { return mNext.get(index); }
                                     public LoadData addContent(VideoListProto.Root.ResponseBody.SingleColumnBrowseResultsRenderer.Tabs.TabRenderer.ContentEntry.ContentData.LoadData.Contents value) {
                                         if (value == null) throw new NullPointerException("content");
                                         mContent.add(value);
@@ -2478,6 +2835,7 @@ public final class VideoListProto {
 
                                     @Override
                                     public void writeTo(ProtoWriter writer) {
+                                        for (int i = 0; i < mNext.size(); i++) writer.writeMessage(52047593, mNext.get(i));
                                         for (int i = 0; i < mContent.size(); i++) writer.writeMessage(60487319, mContent.get(i));
                                     }
 
@@ -2486,6 +2844,10 @@ public final class VideoListProto {
                                         while (reader.hasMore()) {
                                             int tag = reader.readTag();
                                             switch (tag >>> 3) {
+                                                case 52047593:
+                                                    if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                                    { VideoListProto.Root.ResponseBody.SingleColumnBrowseResultsRenderer.Tabs.TabRenderer.ContentEntry.ContentData.LoadData.NextContinuationData item = new VideoListProto.Root.ResponseBody.SingleColumnBrowseResultsRenderer.Tabs.TabRenderer.ContentEntry.ContentData.LoadData.NextContinuationData(); item.mergeFrom(reader.readMessage()); mNext.add(item); }
+                                                    break;
                                                 case 60487319:
                                                     if ((tag & 7) != 2) { reader.skip(tag); break; }
                                                     { VideoListProto.Root.ResponseBody.SingleColumnBrowseResultsRenderer.Tabs.TabRenderer.ContentEntry.ContentData.LoadData.Contents item = new VideoListProto.Root.ResponseBody.SingleColumnBrowseResultsRenderer.Tabs.TabRenderer.ContentEntry.ContentData.LoadData.Contents(); item.mergeFrom(reader.readMessage()); mContent.add(item); }
@@ -2813,6 +3175,45 @@ public final class VideoListProto {
 
             public static ResponseBody parseFrom(byte[] data) throws java.io.IOException {
                 ResponseBody message = new ResponseBody();
+                message.mergeFrom(new ProtoReader(data, 0, data.length));
+                return message;
+            }
+        }
+
+        /** proto: browse_proto.root.continuationContents */
+        public static final class ContinuationContents extends ProtoMessage {
+            private final java.util.List<VideoListProto.Root.ResponseBody.SingleColumnBrowseResultsRenderer.Tabs.TabRenderer.ContentEntry.ContentData> mSectionListContinuation = new java.util.ArrayList<VideoListProto.Root.ResponseBody.SingleColumnBrowseResultsRenderer.Tabs.TabRenderer.ContentEntry.ContentData>();
+            public ContinuationContents addSectionListContinuation(VideoListProto.Root.ResponseBody.SingleColumnBrowseResultsRenderer.Tabs.TabRenderer.ContentEntry.ContentData value) {
+                if (value == null) throw new NullPointerException("sectionListContinuation");
+                mSectionListContinuation.add(value);
+                return this;
+            }
+            public java.util.List<VideoListProto.Root.ResponseBody.SingleColumnBrowseResultsRenderer.Tabs.TabRenderer.ContentEntry.ContentData> getSectionListContinuationList() { return mSectionListContinuation; }
+            public int getSectionListContinuationCount() { return mSectionListContinuation.size(); }
+            public VideoListProto.Root.ResponseBody.SingleColumnBrowseResultsRenderer.Tabs.TabRenderer.ContentEntry.ContentData getSectionListContinuation(int index) { return mSectionListContinuation.get(index); }
+
+            @Override
+            public void writeTo(ProtoWriter writer) {
+                for (int i = 0; i < mSectionListContinuation.size(); i++) writer.writeMessage(49399797, mSectionListContinuation.get(i));
+            }
+
+            @Override
+            public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                while (reader.hasMore()) {
+                    int tag = reader.readTag();
+                    switch (tag >>> 3) {
+                        case 49399797:
+                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                            { VideoListProto.Root.ResponseBody.SingleColumnBrowseResultsRenderer.Tabs.TabRenderer.ContentEntry.ContentData item = new VideoListProto.Root.ResponseBody.SingleColumnBrowseResultsRenderer.Tabs.TabRenderer.ContentEntry.ContentData(); item.mergeFrom(reader.readMessage()); mSectionListContinuation.add(item); }
+                            break;
+                        default:
+                            reader.skip(tag);
+                    }
+                }
+            }
+
+            public static ContinuationContents parseFrom(byte[] data) throws java.io.IOException {
+                ContinuationContents message = new ContinuationContents();
                 message.mergeFrom(new ProtoReader(data, 0, data.length));
                 return message;
             }
@@ -3303,6 +3704,7 @@ public final class VideoListProto {
         }
         private final java.util.List<VideoListProto.Root.ContextType> mContext = new java.util.ArrayList<VideoListProto.Root.ContextType>();
         private final java.util.List<VideoListProto.Root.ResponseBody> mContents = new java.util.ArrayList<VideoListProto.Root.ResponseBody>();
+        private VideoListProto.Root.ContinuationContents mContinuation;
         private final java.util.List<VideoListProto.Root.HeaderRender> mHeader = new java.util.ArrayList<VideoListProto.Root.HeaderRender>();
         public Root addContext(VideoListProto.Root.ContextType value) {
             if (value == null) throw new NullPointerException("context");
@@ -3320,6 +3722,9 @@ public final class VideoListProto {
         public java.util.List<VideoListProto.Root.ResponseBody> getContentsList() { return mContents; }
         public int getContentsCount() { return mContents.size(); }
         public VideoListProto.Root.ResponseBody getContents(int index) { return mContents.get(index); }
+        public Root setContinuation(VideoListProto.Root.ContinuationContents value) { mContinuation = value; return this; }
+        public VideoListProto.Root.ContinuationContents getContinuation() { return mContinuation; }
+        public boolean hasContinuation() { return mContinuation != null; }
         public Root addHeader(VideoListProto.Root.HeaderRender value) {
             if (value == null) throw new NullPointerException("header");
             mHeader.add(value);
@@ -3333,6 +3738,7 @@ public final class VideoListProto {
         public void writeTo(ProtoWriter writer) {
             for (int i = 0; i < mContext.size(); i++) writer.writeMessage(1, mContext.get(i));
             for (int i = 0; i < mContents.size(); i++) writer.writeMessage(9, mContents.get(i));
+            if (mContinuation != null) writer.writeMessage(10, mContinuation);
             for (int i = 0; i < mHeader.size(); i++) writer.writeMessage(13, mHeader.get(i));
         }
 
@@ -3348,6 +3754,11 @@ public final class VideoListProto {
                     case 9:
                         if ((tag & 7) != 2) { reader.skip(tag); break; }
                         { VideoListProto.Root.ResponseBody item = new VideoListProto.Root.ResponseBody(); item.mergeFrom(reader.readMessage()); mContents.add(item); }
+                        break;
+                    case 10:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mContinuation == null) mContinuation = new VideoListProto.Root.ContinuationContents();
+                        mContinuation.mergeFrom(reader.readMessage());
                         break;
                     case 13:
                         if ((tag & 7) != 2) { reader.skip(tag); break; }

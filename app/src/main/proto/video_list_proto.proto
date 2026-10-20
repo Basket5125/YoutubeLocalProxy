@@ -12,6 +12,8 @@ message nextRequest {
 message textRuns {
     message textRun {
         string text = 1;
+        /** The app draws the run with a bold typeface. */
+        optional int32 bold = 2;
     }
     repeated textRun run = 1;
 }
@@ -180,6 +182,37 @@ message accountTabLink {
     repeated textRuns text = 3;
     optional browseNavigation navigation = 4;
 }
+// The big card of the home and Trending feeds in the 2017 apps (presenter hzx, layout
+// video_feed_entry): thumbnail on top, then the title and one line of "Channel - views - age".
+message videoWithContextRenderer {
+    optional textRuns title = 1;
+    /** The row above the thumbnail, next to its own small avatar; left empty here. */
+    optional textRuns context = 2;
+    optional thumbnails thumbnail = 3;
+    /** The lighter line under the title ("Channel - views - age"): the app's "details" view. */
+    optional textRuns byline = 4;
+    /** Goes to the duration over the thumbnail, not under the title. */
+    optional textRuns duration = 5;
+    optional navigationData navData = 7;
+    string videoId = 14;
+    /** The channel picture left of the title. */
+    message channelAvatar {
+        message avatar {
+            optional thumbnails thumbnail = 1;
+            optional browseNavigation navigation = 2;
+        }
+        repeated avatar image = 100346611;
+    }
+    optional channelAvatar avatar = 16;
+    message overlays {
+        message timeStatus {
+            repeated textRuns text = 1;
+            optional int32 live = 2;
+        }
+        repeated timeStatus time = 115279480;
+    }
+    repeated overlays overlay = 15;
+}
 message itemSectionRenderer {
     message icsContents {
         repeated compactVideoRenderer video = 50630979;
@@ -187,6 +220,7 @@ message itemSectionRenderer {
         repeated aboutRenderer about = 52191200;
         repeated channelRenderer channel = 50794305;
         repeated accountTabLink accountLink = 79129962;
+        repeated videoWithContextRenderer feedVideo = 89018663;
         // 53170873 - radio (mix) renderer
         // 55641975 - caption with a link next to it
         // 58485276 - link ad
@@ -229,7 +263,13 @@ message root {
                                 repeated playlistData playlist = 54681060;
                             }
                             repeated contentActualData c = 1;
+                            // The section list's continuations: nextContinuationData holds the
+                            // token the app sends back when the list is scrolled to its end.
                             message loadData {
+                                message nextContinuationData {
+                                    string token = 1;
+                                }
+                                repeated nextContinuationData next = 52047593;
                                 message contents {
                                     string id = 1;
                                 }
@@ -253,6 +293,12 @@ message root {
         repeated singleColumnBrowseResultsRenderer browseData = 58173949;
     }
     repeated responseBody contents = 9;
+    /** The answer to a browse request that carries a continuation token. */
+    message continuationContents {
+        repeated responseBody.singleColumnBrowseResultsRenderer.tabs.tabRenderer.contentEntry.contentData
+                sectionListContinuation = 49399797;
+    }
+    optional continuationContents continuation = 10;
     message headerRender {
         message headerContent {
             repeated textRuns text = 1;

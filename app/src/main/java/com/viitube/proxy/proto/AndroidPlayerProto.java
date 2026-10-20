@@ -477,6 +477,7 @@ public final class AndroidPlayerProto {
                 private String mXtags = "";
                 private int mTwentyFive = 0;
                 private String mQualityLabel = "";
+                private int mSortKey = 0;
                 private final java.util.List<AndroidPlayerProto.AudioTrackData> mAudioTrack = new java.util.ArrayList<AndroidPlayerProto.AudioTrackData>();
                 private int mAudioBitrate = 0;
                 private int mAudioSample = 0;
@@ -521,6 +522,8 @@ public final class AndroidPlayerProto {
                 public int getTwentyFive() { return mTwentyFive; }
                 public Format setQualityLabel(String value) { mQualityLabel = value == null ? "" : value; return this; }
                 public String getQualityLabel() { return mQualityLabel; }
+                public Format setSortKey(int value) { mSortKey = value; return this; }
+                public int getSortKey() { return mSortKey; }
                 public Format addAudioTrack(AndroidPlayerProto.AudioTrackData value) {
                     if (value == null) throw new NullPointerException("audioTrack");
                     mAudioTrack.add(value);
@@ -554,6 +557,7 @@ public final class AndroidPlayerProto {
                     if (mXtags.length() > 0) writer.writeString(23, mXtags);
                     if (mTwentyFive != 0) writer.writeInt32(25, mTwentyFive);
                     if (mQualityLabel.length() > 0) writer.writeString(26, mQualityLabel);
+                    if (mSortKey != 0) writer.writeInt32(31, mSortKey);
                     for (int i = 0; i < mAudioTrack.size(); i++) writer.writeMessage(28, mAudioTrack.get(i));
                     if (mAudioBitrate != 0) writer.writeInt32(44, mAudioBitrate);
                     if (mAudioSample != 0) writer.writeInt32(45, mAudioSample);
@@ -617,6 +621,10 @@ public final class AndroidPlayerProto {
                             case 26:
                                 if ((tag & 7) != 2) { reader.skip(tag); break; }
                                 mQualityLabel = reader.readString();
+                                break;
+                            case 31:
+                                if ((tag & 7) != 0) { reader.skip(tag); break; }
+                                mSortKey = reader.readInt32();
                                 break;
                             case 28:
                                 if ((tag & 7) != 2) { reader.skip(tag); break; }

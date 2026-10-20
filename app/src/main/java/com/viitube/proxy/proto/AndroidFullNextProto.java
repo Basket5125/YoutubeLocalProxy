@@ -79,12 +79,18 @@ public final class AndroidFullNextProto {
         /** proto: android_full_next.textRuns.textRun */
         public static final class TextRun extends ProtoMessage {
             private String mText = "";
+            private int mBold = 0;
+            private boolean hasBold;
             public TextRun setText(String value) { mText = value == null ? "" : value; return this; }
             public String getText() { return mText; }
+            public TextRun setBold(int value) { mBold = value; hasBold = true; return this; }
+            public int getBold() { return mBold; }
+            public boolean hasBold() { return hasBold; }
 
             @Override
             public void writeTo(ProtoWriter writer) {
                 if (mText.length() > 0) writer.writeString(1, mText);
+                if (hasBold) writer.writeInt32(2, mBold);
             }
 
             @Override
@@ -95,6 +101,11 @@ public final class AndroidFullNextProto {
                         case 1:
                             if ((tag & 7) != 2) { reader.skip(tag); break; }
                             mText = reader.readString();
+                            break;
+                        case 2:
+                            if ((tag & 7) != 0) { reader.skip(tag); break; }
+                            mBold = reader.readInt32();
+                            hasBold = true;
                             break;
                         default:
                             reader.skip(tag);
@@ -677,6 +688,8 @@ public final class AndroidFullNextProto {
                 private AndroidFullNextProto.TextRuns mSubscribeLabel;
                 private AndroidFullNextProto.TextRuns mUnsubscribeLabel;
                 private final java.util.List<AndroidFullNextProto.AuthorRendererData.SubscribeButtonData.SubContents.SubAction> mAction = new java.util.ArrayList<AndroidFullNextProto.AuthorRendererData.SubscribeButtonData.SubContents.SubAction>();
+                private AndroidFullNextProto.TextRuns mShortSubscriberCount;
+                private AndroidFullNextProto.TextRuns mLongSubscriberCount;
                 private String mIdentifier = "";
                 public SubContents setSubscribeButton(AndroidFullNextProto.TextRuns value) { mSubscribeButton = value; return this; }
                 public AndroidFullNextProto.TextRuns getSubscribeButton() { return mSubscribeButton; }
@@ -712,6 +725,12 @@ public final class AndroidFullNextProto {
                 public java.util.List<AndroidFullNextProto.AuthorRendererData.SubscribeButtonData.SubContents.SubAction> getActionList() { return mAction; }
                 public int getActionCount() { return mAction.size(); }
                 public AndroidFullNextProto.AuthorRendererData.SubscribeButtonData.SubContents.SubAction getAction(int index) { return mAction.get(index); }
+                public SubContents setShortSubscriberCount(AndroidFullNextProto.TextRuns value) { mShortSubscriberCount = value; return this; }
+                public AndroidFullNextProto.TextRuns getShortSubscriberCount() { return mShortSubscriberCount; }
+                public boolean hasShortSubscriberCount() { return mShortSubscriberCount != null; }
+                public SubContents setLongSubscriberCount(AndroidFullNextProto.TextRuns value) { mLongSubscriberCount = value; return this; }
+                public AndroidFullNextProto.TextRuns getLongSubscriberCount() { return mLongSubscriberCount; }
+                public boolean hasLongSubscriberCount() { return mLongSubscriberCount != null; }
                 public SubContents setIdentifier(String value) { mIdentifier = value == null ? "" : value; return this; }
                 public String getIdentifier() { return mIdentifier; }
 
@@ -727,6 +746,8 @@ public final class AndroidFullNextProto {
                     if (mSubscribeLabel != null) writer.writeMessage(13, mSubscribeLabel);
                     if (mUnsubscribeLabel != null) writer.writeMessage(16, mUnsubscribeLabel);
                     for (int i = 0; i < mAction.size(); i++) writer.writeMessage(18, mAction.get(i));
+                    if (mShortSubscriberCount != null) writer.writeMessage(20, mShortSubscriberCount);
+                    if (mLongSubscriberCount != null) writer.writeMessage(23, mLongSubscriberCount);
                     if (mIdentifier.length() > 0) writer.writeString(31, mIdentifier);
                 }
 
@@ -782,6 +803,16 @@ public final class AndroidFullNextProto {
                             case 18:
                                 if ((tag & 7) != 2) { reader.skip(tag); break; }
                                 { AndroidFullNextProto.AuthorRendererData.SubscribeButtonData.SubContents.SubAction item = new AndroidFullNextProto.AuthorRendererData.SubscribeButtonData.SubContents.SubAction(); item.mergeFrom(reader.readMessage()); mAction.add(item); }
+                                break;
+                            case 20:
+                                if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                if (mShortSubscriberCount == null) mShortSubscriberCount = new AndroidFullNextProto.TextRuns();
+                                mShortSubscriberCount.mergeFrom(reader.readMessage());
+                                break;
+                            case 23:
+                                if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                if (mLongSubscriberCount == null) mLongSubscriberCount = new AndroidFullNextProto.TextRuns();
+                                mLongSubscriberCount.mergeFrom(reader.readMessage());
                                 break;
                             case 31:
                                 if ((tag & 7) != 2) { reader.skip(tag); break; }
@@ -1653,6 +1684,584 @@ public final class AndroidFullNextProto {
         }
     }
 
+    /** proto: android_full_next.iconContainer */
+    public static final class IconContainer extends ProtoMessage {
+        private int mIconType = 0;
+        public IconContainer setIconType(int value) { mIconType = value; return this; }
+        public int getIconType() { return mIconType; }
+
+        @Override
+        public void writeTo(ProtoWriter writer) {
+            if (mIconType != 0) writer.writeInt32(1, mIconType);
+        }
+
+        @Override
+        public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+            while (reader.hasMore()) {
+                int tag = reader.readTag();
+                switch (tag >>> 3) {
+                    case 1:
+                        if ((tag & 7) != 0) { reader.skip(tag); break; }
+                        mIconType = reader.readInt32();
+                        break;
+                    default:
+                        reader.skip(tag);
+                }
+            }
+        }
+
+        public static IconContainer parseFrom(byte[] data) throws java.io.IOException {
+            IconContainer message = new IconContainer();
+            message.mergeFrom(new ProtoReader(data, 0, data.length));
+            return message;
+        }
+    }
+
+    /** proto: android_full_next.buttonRenderer */
+    public static final class ButtonRenderer extends ProtoMessage {
+        private AndroidFullNextProto.TextRuns mText;
+        private AndroidFullNextProto.ButtonEndpoint mServiceEndpoint;
+        private AndroidFullNextProto.IconContainer mIcon;
+        private AndroidFullNextProto.ButtonEndpoint mNavigationEndpoint;
+        public ButtonRenderer setText(AndroidFullNextProto.TextRuns value) { mText = value; return this; }
+        public AndroidFullNextProto.TextRuns getText() { return mText; }
+        public boolean hasText() { return mText != null; }
+        public ButtonRenderer setServiceEndpoint(AndroidFullNextProto.ButtonEndpoint value) { mServiceEndpoint = value; return this; }
+        public AndroidFullNextProto.ButtonEndpoint getServiceEndpoint() { return mServiceEndpoint; }
+        public boolean hasServiceEndpoint() { return mServiceEndpoint != null; }
+        public ButtonRenderer setIcon(AndroidFullNextProto.IconContainer value) { mIcon = value; return this; }
+        public AndroidFullNextProto.IconContainer getIcon() { return mIcon; }
+        public boolean hasIcon() { return mIcon != null; }
+        public ButtonRenderer setNavigationEndpoint(AndroidFullNextProto.ButtonEndpoint value) { mNavigationEndpoint = value; return this; }
+        public AndroidFullNextProto.ButtonEndpoint getNavigationEndpoint() { return mNavigationEndpoint; }
+        public boolean hasNavigationEndpoint() { return mNavigationEndpoint != null; }
+
+        @Override
+        public void writeTo(ProtoWriter writer) {
+            if (mText != null) writer.writeMessage(5, mText);
+            if (mServiceEndpoint != null) writer.writeMessage(7, mServiceEndpoint);
+            if (mIcon != null) writer.writeMessage(8, mIcon);
+            if (mNavigationEndpoint != null) writer.writeMessage(9, mNavigationEndpoint);
+        }
+
+        @Override
+        public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+            while (reader.hasMore()) {
+                int tag = reader.readTag();
+                switch (tag >>> 3) {
+                    case 5:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mText == null) mText = new AndroidFullNextProto.TextRuns();
+                        mText.mergeFrom(reader.readMessage());
+                        break;
+                    case 7:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mServiceEndpoint == null) mServiceEndpoint = new AndroidFullNextProto.ButtonEndpoint();
+                        mServiceEndpoint.mergeFrom(reader.readMessage());
+                        break;
+                    case 8:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mIcon == null) mIcon = new AndroidFullNextProto.IconContainer();
+                        mIcon.mergeFrom(reader.readMessage());
+                        break;
+                    case 9:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mNavigationEndpoint == null) mNavigationEndpoint = new AndroidFullNextProto.ButtonEndpoint();
+                        mNavigationEndpoint.mergeFrom(reader.readMessage());
+                        break;
+                    default:
+                        reader.skip(tag);
+                }
+            }
+        }
+
+        public static ButtonRenderer parseFrom(byte[] data) throws java.io.IOException {
+            ButtonRenderer message = new ButtonRenderer();
+            message.mergeFrom(new ProtoReader(data, 0, data.length));
+            return message;
+        }
+    }
+
+    /** proto: android_full_next.buttonEndpoint */
+    public static final class ButtonEndpoint extends ProtoMessage {
+
+        /** proto: android_full_next.buttonEndpoint.shareIntent */
+        public static final class ShareIntent extends ProtoMessage {
+
+            /** proto: android_full_next.buttonEndpoint.shareIntent.extra */
+            public static final class Extra extends ProtoMessage {
+                private String mKey = "";
+                private String mValue = "";
+                public Extra setKey(String value) { mKey = value == null ? "" : value; return this; }
+                public String getKey() { return mKey; }
+                public Extra setValue(String value) { mValue = value == null ? "" : value; return this; }
+                public String getValue() { return mValue; }
+
+                @Override
+                public void writeTo(ProtoWriter writer) {
+                    if (mKey.length() > 0) writer.writeString(1, mKey);
+                    if (mValue.length() > 0) writer.writeString(2, mValue);
+                }
+
+                @Override
+                public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                    while (reader.hasMore()) {
+                        int tag = reader.readTag();
+                        switch (tag >>> 3) {
+                            case 1:
+                                if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                mKey = reader.readString();
+                                break;
+                            case 2:
+                                if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                mValue = reader.readString();
+                                break;
+                            default:
+                                reader.skip(tag);
+                        }
+                    }
+                }
+
+                public static Extra parseFrom(byte[] data) throws java.io.IOException {
+                    Extra message = new Extra();
+                    message.mergeFrom(new ProtoReader(data, 0, data.length));
+                    return message;
+                }
+            }
+            private final java.util.List<AndroidFullNextProto.ButtonEndpoint.ShareIntent.Extra> mExtras = new java.util.ArrayList<AndroidFullNextProto.ButtonEndpoint.ShareIntent.Extra>();
+            private String mType = "";
+            private String mChooserTitle = "";
+            public ShareIntent addExtras(AndroidFullNextProto.ButtonEndpoint.ShareIntent.Extra value) {
+                if (value == null) throw new NullPointerException("extras");
+                mExtras.add(value);
+                return this;
+            }
+            public java.util.List<AndroidFullNextProto.ButtonEndpoint.ShareIntent.Extra> getExtrasList() { return mExtras; }
+            public int getExtrasCount() { return mExtras.size(); }
+            public AndroidFullNextProto.ButtonEndpoint.ShareIntent.Extra getExtras(int index) { return mExtras.get(index); }
+            public ShareIntent setType(String value) { mType = value == null ? "" : value; return this; }
+            public String getType() { return mType; }
+            public ShareIntent setChooserTitle(String value) { mChooserTitle = value == null ? "" : value; return this; }
+            public String getChooserTitle() { return mChooserTitle; }
+
+            @Override
+            public void writeTo(ProtoWriter writer) {
+                for (int i = 0; i < mExtras.size(); i++) writer.writeMessage(1, mExtras.get(i));
+                if (mType.length() > 0) writer.writeString(2, mType);
+                if (mChooserTitle.length() > 0) writer.writeString(4, mChooserTitle);
+            }
+
+            @Override
+            public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                while (reader.hasMore()) {
+                    int tag = reader.readTag();
+                    switch (tag >>> 3) {
+                        case 1:
+                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                            { AndroidFullNextProto.ButtonEndpoint.ShareIntent.Extra item = new AndroidFullNextProto.ButtonEndpoint.ShareIntent.Extra(); item.mergeFrom(reader.readMessage()); mExtras.add(item); }
+                            break;
+                        case 2:
+                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                            mType = reader.readString();
+                            break;
+                        case 4:
+                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                            mChooserTitle = reader.readString();
+                            break;
+                        default:
+                            reader.skip(tag);
+                    }
+                }
+            }
+
+            public static ShareIntent parseFrom(byte[] data) throws java.io.IOException {
+                ShareIntent message = new ShareIntent();
+                message.mergeFrom(new ProtoReader(data, 0, data.length));
+                return message;
+            }
+        }
+        private AndroidFullNextProto.ButtonEndpoint.ShareIntent mShare;
+        public ButtonEndpoint setShare(AndroidFullNextProto.ButtonEndpoint.ShareIntent value) { mShare = value; return this; }
+        public AndroidFullNextProto.ButtonEndpoint.ShareIntent getShare() { return mShare; }
+        public boolean hasShare() { return mShare != null; }
+
+        @Override
+        public void writeTo(ProtoWriter writer) {
+            if (mShare != null) writer.writeMessage(106983893, mShare);
+        }
+
+        @Override
+        public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+            while (reader.hasMore()) {
+                int tag = reader.readTag();
+                switch (tag >>> 3) {
+                    case 106983893:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mShare == null) mShare = new AndroidFullNextProto.ButtonEndpoint.ShareIntent();
+                        mShare.mergeFrom(reader.readMessage());
+                        break;
+                    default:
+                        reader.skip(tag);
+                }
+            }
+        }
+
+        public static ButtonEndpoint parseFrom(byte[] data) throws java.io.IOException {
+            ButtonEndpoint message = new ButtonEndpoint();
+            message.mergeFrom(new ProtoReader(data, 0, data.length));
+            return message;
+        }
+    }
+
+    /** proto: android_full_next.slimMetadataButton */
+    public static final class SlimMetadataButton extends ProtoMessage {
+
+        /** proto: android_full_next.slimMetadataButton.slimMetadataButtonRenderer */
+        public static final class SlimMetadataButtonRenderer extends ProtoMessage {
+
+            /** proto: android_full_next.slimMetadataButton.slimMetadataButtonRenderer.buttonContainer */
+            public static final class ButtonContainer extends ProtoMessage {
+                private AndroidFullNextProto.ButtonRenderer mButton;
+                public ButtonContainer setButton(AndroidFullNextProto.ButtonRenderer value) { mButton = value; return this; }
+                public AndroidFullNextProto.ButtonRenderer getButton() { return mButton; }
+                public boolean hasButton() { return mButton != null; }
+
+                @Override
+                public void writeTo(ProtoWriter writer) {
+                    if (mButton != null) writer.writeMessage(65153809, mButton);
+                }
+
+                @Override
+                public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                    while (reader.hasMore()) {
+                        int tag = reader.readTag();
+                        switch (tag >>> 3) {
+                            case 65153809:
+                                if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                if (mButton == null) mButton = new AndroidFullNextProto.ButtonRenderer();
+                                mButton.mergeFrom(reader.readMessage());
+                                break;
+                            default:
+                                reader.skip(tag);
+                        }
+                    }
+                }
+
+                public static ButtonContainer parseFrom(byte[] data) throws java.io.IOException {
+                    ButtonContainer message = new ButtonContainer();
+                    message.mergeFrom(new ProtoReader(data, 0, data.length));
+                    return message;
+                }
+            }
+            private AndroidFullNextProto.SlimMetadataButton.SlimMetadataButtonRenderer.ButtonContainer mButton;
+            public SlimMetadataButtonRenderer setButton(AndroidFullNextProto.SlimMetadataButton.SlimMetadataButtonRenderer.ButtonContainer value) { mButton = value; return this; }
+            public AndroidFullNextProto.SlimMetadataButton.SlimMetadataButtonRenderer.ButtonContainer getButton() { return mButton; }
+            public boolean hasButton() { return mButton != null; }
+
+            @Override
+            public void writeTo(ProtoWriter writer) {
+                if (mButton != null) writer.writeMessage(22, mButton);
+            }
+
+            @Override
+            public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                while (reader.hasMore()) {
+                    int tag = reader.readTag();
+                    switch (tag >>> 3) {
+                        case 22:
+                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                            if (mButton == null) mButton = new AndroidFullNextProto.SlimMetadataButton.SlimMetadataButtonRenderer.ButtonContainer();
+                            mButton.mergeFrom(reader.readMessage());
+                            break;
+                        default:
+                            reader.skip(tag);
+                    }
+                }
+            }
+
+            public static SlimMetadataButtonRenderer parseFrom(byte[] data) throws java.io.IOException {
+                SlimMetadataButtonRenderer message = new SlimMetadataButtonRenderer();
+                message.mergeFrom(new ProtoReader(data, 0, data.length));
+                return message;
+            }
+        }
+        private final java.util.List<AndroidFullNextProto.SlimMetadataButton.SlimMetadataButtonRenderer> mButton = new java.util.ArrayList<AndroidFullNextProto.SlimMetadataButton.SlimMetadataButtonRenderer>();
+        public SlimMetadataButton addButton(AndroidFullNextProto.SlimMetadataButton.SlimMetadataButtonRenderer value) {
+            if (value == null) throw new NullPointerException("button");
+            mButton.add(value);
+            return this;
+        }
+        public java.util.List<AndroidFullNextProto.SlimMetadataButton.SlimMetadataButtonRenderer> getButtonList() { return mButton; }
+        public int getButtonCount() { return mButton.size(); }
+        public AndroidFullNextProto.SlimMetadataButton.SlimMetadataButtonRenderer getButton(int index) { return mButton.get(index); }
+
+        @Override
+        public void writeTo(ProtoWriter writer) {
+            for (int i = 0; i < mButton.size(); i++) writer.writeMessage(124608017, mButton.get(i));
+        }
+
+        @Override
+        public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+            while (reader.hasMore()) {
+                int tag = reader.readTag();
+                switch (tag >>> 3) {
+                    case 124608017:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        { AndroidFullNextProto.SlimMetadataButton.SlimMetadataButtonRenderer item = new AndroidFullNextProto.SlimMetadataButton.SlimMetadataButtonRenderer(); item.mergeFrom(reader.readMessage()); mButton.add(item); }
+                        break;
+                    default:
+                        reader.skip(tag);
+                }
+            }
+        }
+
+        public static SlimMetadataButton parseFrom(byte[] data) throws java.io.IOException {
+            SlimMetadataButton message = new SlimMetadataButton();
+            message.mergeFrom(new ProtoReader(data, 0, data.length));
+            return message;
+        }
+    }
+
+    /** proto: android_full_next.slimOwner */
+    public static final class SlimOwner extends ProtoMessage {
+
+        /** proto: android_full_next.slimOwner.slimOwnerRenderer */
+        public static final class SlimOwnerRenderer extends ProtoMessage {
+
+            /** proto: android_full_next.slimOwner.slimOwnerRenderer.subscribeContainer */
+            public static final class SubscribeContainer extends ProtoMessage {
+                private final java.util.List<AndroidFullNextProto.AuthorRendererData.SubscribeButtonData.SubContents> mButton = new java.util.ArrayList<AndroidFullNextProto.AuthorRendererData.SubscribeButtonData.SubContents>();
+                public SubscribeContainer addButton(AndroidFullNextProto.AuthorRendererData.SubscribeButtonData.SubContents value) {
+                    if (value == null) throw new NullPointerException("button");
+                    mButton.add(value);
+                    return this;
+                }
+                public java.util.List<AndroidFullNextProto.AuthorRendererData.SubscribeButtonData.SubContents> getButtonList() { return mButton; }
+                public int getButtonCount() { return mButton.size(); }
+                public AndroidFullNextProto.AuthorRendererData.SubscribeButtonData.SubContents getButton(int index) { return mButton.get(index); }
+
+                @Override
+                public void writeTo(ProtoWriter writer) {
+                    for (int i = 0; i < mButton.size(); i++) writer.writeMessage(55419609, mButton.get(i));
+                }
+
+                @Override
+                public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                    while (reader.hasMore()) {
+                        int tag = reader.readTag();
+                        switch (tag >>> 3) {
+                            case 55419609:
+                                if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                { AndroidFullNextProto.AuthorRendererData.SubscribeButtonData.SubContents item = new AndroidFullNextProto.AuthorRendererData.SubscribeButtonData.SubContents(); item.mergeFrom(reader.readMessage()); mButton.add(item); }
+                                break;
+                            default:
+                                reader.skip(tag);
+                        }
+                    }
+                }
+
+                public static SubscribeContainer parseFrom(byte[] data) throws java.io.IOException {
+                    SubscribeContainer message = new SubscribeContainer();
+                    message.mergeFrom(new ProtoReader(data, 0, data.length));
+                    return message;
+                }
+            }
+            private AndroidFullNextProto.Thumbnails mAvatar;
+            private AndroidFullNextProto.TextRuns mTitle;
+            private AndroidFullNextProto.BrowseNavigation mNavigation;
+            private AndroidFullNextProto.SlimOwner.SlimOwnerRenderer.SubscribeContainer mSubscribeButton;
+            public SlimOwnerRenderer setAvatar(AndroidFullNextProto.Thumbnails value) { mAvatar = value; return this; }
+            public AndroidFullNextProto.Thumbnails getAvatar() { return mAvatar; }
+            public boolean hasAvatar() { return mAvatar != null; }
+            public SlimOwnerRenderer setTitle(AndroidFullNextProto.TextRuns value) { mTitle = value; return this; }
+            public AndroidFullNextProto.TextRuns getTitle() { return mTitle; }
+            public boolean hasTitle() { return mTitle != null; }
+            public SlimOwnerRenderer setNavigation(AndroidFullNextProto.BrowseNavigation value) { mNavigation = value; return this; }
+            public AndroidFullNextProto.BrowseNavigation getNavigation() { return mNavigation; }
+            public boolean hasNavigation() { return mNavigation != null; }
+            public SlimOwnerRenderer setSubscribeButton(AndroidFullNextProto.SlimOwner.SlimOwnerRenderer.SubscribeContainer value) { mSubscribeButton = value; return this; }
+            public AndroidFullNextProto.SlimOwner.SlimOwnerRenderer.SubscribeContainer getSubscribeButton() { return mSubscribeButton; }
+            public boolean hasSubscribeButton() { return mSubscribeButton != null; }
+
+            @Override
+            public void writeTo(ProtoWriter writer) {
+                if (mAvatar != null) writer.writeMessage(1, mAvatar);
+                if (mTitle != null) writer.writeMessage(2, mTitle);
+                if (mNavigation != null) writer.writeMessage(3, mNavigation);
+                if (mSubscribeButton != null) writer.writeMessage(4, mSubscribeButton);
+            }
+
+            @Override
+            public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                while (reader.hasMore()) {
+                    int tag = reader.readTag();
+                    switch (tag >>> 3) {
+                        case 1:
+                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                            if (mAvatar == null) mAvatar = new AndroidFullNextProto.Thumbnails();
+                            mAvatar.mergeFrom(reader.readMessage());
+                            break;
+                        case 2:
+                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                            if (mTitle == null) mTitle = new AndroidFullNextProto.TextRuns();
+                            mTitle.mergeFrom(reader.readMessage());
+                            break;
+                        case 3:
+                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                            if (mNavigation == null) mNavigation = new AndroidFullNextProto.BrowseNavigation();
+                            mNavigation.mergeFrom(reader.readMessage());
+                            break;
+                        case 4:
+                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                            if (mSubscribeButton == null) mSubscribeButton = new AndroidFullNextProto.SlimOwner.SlimOwnerRenderer.SubscribeContainer();
+                            mSubscribeButton.mergeFrom(reader.readMessage());
+                            break;
+                        default:
+                            reader.skip(tag);
+                    }
+                }
+            }
+
+            public static SlimOwnerRenderer parseFrom(byte[] data) throws java.io.IOException {
+                SlimOwnerRenderer message = new SlimOwnerRenderer();
+                message.mergeFrom(new ProtoReader(data, 0, data.length));
+                return message;
+            }
+        }
+        private final java.util.List<AndroidFullNextProto.SlimOwner.SlimOwnerRenderer> mOwner = new java.util.ArrayList<AndroidFullNextProto.SlimOwner.SlimOwnerRenderer>();
+        public SlimOwner addOwner(AndroidFullNextProto.SlimOwner.SlimOwnerRenderer value) {
+            if (value == null) throw new NullPointerException("owner");
+            mOwner.add(value);
+            return this;
+        }
+        public java.util.List<AndroidFullNextProto.SlimOwner.SlimOwnerRenderer> getOwnerList() { return mOwner; }
+        public int getOwnerCount() { return mOwner.size(); }
+        public AndroidFullNextProto.SlimOwner.SlimOwnerRenderer getOwner(int index) { return mOwner.get(index); }
+
+        @Override
+        public void writeTo(ProtoWriter writer) {
+            for (int i = 0; i < mOwner.size(); i++) writer.writeMessage(119170535, mOwner.get(i));
+        }
+
+        @Override
+        public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+            while (reader.hasMore()) {
+                int tag = reader.readTag();
+                switch (tag >>> 3) {
+                    case 119170535:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        { AndroidFullNextProto.SlimOwner.SlimOwnerRenderer item = new AndroidFullNextProto.SlimOwner.SlimOwnerRenderer(); item.mergeFrom(reader.readMessage()); mOwner.add(item); }
+                        break;
+                    default:
+                        reader.skip(tag);
+                }
+            }
+        }
+
+        public static SlimOwner parseFrom(byte[] data) throws java.io.IOException {
+            SlimOwner message = new SlimOwner();
+            message.mergeFrom(new ProtoReader(data, 0, data.length));
+            return message;
+        }
+    }
+
+    /** proto: android_full_next.slimVideoMetadataRenderer */
+    public static final class SlimVideoMetadataRenderer extends ProtoMessage {
+        private AndroidFullNextProto.TextRuns mTitle;
+        private AndroidFullNextProto.TextRuns mCollapsedSubtitle;
+        private AndroidFullNextProto.TextRuns mExpandedSubtitle;
+        private final java.util.List<AndroidFullNextProto.SlimMetadataButton> mButtons = new java.util.ArrayList<AndroidFullNextProto.SlimMetadataButton>();
+        private AndroidFullNextProto.SlimOwner mOwner;
+        private AndroidFullNextProto.TextRuns mDescription;
+        private String mVideoId = "";
+        public SlimVideoMetadataRenderer setTitle(AndroidFullNextProto.TextRuns value) { mTitle = value; return this; }
+        public AndroidFullNextProto.TextRuns getTitle() { return mTitle; }
+        public boolean hasTitle() { return mTitle != null; }
+        public SlimVideoMetadataRenderer setCollapsedSubtitle(AndroidFullNextProto.TextRuns value) { mCollapsedSubtitle = value; return this; }
+        public AndroidFullNextProto.TextRuns getCollapsedSubtitle() { return mCollapsedSubtitle; }
+        public boolean hasCollapsedSubtitle() { return mCollapsedSubtitle != null; }
+        public SlimVideoMetadataRenderer setExpandedSubtitle(AndroidFullNextProto.TextRuns value) { mExpandedSubtitle = value; return this; }
+        public AndroidFullNextProto.TextRuns getExpandedSubtitle() { return mExpandedSubtitle; }
+        public boolean hasExpandedSubtitle() { return mExpandedSubtitle != null; }
+        public SlimVideoMetadataRenderer addButtons(AndroidFullNextProto.SlimMetadataButton value) {
+            if (value == null) throw new NullPointerException("buttons");
+            mButtons.add(value);
+            return this;
+        }
+        public java.util.List<AndroidFullNextProto.SlimMetadataButton> getButtonsList() { return mButtons; }
+        public int getButtonsCount() { return mButtons.size(); }
+        public AndroidFullNextProto.SlimMetadataButton getButtons(int index) { return mButtons.get(index); }
+        public SlimVideoMetadataRenderer setOwner(AndroidFullNextProto.SlimOwner value) { mOwner = value; return this; }
+        public AndroidFullNextProto.SlimOwner getOwner() { return mOwner; }
+        public boolean hasOwner() { return mOwner != null; }
+        public SlimVideoMetadataRenderer setDescription(AndroidFullNextProto.TextRuns value) { mDescription = value; return this; }
+        public AndroidFullNextProto.TextRuns getDescription() { return mDescription; }
+        public boolean hasDescription() { return mDescription != null; }
+        public SlimVideoMetadataRenderer setVideoId(String value) { mVideoId = value == null ? "" : value; return this; }
+        public String getVideoId() { return mVideoId; }
+
+        @Override
+        public void writeTo(ProtoWriter writer) {
+            if (mTitle != null) writer.writeMessage(3, mTitle);
+            if (mCollapsedSubtitle != null) writer.writeMessage(4, mCollapsedSubtitle);
+            if (mExpandedSubtitle != null) writer.writeMessage(5, mExpandedSubtitle);
+            for (int i = 0; i < mButtons.size(); i++) writer.writeMessage(6, mButtons.get(i));
+            if (mOwner != null) writer.writeMessage(8, mOwner);
+            if (mDescription != null) writer.writeMessage(9, mDescription);
+            if (mVideoId.length() > 0) writer.writeString(14, mVideoId);
+        }
+
+        @Override
+        public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+            while (reader.hasMore()) {
+                int tag = reader.readTag();
+                switch (tag >>> 3) {
+                    case 3:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mTitle == null) mTitle = new AndroidFullNextProto.TextRuns();
+                        mTitle.mergeFrom(reader.readMessage());
+                        break;
+                    case 4:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mCollapsedSubtitle == null) mCollapsedSubtitle = new AndroidFullNextProto.TextRuns();
+                        mCollapsedSubtitle.mergeFrom(reader.readMessage());
+                        break;
+                    case 5:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mExpandedSubtitle == null) mExpandedSubtitle = new AndroidFullNextProto.TextRuns();
+                        mExpandedSubtitle.mergeFrom(reader.readMessage());
+                        break;
+                    case 6:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        { AndroidFullNextProto.SlimMetadataButton item = new AndroidFullNextProto.SlimMetadataButton(); item.mergeFrom(reader.readMessage()); mButtons.add(item); }
+                        break;
+                    case 8:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mOwner == null) mOwner = new AndroidFullNextProto.SlimOwner();
+                        mOwner.mergeFrom(reader.readMessage());
+                        break;
+                    case 9:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mDescription == null) mDescription = new AndroidFullNextProto.TextRuns();
+                        mDescription.mergeFrom(reader.readMessage());
+                        break;
+                    case 14:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        mVideoId = reader.readString();
+                        break;
+                    default:
+                        reader.skip(tag);
+                }
+            }
+        }
+
+        public static SlimVideoMetadataRenderer parseFrom(byte[] data) throws java.io.IOException {
+            SlimVideoMetadataRenderer message = new SlimVideoMetadataRenderer();
+            message.mergeFrom(new ProtoReader(data, 0, data.length));
+            return message;
+        }
+    }
+
     /** proto: android_full_next.compactVideoRenderer */
     public static final class CompactVideoRenderer extends ProtoMessage {
         private String mVideoId = "";
@@ -1786,6 +2395,231 @@ public final class AndroidFullNextProto {
         }
     }
 
+    /** proto: android_full_next.continuations */
+    public static final class Continuations extends ProtoMessage {
+
+        /** proto: android_full_next.continuations.nextContinuationData */
+        public static final class NextContinuationData extends ProtoMessage {
+            private String mToken = "";
+            public NextContinuationData setToken(String value) { mToken = value == null ? "" : value; return this; }
+            public String getToken() { return mToken; }
+
+            @Override
+            public void writeTo(ProtoWriter writer) {
+                if (mToken.length() > 0) writer.writeString(1, mToken);
+            }
+
+            @Override
+            public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                while (reader.hasMore()) {
+                    int tag = reader.readTag();
+                    switch (tag >>> 3) {
+                        case 1:
+                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                            mToken = reader.readString();
+                            break;
+                        default:
+                            reader.skip(tag);
+                    }
+                }
+            }
+
+            public static NextContinuationData parseFrom(byte[] data) throws java.io.IOException {
+                NextContinuationData message = new NextContinuationData();
+                message.mergeFrom(new ProtoReader(data, 0, data.length));
+                return message;
+            }
+        }
+        private final java.util.List<AndroidFullNextProto.Continuations.NextContinuationData> mNext = new java.util.ArrayList<AndroidFullNextProto.Continuations.NextContinuationData>();
+        public Continuations addNext(AndroidFullNextProto.Continuations.NextContinuationData value) {
+            if (value == null) throw new NullPointerException("next");
+            mNext.add(value);
+            return this;
+        }
+        public java.util.List<AndroidFullNextProto.Continuations.NextContinuationData> getNextList() { return mNext; }
+        public int getNextCount() { return mNext.size(); }
+        public AndroidFullNextProto.Continuations.NextContinuationData getNext(int index) { return mNext.get(index); }
+
+        @Override
+        public void writeTo(ProtoWriter writer) {
+            for (int i = 0; i < mNext.size(); i++) writer.writeMessage(52047593, mNext.get(i));
+        }
+
+        @Override
+        public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+            while (reader.hasMore()) {
+                int tag = reader.readTag();
+                switch (tag >>> 3) {
+                    case 52047593:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        { AndroidFullNextProto.Continuations.NextContinuationData item = new AndroidFullNextProto.Continuations.NextContinuationData(); item.mergeFrom(reader.readMessage()); mNext.add(item); }
+                        break;
+                    default:
+                        reader.skip(tag);
+                }
+            }
+        }
+
+        public static Continuations parseFrom(byte[] data) throws java.io.IOException {
+            Continuations message = new Continuations();
+            message.mergeFrom(new ProtoReader(data, 0, data.length));
+            return message;
+        }
+    }
+
+    /** proto: android_full_next.commentRenderer */
+    public static final class CommentRenderer extends ProtoMessage {
+        private AndroidFullNextProto.TextRuns mAuthor;
+        private AndroidFullNextProto.Thumbnails mAuthorThumbnail;
+        private AndroidFullNextProto.BrowseNavigation mAuthorEndpoint;
+        private AndroidFullNextProto.TextRuns mContent;
+        private String mCommentId = "";
+        private AndroidFullNextProto.TextRuns mPublishedTime;
+        public CommentRenderer setAuthor(AndroidFullNextProto.TextRuns value) { mAuthor = value; return this; }
+        public AndroidFullNextProto.TextRuns getAuthor() { return mAuthor; }
+        public boolean hasAuthor() { return mAuthor != null; }
+        public CommentRenderer setAuthorThumbnail(AndroidFullNextProto.Thumbnails value) { mAuthorThumbnail = value; return this; }
+        public AndroidFullNextProto.Thumbnails getAuthorThumbnail() { return mAuthorThumbnail; }
+        public boolean hasAuthorThumbnail() { return mAuthorThumbnail != null; }
+        public CommentRenderer setAuthorEndpoint(AndroidFullNextProto.BrowseNavigation value) { mAuthorEndpoint = value; return this; }
+        public AndroidFullNextProto.BrowseNavigation getAuthorEndpoint() { return mAuthorEndpoint; }
+        public boolean hasAuthorEndpoint() { return mAuthorEndpoint != null; }
+        public CommentRenderer setContent(AndroidFullNextProto.TextRuns value) { mContent = value; return this; }
+        public AndroidFullNextProto.TextRuns getContent() { return mContent; }
+        public boolean hasContent() { return mContent != null; }
+        public CommentRenderer setCommentId(String value) { mCommentId = value == null ? "" : value; return this; }
+        public String getCommentId() { return mCommentId; }
+        public CommentRenderer setPublishedTime(AndroidFullNextProto.TextRuns value) { mPublishedTime = value; return this; }
+        public AndroidFullNextProto.TextRuns getPublishedTime() { return mPublishedTime; }
+        public boolean hasPublishedTime() { return mPublishedTime != null; }
+
+        @Override
+        public void writeTo(ProtoWriter writer) {
+            if (mAuthor != null) writer.writeMessage(1, mAuthor);
+            if (mAuthorThumbnail != null) writer.writeMessage(2, mAuthorThumbnail);
+            if (mAuthorEndpoint != null) writer.writeMessage(3, mAuthorEndpoint);
+            if (mContent != null) writer.writeMessage(4, mContent);
+            if (mCommentId.length() > 0) writer.writeString(9, mCommentId);
+            if (mPublishedTime != null) writer.writeMessage(28, mPublishedTime);
+        }
+
+        @Override
+        public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+            while (reader.hasMore()) {
+                int tag = reader.readTag();
+                switch (tag >>> 3) {
+                    case 1:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mAuthor == null) mAuthor = new AndroidFullNextProto.TextRuns();
+                        mAuthor.mergeFrom(reader.readMessage());
+                        break;
+                    case 2:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mAuthorThumbnail == null) mAuthorThumbnail = new AndroidFullNextProto.Thumbnails();
+                        mAuthorThumbnail.mergeFrom(reader.readMessage());
+                        break;
+                    case 3:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mAuthorEndpoint == null) mAuthorEndpoint = new AndroidFullNextProto.BrowseNavigation();
+                        mAuthorEndpoint.mergeFrom(reader.readMessage());
+                        break;
+                    case 4:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mContent == null) mContent = new AndroidFullNextProto.TextRuns();
+                        mContent.mergeFrom(reader.readMessage());
+                        break;
+                    case 9:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        mCommentId = reader.readString();
+                        break;
+                    case 28:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mPublishedTime == null) mPublishedTime = new AndroidFullNextProto.TextRuns();
+                        mPublishedTime.mergeFrom(reader.readMessage());
+                        break;
+                    default:
+                        reader.skip(tag);
+                }
+            }
+        }
+
+        public static CommentRenderer parseFrom(byte[] data) throws java.io.IOException {
+            CommentRenderer message = new CommentRenderer();
+            message.mergeFrom(new ProtoReader(data, 0, data.length));
+            return message;
+        }
+    }
+
+    /** proto: android_full_next.commentThreadRenderer */
+    public static final class CommentThreadRenderer extends ProtoMessage {
+
+        /** proto: android_full_next.commentThreadRenderer.commentWrapper */
+        public static final class CommentWrapper extends ProtoMessage {
+            private AndroidFullNextProto.CommentRenderer mComment;
+            public CommentWrapper setComment(AndroidFullNextProto.CommentRenderer value) { mComment = value; return this; }
+            public AndroidFullNextProto.CommentRenderer getComment() { return mComment; }
+            public boolean hasComment() { return mComment != null; }
+
+            @Override
+            public void writeTo(ProtoWriter writer) {
+                if (mComment != null) writer.writeMessage(62285947, mComment);
+            }
+
+            @Override
+            public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                while (reader.hasMore()) {
+                    int tag = reader.readTag();
+                    switch (tag >>> 3) {
+                        case 62285947:
+                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                            if (mComment == null) mComment = new AndroidFullNextProto.CommentRenderer();
+                            mComment.mergeFrom(reader.readMessage());
+                            break;
+                        default:
+                            reader.skip(tag);
+                    }
+                }
+            }
+
+            public static CommentWrapper parseFrom(byte[] data) throws java.io.IOException {
+                CommentWrapper message = new CommentWrapper();
+                message.mergeFrom(new ProtoReader(data, 0, data.length));
+                return message;
+            }
+        }
+        private AndroidFullNextProto.CommentThreadRenderer.CommentWrapper mComment;
+        public CommentThreadRenderer setComment(AndroidFullNextProto.CommentThreadRenderer.CommentWrapper value) { mComment = value; return this; }
+        public AndroidFullNextProto.CommentThreadRenderer.CommentWrapper getComment() { return mComment; }
+        public boolean hasComment() { return mComment != null; }
+
+        @Override
+        public void writeTo(ProtoWriter writer) {
+            if (mComment != null) writer.writeMessage(1, mComment);
+        }
+
+        @Override
+        public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+            while (reader.hasMore()) {
+                int tag = reader.readTag();
+                switch (tag >>> 3) {
+                    case 1:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mComment == null) mComment = new AndroidFullNextProto.CommentThreadRenderer.CommentWrapper();
+                        mComment.mergeFrom(reader.readMessage());
+                        break;
+                    default:
+                        reader.skip(tag);
+                }
+            }
+        }
+
+        public static CommentThreadRenderer parseFrom(byte[] data) throws java.io.IOException {
+            CommentThreadRenderer message = new CommentThreadRenderer();
+            message.mergeFrom(new ProtoReader(data, 0, data.length));
+            return message;
+        }
+    }
+
     /** proto: android_full_next.root */
     public static final class Root extends ProtoMessage {
 
@@ -1812,6 +2646,8 @@ public final class AndroidFullNextProto {
                                     private final java.util.List<AndroidFullNextProto.VideoMetadataRenderer> mVideoMetadata = new java.util.ArrayList<AndroidFullNextProto.VideoMetadataRenderer>();
                                     private final java.util.List<AndroidFullNextProto.AuthorRendererData> mAuthorData = new java.util.ArrayList<AndroidFullNextProto.AuthorRendererData>();
                                     private final java.util.List<AndroidFullNextProto.CompactVideoRenderer> mNextVideo = new java.util.ArrayList<AndroidFullNextProto.CompactVideoRenderer>();
+                                    private final java.util.List<AndroidFullNextProto.SlimVideoMetadataRenderer> mSlimVideoMetadata = new java.util.ArrayList<AndroidFullNextProto.SlimVideoMetadataRenderer>();
+                                    private final java.util.List<AndroidFullNextProto.CommentThreadRenderer> mCommentThread = new java.util.ArrayList<AndroidFullNextProto.CommentThreadRenderer>();
                                     public ItemSectionRendererContents addVideoMetadata(AndroidFullNextProto.VideoMetadataRenderer value) {
                                         if (value == null) throw new NullPointerException("videoMetadata");
                                         mVideoMetadata.add(value);
@@ -1836,12 +2672,30 @@ public final class AndroidFullNextProto {
                                     public java.util.List<AndroidFullNextProto.CompactVideoRenderer> getNextVideoList() { return mNextVideo; }
                                     public int getNextVideoCount() { return mNextVideo.size(); }
                                     public AndroidFullNextProto.CompactVideoRenderer getNextVideo(int index) { return mNextVideo.get(index); }
+                                    public ItemSectionRendererContents addSlimVideoMetadata(AndroidFullNextProto.SlimVideoMetadataRenderer value) {
+                                        if (value == null) throw new NullPointerException("slimVideoMetadata");
+                                        mSlimVideoMetadata.add(value);
+                                        return this;
+                                    }
+                                    public java.util.List<AndroidFullNextProto.SlimVideoMetadataRenderer> getSlimVideoMetadataList() { return mSlimVideoMetadata; }
+                                    public int getSlimVideoMetadataCount() { return mSlimVideoMetadata.size(); }
+                                    public AndroidFullNextProto.SlimVideoMetadataRenderer getSlimVideoMetadata(int index) { return mSlimVideoMetadata.get(index); }
+                                    public ItemSectionRendererContents addCommentThread(AndroidFullNextProto.CommentThreadRenderer value) {
+                                        if (value == null) throw new NullPointerException("commentThread");
+                                        mCommentThread.add(value);
+                                        return this;
+                                    }
+                                    public java.util.List<AndroidFullNextProto.CommentThreadRenderer> getCommentThreadList() { return mCommentThread; }
+                                    public int getCommentThreadCount() { return mCommentThread.size(); }
+                                    public AndroidFullNextProto.CommentThreadRenderer getCommentThread(int index) { return mCommentThread.get(index); }
 
                                     @Override
                                     public void writeTo(ProtoWriter writer) {
                                         for (int i = 0; i < mVideoMetadata.size(); i++) writer.writeMessage(51779720, mVideoMetadata.get(i));
                                         for (int i = 0; i < mAuthorData.size(); i++) writer.writeMessage(51779708, mAuthorData.get(i));
                                         for (int i = 0; i < mNextVideo.size(); i++) writer.writeMessage(50630979, mNextVideo.get(i));
+                                        for (int i = 0; i < mSlimVideoMetadata.size(); i++) writer.writeMessage(119167901, mSlimVideoMetadata.get(i));
+                                        for (int i = 0; i < mCommentThread.size(); i++) writer.writeMessage(62285833, mCommentThread.get(i));
                                     }
 
                                     @Override
@@ -1860,6 +2714,14 @@ public final class AndroidFullNextProto {
                                                 case 50630979:
                                                     if ((tag & 7) != 2) { reader.skip(tag); break; }
                                                     { AndroidFullNextProto.CompactVideoRenderer item = new AndroidFullNextProto.CompactVideoRenderer(); item.mergeFrom(reader.readMessage()); mNextVideo.add(item); }
+                                                    break;
+                                                case 119167901:
+                                                    if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                                    { AndroidFullNextProto.SlimVideoMetadataRenderer item = new AndroidFullNextProto.SlimVideoMetadataRenderer(); item.mergeFrom(reader.readMessage()); mSlimVideoMetadata.add(item); }
+                                                    break;
+                                                case 62285833:
+                                                    if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                                    { AndroidFullNextProto.CommentThreadRenderer item = new AndroidFullNextProto.CommentThreadRenderer(); item.mergeFrom(reader.readMessage()); mCommentThread.add(item); }
                                                     break;
                                                 default:
                                                     reader.skip(tag);
@@ -1968,6 +2830,7 @@ public final class AndroidFullNextProto {
                             }
                         }
                         private final java.util.List<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents> mContent = new java.util.ArrayList<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents>();
+                        private final java.util.List<AndroidFullNextProto.Continuations> mContinuation = new java.util.ArrayList<AndroidFullNextProto.Continuations>();
                         public Results addContent(AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents value) {
                             if (value == null) throw new NullPointerException("content");
                             mContent.add(value);
@@ -1976,10 +2839,19 @@ public final class AndroidFullNextProto {
                         public java.util.List<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents> getContentList() { return mContent; }
                         public int getContentCount() { return mContent.size(); }
                         public AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents getContent(int index) { return mContent.get(index); }
+                        public Results addContinuation(AndroidFullNextProto.Continuations value) {
+                            if (value == null) throw new NullPointerException("continuation");
+                            mContinuation.add(value);
+                            return this;
+                        }
+                        public java.util.List<AndroidFullNextProto.Continuations> getContinuationList() { return mContinuation; }
+                        public int getContinuationCount() { return mContinuation.size(); }
+                        public AndroidFullNextProto.Continuations getContinuation(int index) { return mContinuation.get(index); }
 
                         @Override
                         public void writeTo(ProtoWriter writer) {
                             for (int i = 0; i < mContent.size(); i++) writer.writeMessage(1, mContent.get(i));
+                            for (int i = 0; i < mContinuation.size(); i++) writer.writeMessage(2, mContinuation.get(i));
                         }
 
                         @Override
@@ -1990,6 +2862,10 @@ public final class AndroidFullNextProto {
                                     case 1:
                                         if ((tag & 7) != 2) { reader.skip(tag); break; }
                                         { AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents item = new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents(); item.mergeFrom(reader.readMessage()); mContent.add(item); }
+                                        break;
+                                    case 2:
+                                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                        { AndroidFullNextProto.Continuations item = new AndroidFullNextProto.Continuations(); item.mergeFrom(reader.readMessage()); mContinuation.add(item); }
                                         break;
                                     default:
                                         reader.skip(tag);
@@ -2112,6 +2988,59 @@ public final class AndroidFullNextProto {
             }
         }
 
+        /** proto: android_full_next.root.continuationContents */
+        public static final class ContinuationContents extends ProtoMessage {
+            private final java.util.List<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results> mSectionListContinuation = new java.util.ArrayList<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results>();
+            private final java.util.List<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer> mItemSectionContinuation = new java.util.ArrayList<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer>();
+            public ContinuationContents addSectionListContinuation(AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results value) {
+                if (value == null) throw new NullPointerException("sectionListContinuation");
+                mSectionListContinuation.add(value);
+                return this;
+            }
+            public java.util.List<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results> getSectionListContinuationList() { return mSectionListContinuation; }
+            public int getSectionListContinuationCount() { return mSectionListContinuation.size(); }
+            public AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results getSectionListContinuation(int index) { return mSectionListContinuation.get(index); }
+            public ContinuationContents addItemSectionContinuation(AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer value) {
+                if (value == null) throw new NullPointerException("itemSectionContinuation");
+                mItemSectionContinuation.add(value);
+                return this;
+            }
+            public java.util.List<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer> getItemSectionContinuationList() { return mItemSectionContinuation; }
+            public int getItemSectionContinuationCount() { return mItemSectionContinuation.size(); }
+            public AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer getItemSectionContinuation(int index) { return mItemSectionContinuation.get(index); }
+
+            @Override
+            public void writeTo(ProtoWriter writer) {
+                for (int i = 0; i < mSectionListContinuation.size(); i++) writer.writeMessage(49399797, mSectionListContinuation.get(i));
+                for (int i = 0; i < mItemSectionContinuation.size(); i++) writer.writeMessage(50195462, mItemSectionContinuation.get(i));
+            }
+
+            @Override
+            public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                while (reader.hasMore()) {
+                    int tag = reader.readTag();
+                    switch (tag >>> 3) {
+                        case 49399797:
+                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                            { AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results item = new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results(); item.mergeFrom(reader.readMessage()); mSectionListContinuation.add(item); }
+                            break;
+                        case 50195462:
+                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                            { AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer item = new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer(); item.mergeFrom(reader.readMessage()); mItemSectionContinuation.add(item); }
+                            break;
+                        default:
+                            reader.skip(tag);
+                    }
+                }
+            }
+
+            public static ContinuationContents parseFrom(byte[] data) throws java.io.IOException {
+                ContinuationContents message = new ContinuationContents();
+                message.mergeFrom(new ProtoReader(data, 0, data.length));
+                return message;
+            }
+        }
+
         /** proto: android_full_next.root.playerOverlays */
         public static final class PlayerOverlays extends ProtoMessage {
 
@@ -2172,6 +3101,7 @@ public final class AndroidFullNextProto {
             }
         }
         private final java.util.List<AndroidFullNextProto.Root.Contents> mContent = new java.util.ArrayList<AndroidFullNextProto.Root.Contents>();
+        private AndroidFullNextProto.Root.ContinuationContents mContinuation;
         private AndroidFullNextProto.NavigationData mNavigationEndpoint;
         private AndroidFullNextProto.Root.PlayerOverlays mPoverlays;
         public Root addContent(AndroidFullNextProto.Root.Contents value) {
@@ -2182,6 +3112,9 @@ public final class AndroidFullNextProto {
         public java.util.List<AndroidFullNextProto.Root.Contents> getContentList() { return mContent; }
         public int getContentCount() { return mContent.size(); }
         public AndroidFullNextProto.Root.Contents getContent(int index) { return mContent.get(index); }
+        public Root setContinuation(AndroidFullNextProto.Root.ContinuationContents value) { mContinuation = value; return this; }
+        public AndroidFullNextProto.Root.ContinuationContents getContinuation() { return mContinuation; }
+        public boolean hasContinuation() { return mContinuation != null; }
         public Root setNavigationEndpoint(AndroidFullNextProto.NavigationData value) { mNavigationEndpoint = value; return this; }
         public AndroidFullNextProto.NavigationData getNavigationEndpoint() { return mNavigationEndpoint; }
         public boolean hasNavigationEndpoint() { return mNavigationEndpoint != null; }
@@ -2192,6 +3125,7 @@ public final class AndroidFullNextProto {
         @Override
         public void writeTo(ProtoWriter writer) {
             for (int i = 0; i < mContent.size(); i++) writer.writeMessage(7, mContent.get(i));
+            if (mContinuation != null) writer.writeMessage(8, mContinuation);
             if (mNavigationEndpoint != null) writer.writeMessage(9, mNavigationEndpoint);
             if (mPoverlays != null) writer.writeMessage(14, mPoverlays);
         }
@@ -2204,6 +3138,11 @@ public final class AndroidFullNextProto {
                     case 7:
                         if ((tag & 7) != 2) { reader.skip(tag); break; }
                         { AndroidFullNextProto.Root.Contents item = new AndroidFullNextProto.Root.Contents(); item.mergeFrom(reader.readMessage()); mContent.add(item); }
+                        break;
+                    case 8:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mContinuation == null) mContinuation = new AndroidFullNextProto.Root.ContinuationContents();
+                        mContinuation.mergeFrom(reader.readMessage());
                         break;
                     case 9:
                         if ((tag & 7) != 2) { reader.skip(tag); break; }

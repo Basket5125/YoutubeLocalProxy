@@ -68,12 +68,23 @@ message playlistRenderer {
 message channelRenderer {
     string id = 1;
     optional thumbnails avatar = 2;
-    optional textRuns name = 3;
+    // Where the 2017 apps put these on a channel card: field 9 is the name, field 4 the line
+    // under it and field 3 the second count line.
+    optional textRuns videoCount = 3;
     optional textRuns subCount = 4;
     optional textRuns handle = 5;
     optional browseNavigation navigation = 6;
-    optional textRuns name2 = 9;
+    optional textRuns name = 9;
     optional thumbnails avatar2 = 16;
+}
+// The app asks for the next page when the last result is on screen: it takes the token out of
+// the section list's continuations and sends it back, and expects the answer in
+// continuationContents.sectionListContinuation (the same renderer id, 49399797).
+message continuations {
+    message nextContinuationData {
+        string token = 1;
+    }
+    repeated nextContinuationData next = 52047593;
 }
 message root {
     message contents {
@@ -90,8 +101,13 @@ message root {
                 repeated itemSectionRender section = 50195462;
             }
             repeated contents content = 1;
+            repeated continuations continuation = 2;
         }
         repeated searchResults resultsContainer = 49399797;
     }
     repeated contents content = 4;
+    message continuationContents {
+        repeated contents.searchResults sectionListContinuation = 49399797;
+    }
+    optional continuationContents continuation = 7;
 }

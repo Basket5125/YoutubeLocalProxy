@@ -292,6 +292,13 @@ public class PlaylistEndpoint implements Endpoint {
         return -1;
     }
 
+    /** Forgets the loaded playlists (the Clear cache button). */
+    static void clearMemory() {
+        synchronized (LOADED) {
+            LOADED.clear();
+        }
+    }
+
     static String findContinuation(Object node) {
         if (node instanceof JSONObject) {
             JSONObject object = (JSONObject) node;

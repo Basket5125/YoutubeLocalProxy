@@ -26,6 +26,20 @@ message guideEntry {
     repeated iconContainer icon = 7;
     repeated textRuns name = 10;
 }
+message pivotBarItem {
+    // The bottom bar of the 2017 apps (version 12+). One entry; the app needs the identifier,
+    // the endpoint, a title and an icon (it reads the icon without checking for null).
+    message pivotBarItemRenderer {
+        string pivotIdentifier = 1;
+        repeated browseNavigation navigation = 2;
+        repeated textRuns title = 3;
+        message iconContainer {
+            int32 iconType = 1;
+        }
+        repeated iconContainer icon = 5;
+    }
+    repeated pivotBarItemRenderer item = 117501096;
+}
 message root {
     message items {
         message guideSectionRenderer {
@@ -36,6 +50,10 @@ message root {
             string header = 4;
         }
         repeated guideSectionRenderer guideSection = 46887524;
+        message pivotBarRenderer {
+            repeated pivotBarItem items = 1;
+        }
+        repeated pivotBarRenderer pivotBar = 117866661;
     }
     repeated items item = 4;
 }

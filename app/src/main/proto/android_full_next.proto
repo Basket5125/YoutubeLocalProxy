@@ -10,6 +10,8 @@ message navigationData {
 message textRuns {
     message textRun {
         string text = 1;
+        /** The app draws the run with a bold typeface. */
+        optional int32 bold = 2;
     }
     repeated textRun run = 1;
 }
@@ -76,6 +78,9 @@ message authorRendererData {
                 repeated sub2 subscr2 = 68997401;
             }
             repeated subAction action = 18;
+            // The 2017 apps show the channel's subscriber count next to the subscribe button.
+            optional textRuns shortSubscriberCount = 20;
+            optional textRuns longSubscriberCount = 23;
             string identifier = 31;
         }
         repeated subContents content = 55419609;
@@ -146,6 +151,68 @@ message videoMetadataRenderer {
     optional int32 pb38 = 38;
     optional int32 pb43 = 43;
 }
+// ---------------------------------------------------------------- watch page of the 2017 apps
+// Apps from version 12 show the watch metadata with slimVideoMetadataRenderer (title, the two
+// subtitles, the buttons under the video, the channel and the description); they parse
+// videoMetadataRenderer but have no view for it, so the data below is what they display.
+message iconContainer {
+    int32 iconType = 1;
+}
+message buttonRenderer {
+    optional textRuns text = 5;
+    /** What a tap does; the app reads this one and field 9 of the button. */
+    optional buttonEndpoint serviceEndpoint = 7;
+    optional iconContainer icon = 8;
+    optional buttonEndpoint navigationEndpoint = 9;
+}
+/**
+ * The share endpoint is an Android share intent spelled out: the app puts every extra into an
+ * ACTION_SEND intent, sets the type and opens the chooser (class due of YouTube 12.45.56).
+ */
+message buttonEndpoint {
+    message shareIntent {
+        message extra {
+            string key = 1;
+            string value = 2;
+        }
+        repeated extra extras = 1;
+        string type = 2;
+        string chooserTitle = 4;
+    }
+    optional shareIntent share = 106983893;
+}
+message slimMetadataButton {
+    message slimMetadataButtonRenderer {
+        message buttonContainer {
+            optional buttonRenderer button = 65153809;
+        }
+        optional buttonContainer button = 22;
+    }
+    repeated slimMetadataButtonRenderer button = 124608017;
+}
+message slimOwner {
+    message slimOwnerRenderer {
+        optional thumbnails avatar = 1;
+        optional textRuns title = 2;
+        optional browseNavigation navigation = 3;
+        message subscribeContainer {
+            repeated authorRendererData.subscribeButtonData.subContents button = 55419609;
+        }
+        optional subscribeContainer subscribeButton = 4;
+    }
+    repeated slimOwnerRenderer owner = 119170535;
+}
+message slimVideoMetadataRenderer {
+    optional textRuns title = 3;
+    /** Shown while the panel is collapsed, for example "1.2M views". */
+    optional textRuns collapsedSubtitle = 4;
+    /** Shown while it is expanded, for example "1,234,567 views - Published on Oct 3, 2024". */
+    optional textRuns expandedSubtitle = 5;
+    repeated slimMetadataButton buttons = 6;
+    optional slimOwner owner = 8;
+    optional textRuns description = 9;
+    string videoId = 14;
+}
 message compactVideoRenderer {
     string videoId = 1;
     optional thumbnails thumblist = 2;
@@ -159,6 +226,31 @@ message compactVideoRenderer {
     optional thumbnails authorAvatar = 14;
     optional textRuns shortViewCounts = 23;
 }
+// Continuations: the app sends the token back in the request's field 8 and expects the answer
+// in continuationContents.sectionListContinuation.
+message continuations {
+    message nextContinuationData {
+        string token = 1;
+    }
+    repeated nextContinuationData next = 52047593;
+}
+// Comments, as the 2017 apps read them (renderer ids and field numbers from the app itself:
+// commentThreadRenderer 62285833 holds the comment at 62285947, whose author is field 1, its
+// picture field 2, the text field 4 and the time field 28).
+message commentRenderer {
+    optional textRuns author = 1;
+    optional thumbnails authorThumbnail = 2;
+    optional browseNavigation authorEndpoint = 3;
+    optional textRuns content = 4;
+    string commentId = 9;
+    optional textRuns publishedTime = 28;
+}
+message commentThreadRenderer {
+    message commentWrapper {
+        optional commentRenderer comment = 62285947;
+    }
+    optional commentWrapper comment = 1;
+}
 message root {
     message contents {
         message singleColumnWatchNextResults {
@@ -170,6 +262,8 @@ message root {
                                 repeated videoMetadataRenderer videoMetadata = 51779720;
                                 repeated authorRendererData authorData = 51779708;
                                 repeated compactVideoRenderer nextVideo = 50630979;
+                                repeated slimVideoMetadataRenderer slimVideoMetadata = 119167901;
+                                repeated commentThreadRenderer commentThread = 62285833;
                             }
                             repeated contents content = 1;
                             repeated nextRequest commentRequest = 2;
@@ -178,6 +272,7 @@ message root {
                         repeated itemSectionRenderer itemSectionRender = 50195462;
                     }
                     repeated contents content = 1;
+                    repeated continuations continuation = 2;
                 }
                 repeated results result = 49399797;
             }
@@ -186,6 +281,13 @@ message root {
         repeated singleColumnWatchNextResults nextResults = 51779735;
     }
     repeated contents content = 7;
+    message continuationContents {
+        repeated contents.singleColumnWatchNextResults.contents.results sectionListContinuation = 49399797;
+        /** The answer to a comment continuation: more entries for the section already shown. */
+        repeated contents.singleColumnWatchNextResults.contents.results.contents.itemSectionRenderer
+                itemSectionContinuation = 50195462;
+    }
+    optional continuationContents continuation = 8;
     optional navigationData navigationEndpoint = 9;
     message playerOverlays {
         message playerOverlaysRenderer {}

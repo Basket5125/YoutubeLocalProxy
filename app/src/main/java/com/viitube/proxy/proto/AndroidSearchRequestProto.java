@@ -8,9 +8,12 @@ public final class AndroidSearchRequestProto {
     /** proto: android_search_request.root */
     public static final class Root extends ProtoMessage {
         private String mQuery = "";
+        private String mContinuation = "";
         private SearchRequestParamsProto.SearchRequestParams mParams;
         public Root setQuery(String value) { mQuery = value == null ? "" : value; return this; }
         public String getQuery() { return mQuery; }
+        public Root setContinuation(String value) { mContinuation = value == null ? "" : value; return this; }
+        public String getContinuation() { return mContinuation; }
         public Root setParams(SearchRequestParamsProto.SearchRequestParams value) { mParams = value; return this; }
         public SearchRequestParamsProto.SearchRequestParams getParams() { return mParams; }
         public boolean hasParams() { return mParams != null; }
@@ -18,6 +21,7 @@ public final class AndroidSearchRequestProto {
         @Override
         public void writeTo(ProtoWriter writer) {
             if (mQuery.length() > 0) writer.writeString(2, mQuery);
+            if (mContinuation.length() > 0) writer.writeString(8, mContinuation);
             if (mParams != null) writer.writeMessage(11, mParams);
         }
 
@@ -29,6 +33,10 @@ public final class AndroidSearchRequestProto {
                     case 2:
                         if ((tag & 7) != 2) { reader.skip(tag); break; }
                         mQuery = reader.readString();
+                        break;
+                    case 8:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        mContinuation = reader.readString();
                         break;
                     case 11:
                         if ((tag & 7) != 2) { reader.skip(tag); break; }
