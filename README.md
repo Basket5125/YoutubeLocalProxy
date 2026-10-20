@@ -38,6 +38,15 @@ On macOS or Linux:
 ./gradlew :app:assembleRelease
 ```
 
+The build runs on Gradle 7.5, which reads the build files with the JDK it is
+started with and understands JDK 17 at the newest. On a machine whose default
+`java` is newer than that, the build stops at "Unsupported class file major
+version"; point it at an older JDK for that run:
+
+```sh
+JAVA_HOME=/path/to/jdk-11 ./gradlew :app:assembleRelease
+```
+
 On Windows:
 
 ```bat
@@ -338,11 +347,17 @@ the list and then drop every entry whose quality is lower than the one before it
 falls leaves a single item and no menu at all. With a fixed format in the settings only that one
 format is sent, so the app cannot land on anything else.
 
-Every player answer also carries an audio-only format, because without one the apps stop at the
-lock screen with "No streaming data available for background playback": the instance's audio
-stream when there is an instance, otherwise the 360p file, which plays even though it brings its
-video along. The audio is always the original track - an answer lists one stream per dubbed
-language and only the link says which is which (`xtags=acont=original` against
+Every player answer also carries the sound of the video on its own, because without it the apps
+stop at the lock screen. They keep two lists of formats and read a different one for each case:
+playing on screen uses the plain list (`streamingData` field 2), playing in the background the
+adaptive list (field 3), where only itag 139 or 140 is accepted - with an audio file in the plain
+list alone the log says `Audio not supported/available. supportedAudioItags=[139, 140]
+formatStreams=[]`. So the answer names it in both: in the adaptive list with the ranges of its
+header and of its index and with its length (fields 9, 10 and 12), which is what the background
+player reads the file with. The stream is the instance's when an instance is set, otherwise
+YouTube's own audio stream; if neither has one, the 360p file is named instead, which plays even
+though it brings its video along. The audio is always the original track - an answer lists one
+stream per dubbed language and only the link says which is which (`xtags=acont=original` against
 `acont=dubbed:lang=pl`), so a Polish video is no longer played with its English AI dub.
 
 **Show comments** in the app adds them under the video for apps from version 12. It is off by

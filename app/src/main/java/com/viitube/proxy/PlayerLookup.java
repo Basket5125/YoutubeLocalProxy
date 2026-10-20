@@ -388,6 +388,36 @@ public class PlayerLookup {
         return bestVideo == null || bestAudio == null ? null : new JSONObject[]{bestVideo, bestAudio};
     }
 
+    /**
+     * The audio-only MP4 stream the apps ask for when they keep playing in the background. The
+     * track of the video itself wins over a dub, and the loudness-normalised copy loses, so a
+     * Polish video is not continued with its English dub. Returns the format as the player
+     * answer writes it, ranges and all, or null when the video has none.
+     */
+    public static JSONObject findAudioFormat(JSONObject player) {
+        JSONArray formats = adaptiveFormats(player);
+        if (formats == null) return null;
+        JSONObject best = null;
+        long bestScore = Long.MIN_VALUE;
+        for (int i = 0; i < formats.length(); i++) {
+            JSONObject format = formats.optJSONObject(i);
+            if (format == null || !"audio/mp4".equals(baseMimeType(format))) continue;
+            if (format.optJSONObject("initRange") == null
+                    || format.optJSONObject("indexRange") == null) continue;
+            if (playableFormatUrl(format).isEmpty()) continue;
+            JSONObject track = format.optJSONObject("audioTrack");
+            boolean defaultTrack = track == null || track.optBoolean("audioIsDefault", false);
+            boolean drc = format.optBoolean("isDrc", false);
+            long score = (defaultTrack ? 2_000_000_000L : 0) + (drc ? 0 : 1_000_000_000L)
+                    + format.optInt("averageBitrate", format.optInt("bitrate", 0));
+            if (score > bestScore) {
+                bestScore = score;
+                best = format;
+            }
+        }
+        return best;
+    }
+
     /** Direct (deciphered) URL of an adaptive format. */
     public static String formatUrl(JSONObject format) {
         return playableFormatUrl(format);

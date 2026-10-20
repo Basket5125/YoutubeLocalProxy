@@ -473,6 +473,7 @@ public final class AndroidPlayerProto {
                 private final java.util.List<AndroidPlayerProto.NumberRange> mInitRange = new java.util.ArrayList<AndroidPlayerProto.NumberRange>();
                 private final java.util.List<AndroidPlayerProto.NumberRange> mIndexRange = new java.util.ArrayList<AndroidPlayerProto.NumberRange>();
                 private long mLastChanged = 0L;
+                private long mContentLength = 0L;
                 private String mVideoQuality = "";
                 private String mXtags = "";
                 private int mTwentyFive = 0;
@@ -514,6 +515,8 @@ public final class AndroidPlayerProto {
                 public AndroidPlayerProto.NumberRange getIndexRange(int index) { return mIndexRange.get(index); }
                 public Format setLastChanged(long value) { mLastChanged = value; return this; }
                 public long getLastChanged() { return mLastChanged; }
+                public Format setContentLength(long value) { mContentLength = value; return this; }
+                public long getContentLength() { return mContentLength; }
                 public Format setVideoQuality(String value) { mVideoQuality = value == null ? "" : value; return this; }
                 public String getVideoQuality() { return mVideoQuality; }
                 public Format setXtags(String value) { mXtags = value == null ? "" : value; return this; }
@@ -553,6 +556,7 @@ public final class AndroidPlayerProto {
                     for (int i = 0; i < mInitRange.size(); i++) writer.writeMessage(9, mInitRange.get(i));
                     for (int i = 0; i < mIndexRange.size(); i++) writer.writeMessage(10, mIndexRange.get(i));
                     if (mLastChanged != 0L) writer.writeInt64(11, mLastChanged);
+                    if (mContentLength != 0L) writer.writeInt64(12, mContentLength);
                     if (mVideoQuality.length() > 0) writer.writeString(16, mVideoQuality);
                     if (mXtags.length() > 0) writer.writeString(23, mXtags);
                     if (mTwentyFive != 0) writer.writeInt32(25, mTwentyFive);
@@ -605,6 +609,10 @@ public final class AndroidPlayerProto {
                             case 11:
                                 if ((tag & 7) != 0) { reader.skip(tag); break; }
                                 mLastChanged = reader.readInt64();
+                                break;
+                            case 12:
+                                if ((tag & 7) != 0) { reader.skip(tag); break; }
+                                mContentLength = reader.readInt64();
                                 break;
                             case 16:
                                 if ((tag & 7) != 2) { reader.skip(tag); break; }

@@ -57,6 +57,11 @@ message root {
             repeated numberRange initRange = 9;
             repeated numberRange indexRange = 10;
             int64 lastChanged = 11;
+            /**
+             * How long the file is. The adaptive streams need it: the apps read the header and
+             * the index of the file out of it before they play a range of it.
+             */
+            int64 contentLength = 12;
             string videoQuality = 16;
             string xtags = 23;
             int32 twentyFive = 25;

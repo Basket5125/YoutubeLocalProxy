@@ -1129,6 +1129,12 @@ final class YoutubeiResponses {
         final String quality;
         final String label;
         final String mimeType;
+        /** Set when the format belongs in the adaptive list of the answer instead of the plain one. */
+        boolean adaptive;
+        int bitrate;
+        long contentLength;
+        int[] initRange;
+        int[] indexRange;
 
         StreamFormat(int itag, String url, int width, int height, String quality, String label,
                      String mimeType) {
@@ -1154,6 +1160,24 @@ final class YoutubeiResponses {
     static StreamFormat audioOnly(String url) {
         return new StreamFormat(140, url, 0, 0, "tiny", "",
                 "audio/mp4; codecs=\"mp4a.40.2\"");
+    }
+
+    /**
+     * The sound of the video as an adaptive stream. The apps keep two lists of formats: playing
+     * a video on screen reads the plain one, playing it in the background reads the adaptive one
+     * and only accepts itag 139 or 140 in it ("Audio not supported/available" otherwise), so the
+     * same file is offered in both.
+     */
+    static StreamFormat adaptiveAudio(int itag, String url, String mimeType, int bitrate,
+                                      long contentLength, int[] initRange, int[] indexRange) {
+        StreamFormat format = new StreamFormat(itag == 139 ? 139 : 140, url, 0, 0, "tiny", "",
+                mimeType.isEmpty() ? "audio/mp4; codecs=\"mp4a.40.2\"" : mimeType);
+        format.adaptive = true;
+        format.bitrate = bitrate;
+        format.contentLength = contentLength;
+        format.initRange = initRange;
+        format.indexRange = indexRange;
+        return format;
     }
 
     static StreamFormat muxed720p(String url) {
@@ -1207,15 +1231,30 @@ final class YoutubeiResponses {
             AndroidPlayerProto.Root.PlayerFormats formats = new AndroidPlayerProto.Root.PlayerFormats()
                     .setExpiresInSeconds(21540);
             for (StreamFormat format : info.formats) {
-                formats.addNondashFormat(new AndroidPlayerProto.Root.PlayerFormats.Format()
-                        .setFormatId(format.itag)
-                        .setUrl(format.url)
-                        .setMimeType(format.mimeType)
-                        .setVideoWidth(format.width)
-                        .setVideoHeight(format.height)
-                        .setVideoQuality(format.quality)
-                        .setQualityLabel(format.label)
-                        .setSortKey(format.height));
+                AndroidPlayerProto.Root.PlayerFormats.Format entry =
+                        new AndroidPlayerProto.Root.PlayerFormats.Format()
+                                .setFormatId(format.itag)
+                                .setUrl(format.url)
+                                .setMimeType(format.mimeType)
+                                .setVideoWidth(format.width)
+                                .setVideoHeight(format.height)
+                                .setVideoQuality(format.quality)
+                                .setQualityLabel(format.label)
+                                .setSortKey(format.height);
+                if (!format.adaptive) {
+                    formats.addNondashFormat(entry);
+                    continue;
+                }
+                entry.setTotalBitrate(format.bitrate).setContentLength(format.contentLength);
+                if (format.initRange != null) {
+                    entry.addInitRange(new AndroidPlayerProto.NumberRange()
+                            .setStart(format.initRange[0]).setEnd(format.initRange[1]));
+                }
+                if (format.indexRange != null) {
+                    entry.addIndexRange(new AndroidPlayerProto.NumberRange()
+                            .setStart(format.indexRange[0]).setEnd(format.indexRange[1]));
+                }
+                formats.addDashFormat(entry);
             }
             root.addFormats(formats);
         }

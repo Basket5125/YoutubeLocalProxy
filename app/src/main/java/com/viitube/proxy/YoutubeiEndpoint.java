@@ -669,19 +669,74 @@ public class YoutubeiEndpoint implements Endpoint {
         } else if (small != null) {
             info.formats.add(small);
         }
+        // Whether the video can be watched at all; the sound added below does not make it so.
+        boolean playable = !info.formats.isEmpty();
         // Playing in the background needs a file with only sound in it, otherwise the app says
-        // "No streaming data available for background playback". The instance has one; without
-        // an instance the 360p file is offered instead, which carries its video along but plays.
-        String audioUrl = withInstance && !streams.audioUrl.isEmpty() ? streams.audioUrl
+        // "No streaming data available for background playback" and stops. It reads that file
+        // out of the adaptive list of the answer and wants itag 139 or 140 there, so the file
+        // is listed with the ranges of its header and of its index. The instance has one; with
+        // no instance the audio stream of YouTube itself is used.
+        YoutubeiResponses.StreamFormat audio = withInstance
+                ? adaptiveAudio(streams.audio, streams.audioUrl) : null;
+        if (audio == null) {
+            JSONObject youtubeAudio = PlayerLookup.findAudioFormat(player);
+            audio = youtubeAudio == null ? null
+                    : adaptiveAudio(youtubeAudio, PlayerLookup.formatUrl(youtubeAudio));
+        }
+        // The plain list of the answer gets the sound as well: that is where the apps look when
+        // they play only the audio of a video without going to the background. Without a file of
+        // its own the 360p one is named there, which carries its video along but does play.
+        String audioUrl = audio != null ? audio.url
+                : withInstance && !streams.audioUrl.isEmpty() ? streams.audioUrl
                 : small != null ? small.url : null;
         if (audioUrl != null) info.formats.add(YoutubeiResponses.audioOnly(audioUrl));
-        if (info.formats.isEmpty()) {
+        if (audio != null) info.formats.add(audio);
+        if (!playable) {
             JSONObject playability = player.optJSONObject("playabilityStatus");
             String reason = playability == null ? "" : playability.optString("reason", "");
             info.error = reason.isEmpty() ? "No playable stream for this video" : reason;
+            info.formats.clear();
             android.util.Log.w(TAG, "No 360p stream for " + videoId + ": " + info.error);
         }
         return protobuf(YoutubeiResponses.player(info));
+    }
+
+    /**
+     * One audio stream of a player answer - YouTube's own or an Invidious one - as the adaptive
+     * format the background player needs. Null when the stream has no header and index ranges,
+     * because nothing can be played out of it then.
+     */
+    private static YoutubeiResponses.StreamFormat adaptiveAudio(JSONObject format, String url) {
+        if (format == null || url == null || url.isEmpty()) return null;
+        int[] init = rangeOf(format.optJSONObject("initRange"));
+        int[] index = rangeOf(format.optJSONObject("indexRange"));
+        if (init == null || index == null) return null;
+        long bitrate = numberOf(format, "averageBitrate", numberOf(format, "bitrate", 0));
+        return YoutubeiResponses.adaptiveAudio((int) numberOf(format, "itag", 140), url,
+                format.optString("mimeType", ""), (int) bitrate,
+                numberOf(format, "contentLength", 0), init, index);
+    }
+
+    /** "initRange": {"start": "0", "end": "739"} as a pair of numbers, or null. */
+    private static int[] rangeOf(JSONObject range) {
+        if (range == null) return null;
+        long end = numberOf(range, "end", -1);
+        if (end < 0) return null;
+        return new int[]{(int) numberOf(range, "start", 0), (int) end};
+    }
+
+    /** A number of a player answer, which writes some of them as strings. */
+    private static long numberOf(JSONObject holder, String name, long fallback) {
+        Object value = holder.opt(name);
+        if (value instanceof Number) return ((Number) value).longValue();
+        if (value instanceof String) {
+            try {
+                return Long.parseLong(((String) value).trim());
+            } catch (NumberFormatException e) {
+                return fallback;
+            }
+        }
+        return fallback;
     }
 
     private NanoHTTPD.Response search(byte[] body, Config config, Context context) throws Exception {
