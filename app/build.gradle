@@ -8,8 +8,8 @@ android {
         applicationId "net.truehosting.ytproxy"
         minSdkVersion 9
         targetSdkVersion 33
-        versionCode 3
-        versionName "0.21"
+        versionCode 4
+        versionName "0.3"
     }
 
     compileOptions {
