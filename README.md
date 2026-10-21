@@ -100,7 +100,7 @@ are stored locally until upload succeeds; selecting **Not now** keeps them on
 the device. The HTTPS host can see the sender's IP address while handling an
 upload.
 
-## Crash report receiver
+## Video search
 
 Video search (`/feeds/api/videos?q=`) supports `start-index` and `max-results`
 (default 20, up to 50) and links the next page; while one page is shown, the
