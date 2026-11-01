@@ -1,7 +1,7 @@
 package com.viitube.proxy;
 
 import android.content.Context;
-import android.util.Base64;
+import com.viitube.proxy.proto.AndroidNextRequestProto;
 import com.viitube.proxy.proto.AndroidSearchRequestProto;
 import com.viitube.proxy.proto.BareAndroidRequestProto;
 import fi.iki.elonen.NanoHTTPD;
@@ -81,7 +81,7 @@ public class YoutubeiEndpoint implements Endpoint {
             return protobuf(new byte[0]);
         }
         if ("browse".equals(mode)) return browse(request, session, config, context);
-        if ("next".equals(mode)) return next(request, session, config, context);
+        if ("next".equals(mode)) return next(request, body, session, config, context);
         if ("player".equals(mode)) return player(request, session, config);
         if ("resolve_url".equals(mode)) return resolveUrl(request.getBrowseId(), config);
         // An endpoint this proxy does not serve. An empty message is what the apps handle best:
@@ -101,6 +101,9 @@ public class YoutubeiEndpoint implements Endpoint {
     private static final String SEARCH_TOKEN = "s";
     private static final String COMMENTS_TOKEN = "c";
     private static final String UPLOADS_TOKEN = "u";
+    /** The Community tab and the Playlists tab of a channel load further pages too. */
+    private static final String COMMUNITY_TOKEN = "p";
+    private static final String PLAYLISTS_TOKEN = "l";
     private static final String RELATED_TOKEN = "r";
 
     private static String continuationToken(String kind, int offset, String argument) {
@@ -226,9 +229,15 @@ public class YoutubeiEndpoint implements Endpoint {
             final boolean v11 = version >= 11;
             String key = "home_" + gl + "_"
                     + (version >= YoutubeiResponses.PIVOT_BAR_VERSION ? "v12" : v11 ? "v11" : "v10");
-            byte[] cached = cached(context, key, POPULAR_MAX_AGE_MS);
+            TasteProfile taste = TasteProfile.get(context);
+            // Once this phone has searched for a few things, the home feed is built out of them
+            // instead of the plain chart, the way the apps of today fill theirs from an account.
+            boolean profiled = taste.ready();
+            if (profiled) key += "_" + taste.signature();
+            byte[] cached = cached(context, key, profiled ? PROFILE_MAX_AGE_MS : POPULAR_MAX_AGE_MS);
             if (cached != null) return protobuf(cached);
-            List<InnertubeEndpoint.Video> home = popular(gl, "", 30, config);
+            List<InnertubeEndpoint.Video> home = profiled
+                    ? profiledFeed(taste, gl, config, context) : popular(gl, "", 30, config);
             // Version 11 apps show the same chart as Trending; older apps have a Music tab.
             List<InnertubeEndpoint.Video> second = v11 ? home : popular(gl, "Music", 20, config);
             byte[] answer = YoutubeiResponses.home(version, home, second, now,
@@ -271,7 +280,7 @@ public class YoutubeiEndpoint implements Endpoint {
                 android.util.Log.i(TAG, "Unknown channel " + id);
                 return protobuf(new byte[0]);
             }
-            return protobuf(channel(channelId, config, context, now));
+            return protobuf(channel(channelId, config, context, now, version));
         }
         android.util.Log.i(TAG, "No answer for browse id " + id);
         return protobuf(new byte[0]);
@@ -284,13 +293,19 @@ public class YoutubeiEndpoint implements Endpoint {
     private NanoHTTPD.Response browseContinuation(String token, Config config, Context context)
             throws Exception {
         String[] parts = parseToken(token);
-        if (parts == null || !UPLOADS_TOKEN.equals(parts[0])) {
+        if (parts == null) {
             android.util.Log.i(TAG, "No answer for this continuation");
             return protobuf(new byte[0]);
         }
         String channelId = parts[2];
         if (!channelId.matches("UC[A-Za-z0-9_-]{22}")) return protobuf(new byte[0]);
         int offset = tokenOffset(parts);
+        if (COMMUNITY_TOKEN.equals(parts[0])) return communityPage(channelId, offset, config, context);
+        if (PLAYLISTS_TOKEN.equals(parts[0])) return playlistsPage(channelId, offset, config, context);
+        if (!UPLOADS_TOKEN.equals(parts[0])) {
+            android.util.Log.i(TAG, "No answer for this continuation");
+            return protobuf(new byte[0]);
+        }
         String key = "uploads_" + channelId + "_" + offset;
         byte[] cached = cached(context, key, 30L * 60 * 1000);
         if (cached != null) return protobuf(cached);
@@ -311,7 +326,7 @@ public class YoutubeiEndpoint implements Endpoint {
                 System.currentTimeMillis(), next);
         if (!page.isEmpty()) store(context, key, answer);
         if (!next.isEmpty()) {
-            LOADERS.execute(new UploadsPrefetch(channelId, offset + 2 * PAGE_SIZE, config));
+            PREFETCHERS.execute(new UploadsPrefetch(channelId, offset + 2 * PAGE_SIZE, config));
         }
         return protobuf(answer);
     }
@@ -396,15 +411,40 @@ public class YoutubeiEndpoint implements Endpoint {
         }
     }
 
-    private static final ExecutorService LOADERS = Executors.newCachedThreadPool(
-            new java.util.concurrent.ThreadFactory() {
-                @Override
-                public Thread newThread(Runnable task) {
-                    Thread thread = new Thread(task, "youtubei-loader");
-                    thread.setDaemon(true);
-                    return thread;
-                }
-            });
+    /**
+     * The lookups a request fans out to. The pool is bounded: ten answers of a megabyte being
+     * parsed at the same time is what runs an old phone out of memory, and what does not fit
+     * runs on the request's own thread instead of waiting in a queue.
+     */
+    private static final ExecutorService LOADERS =
+            MemoryBudget.pool("youtubei-loader", 6, Thread.NORM_PRIORITY, 32);
+
+    /** Reading the next page of a list ahead; dropped when the phone has better things to do. */
+    private static final ExecutorService PREFETCHERS = MemoryBudget.prefetchPool("youtubei-ahead");
+
+
+    /** The posts of a channel's Community tab. */
+    private static final class CommunityTask implements Callable<List<ChannelEndpoint.Post>> {
+        private final String channelId;
+        private final Config config;
+
+        CommunityTask(String channelId, Config config) {
+            this.channelId = channelId;
+            this.config = config;
+        }
+
+        @Override
+        public List<ChannelEndpoint.Post> call() throws Exception {
+            return ChannelEndpoint.loadCommunity(channelId, COMMUNITY_POSTS, config);
+        }
+    }
+
+    /**
+     * Posts of a channel's Community tab. Each one carries a picture of its own, and a phone of
+     * 2013 decoding twenty of them at once is what made that tab crawl.
+     */
+    private static final int COMMUNITY_POSTS = 10;
+
 
     private static final class ChannelInfoTask implements Callable<ChannelEndpoint.ChannelInfo> {
         private final String channelId;
@@ -436,15 +476,200 @@ public class YoutubeiEndpoint implements Endpoint {
         }
     }
 
+    /**
+     * Reads ahead what the app is likely to ask for next, when the setting asks for it: the
+     * stream and the page of the video that follows this one, and the newest upload of the
+     * channel of the video being watched. Nobody waits for any of it.
+     */
+    private static void preload(Context context, Config config, String videoId,
+                                InnertubeEndpoint.WatchPage page, YoutubeiResponses.Queue queue) {
+        if (!config.getBool("preload", false)) return;
+        String next = "";
+        if (queue != null && queue.next() >= 0) next = queue.videos.get(queue.next()).id;
+        else if (!page.related.isEmpty()) next = page.related.get(0).id;
+        if (!next.isEmpty()) PREFETCHERS.execute(new WatchPrefetch(next, config, context));
+        String channelId = page.video.channelId;
+        if (channelId.startsWith("UC")) {
+            PREFETCHERS.execute(new UploadsPrefetch(channelId, PAGE_SIZE, config));
+        }
+    }
+
+    /** The page and the stream of a video, read before it is asked for. */
+    private static final class WatchPrefetch implements Runnable {
+        private final String videoId;
+        private final Config config;
+        private final Context context;
+
+        WatchPrefetch(String videoId, Config config, Context context) {
+            this.videoId = videoId;
+            this.config = config;
+            this.context = context;
+        }
+
+        /**
+         * Nothing is read ahead while the video the person is watching starts. On an old phone
+         * those seconds are all the processor there is, and a page read ahead then is a video
+         * that stutters now.
+         */
+        private static final long SETTLE_MS = 15000;
+
+        @Override
+        public void run() {
+            try {
+                Thread.sleep(SETTLE_MS);
+                InnertubeEndpoint.watchPage(videoId, PAGE_SIZE, config, context);
+                PlayerLookup.fetchPlaybackPlayer(videoId, config, "360p");
+            } catch (Exception e) {
+                android.util.Log.i(TAG, "Reading " + videoId + " ahead failed: " + e);
+            }
+        }
+    }
+
+    /** More posts of a channel's Community tab. */
+    private NanoHTTPD.Response communityPage(String channelId, int offset, Config config,
+                                             Context context) throws Exception {
+        String key = "community_" + channelId + "_" + offset;
+        byte[] cached = cached(context, key, 30L * 60 * 1000);
+        if (cached != null) return protobuf(cached);
+        ChannelEndpoint.Posts loaded = ChannelEndpoint.communityPage(channelId,
+                offset + ChannelEndpoint.POSTS_PER_PAGE, config);
+        List<ChannelEndpoint.Post> page = new ArrayList<ChannelEndpoint.Post>();
+        for (int i = offset; i < loaded.posts.size()
+                && page.size() < ChannelEndpoint.POSTS_PER_PAGE; i++) {
+            page.add(loaded.posts.get(i));
+        }
+        boolean more = !loaded.continuation.isEmpty()
+                || loaded.posts.size() > offset + page.size();
+        String next = nextToken(COMMUNITY_TOKEN, offset, page.size(), more, channelId);
+        byte[] answer = YoutubeiResponses.communityContinuation(page, next);
+        if (!page.isEmpty()) store(context, key, answer);
+        return protobuf(answer);
+    }
+
+    /** More playlists of a channel. */
+    private NanoHTTPD.Response playlistsPage(String channelId, int offset, Config config,
+                                             Context context) throws Exception {
+        String key = "channelplaylists_" + channelId + "_" + offset;
+        byte[] cached = cached(context, key, 30L * 60 * 1000);
+        if (cached != null) return protobuf(cached);
+        ChannelEndpoint.ChannelPlaylists loaded = ChannelEndpoint.loadPlaylists(channelId,
+                offset + ChannelEndpoint.PLAYLISTS_PER_PAGE, config);
+        List<ChannelEndpoint.PlaylistSummary> page =
+                new ArrayList<ChannelEndpoint.PlaylistSummary>();
+        for (int i = offset; i < loaded.playlists.size()
+                && page.size() < ChannelEndpoint.PLAYLISTS_PER_PAGE; i++) {
+            page.add(loaded.playlists.get(i));
+        }
+        boolean more = !loaded.continuation.isEmpty()
+                || loaded.playlists.size() > offset + page.size();
+        String next = nextToken(PLAYLISTS_TOKEN, offset, page.size(), more, channelId);
+        byte[] answer = YoutubeiResponses.playlistsContinuation(page, loaded.channelName,
+                channelId, next);
+        if (!page.isEmpty()) store(context, key, answer);
+        return protobuf(answer);
+    }
+
+    /** A feed built from what was searched for is read again sooner than the chart. */
+    private static final long PROFILE_MAX_AGE_MS = 15L * 60 * 1000;
+    /** Videos taken from each of the searches this phone made. */
+    private static final int PER_SEARCH = 5;
+    /** How many of the newest searches the feed is built out of. */
+    private static final int SEARCHES_USED = 4;
+    /** How many of the last watched videos bring their related videos along. */
+    private static final int WATCHED_USED = 2;
+    /** How many of the last watched channels have their newest uploads shown. */
+    private static final int CHANNELS_USED = 2;
+    /** How many videos the home feed holds. */
+    private static final int FEED_SIZE = 30;
+
+    /**
+     * The home feed of someone who has used this phone: the newest searches are asked for again,
+     * the video last opened brings its related videos along, and the chart fills the rest. The
+     * sources take turns, so the feed is not one search followed by another.
+     */
+    private static List<InnertubeEndpoint.Video> profiledFeed(TasteProfile taste, String region,
+                                                              Config config, Context context) {
+        List<List<InnertubeEndpoint.Video>> sources = new ArrayList<List<InnertubeEndpoint.Video>>();
+        for (String query : taste.searches(SEARCHES_USED)) {
+            try {
+                InnertubeEndpoint.SearchPage page = InnertubeEndpoint.searchPage(query, 1,
+                        PER_SEARCH, config, context);
+                sources.add(InnertubeEndpoint.completeFeedVideos(page.videos));
+            } catch (Exception e) {
+                android.util.Log.i(TAG, "Nothing for " + query + " in the home feed: " + e);
+            }
+        }
+        // What the last videos watched lead to, which is how YouTube's own feed is mostly built.
+        for (String watched : taste.lastVideos(WATCHED_USED)) {
+            try {
+                sources.add(InnertubeEndpoint.relatedPage(watched, 0, PER_SEARCH, config).videos);
+            } catch (Exception e) {
+                android.util.Log.i(TAG, "No related videos for the home feed: " + e);
+            }
+        }
+        // The newest videos of the channels watched: the part of the feed that changes by itself.
+        for (String channelId : taste.watchedChannels(CHANNELS_USED)) {
+            try {
+                ChannelEndpoint.Uploads uploads = ChannelEndpoint.loadUploads(channelId,
+                        PER_SEARCH, config);
+                List<InnertubeEndpoint.Video> newest = slice(uploads.videos, 0, PER_SEARCH);
+                for (InnertubeEndpoint.Video video : newest) {
+                    if (video.channel.isEmpty()) video.channel = uploads.channelName;
+                    if (video.channelId.isEmpty()) video.channelId = channelId;
+                }
+                sources.add(newest);
+            } catch (Exception e) {
+                android.util.Log.i(TAG, "No uploads of " + channelId + " for the home feed: " + e);
+            }
+        }
+
+        // The sources take turns, so the feed is not one search followed by another.
+        List<InnertubeEndpoint.Video> feed = new ArrayList<InnertubeEndpoint.Video>();
+        java.util.Set<String> seen = new java.util.HashSet<String>();
+        for (int round = 0; feed.size() < FEED_SIZE; round++) {
+            boolean added = false;
+            for (List<InnertubeEndpoint.Video> source : sources) {
+                if (round >= source.size() || feed.size() >= FEED_SIZE) continue;
+                InnertubeEndpoint.Video video = source.get(round);
+                if (video == null || video.id.isEmpty() || !seen.add(video.id)) continue;
+                feed.add(video);
+                added = true;
+            }
+            if (!added) break;
+        }
+        // The chart only fills what is left: it is the same for everyone, so a feed of someone's
+        // own ends up as theirs and not as a list of whatever the world watched this week.
+        int profiled = feed.size();
+        if (profiled < FEED_SIZE) {
+            try {
+                for (InnertubeEndpoint.Video video : popular(region, "", FEED_SIZE, config)) {
+                    if (feed.size() >= FEED_SIZE) break;
+                    if (video.id.isEmpty() || !seen.add(video.id)) continue;
+                    feed.add(video);
+                }
+            } catch (Exception e) {
+                android.util.Log.w(TAG, "No chart for the home feed: " + e);
+            }
+        }
+        android.util.Log.i(TAG, "home feed from " + taste.searchCount() + " searches: " + profiled
+                + " videos out of " + sources.size() + " sources, " + (feed.size() - profiled)
+                + " from the chart");
+        return feed;
+    }
+
     /** Channel page; the header, uploads and playlists are three requests made in parallel. */
-    private static byte[] channel(String channelId, Config config, Context context, long now)
-            throws Exception {
-        String key = "channel_" + channelId;
+    private static byte[] channel(String channelId, Config config, Context context, long now,
+                                  int clientMajorVersion) throws Exception {
+        boolean withCommunity = clientMajorVersion >= YoutubeiResponses.COMMUNITY_TAB_VERSION;
+        String key = "channel_" + channelId + (withCommunity ? "_c" : "");
         byte[] cached = cached(context, key, 30L * 60 * 1000);
         if (cached != null) return cached;
         Future<ChannelEndpoint.ChannelInfo> infoTask = LOADERS.submit(new ChannelInfoTask(channelId, config));
         Future<ChannelEndpoint.ChannelPlaylists> playlistsTask =
                 LOADERS.submit(new PlaylistsTask(channelId, config));
+        // The Community tab is one more request, made next to the others.
+        Future<List<ChannelEndpoint.Post>> postsTask = withCommunity
+                ? LOADERS.submit(new CommunityTask(channelId, config)) : null;
         ChannelEndpoint.Uploads uploads = ChannelEndpoint.loadUploads(channelId, CHANNEL_UPLOADS, config);
 
         ChannelEndpoint.ChannelInfo info;
@@ -473,15 +698,29 @@ public class YoutubeiEndpoint implements Endpoint {
         // What the Videos tab loads when it is scrolled to the end.
         boolean more = uploads.hasMore || uploads.videos.size() >= CHANNEL_UPLOADS;
         String uploadsToken = nextToken(UPLOADS_TOKEN, 0, uploads.videos.size(), more, channelId);
-        byte[] answer = YoutubeiResponses.channel(info, uploads.videos, playlists, now, uploadsToken);
+        List<ChannelEndpoint.Post> posts = new ArrayList<ChannelEndpoint.Post>();
+        if (postsTask != null) {
+            try {
+                posts = postsTask.get(10, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                android.util.Log.w(TAG, "Channel posts unavailable for " + channelId + ": " + e);
+            }
+        }
+        String communityToken = posts.isEmpty() ? ""
+                : nextToken(COMMUNITY_TOKEN, 0, posts.size(), true, channelId);
+        String playlistsToken = playlists.isEmpty() ? ""
+                : nextToken(PLAYLISTS_TOKEN, 0, playlists.size(), true, channelId);
+        byte[] answer = YoutubeiResponses.channel(info, uploads.videos, playlists, now, uploadsToken,
+                posts, clientMajorVersion, communityToken, playlistsToken);
         if (!uploads.videos.isEmpty()) store(context, key, answer);
         return answer;
     }
 
     // ------------------------------------------------------------------ next, player, search
 
-    private NanoHTTPD.Response next(BareAndroidRequestProto.Root request, NanoHTTPD.IHTTPSession session,
-                                    Config config, Context context) throws Exception {
+    private NanoHTTPD.Response next(BareAndroidRequestProto.Root request, byte[] body,
+                                    NanoHTTPD.IHTTPSession session, Config config, Context context)
+            throws Exception {
         // The apps send the continuation of the related videos in the /next request's field 8.
         String continuation = request.getNextContinuation().isEmpty()
                 ? request.getContinuation() : request.getNextContinuation();
@@ -500,8 +739,21 @@ public class YoutubeiEndpoint implements Endpoint {
         }
         int version = clientMajorVersion(request, session);
         boolean slim = version >= YoutubeiResponses.PIVOT_BAR_VERSION;
-        boolean withComments = slim && config.getBool("show_comments", false);
-        String key = "next_" + videoId + (slim ? "_v12" : "") + (withComments ? "_c" : "");
+        boolean withComments = slim && config.getBool("show_comments", true);
+        // The playlist a video is opened from, which the apps send along with it: field 4 of the
+        // request is the playlist, field 7 the place in it.
+        String playlistId = "";
+        int playlistIndex = 0;
+        try {
+            AndroidNextRequestProto.Root watch = AndroidNextRequestProto.Root.parseFrom(body);
+            playlistId = watch.getPlaylistId();
+            playlistIndex = watch.getPlaylistIndex();
+        } catch (IOException e) {
+            android.util.Log.i(TAG, "next request without playlist fields: " + e);
+        }
+        String key = "next_" + videoId + (slim ? "_v12" : "") + (withComments ? "_c" : "")
+                + (version >= 14 ? "_v14" : "")
+                + (playlistId.isEmpty() ? "" : "_" + playlistId + "_" + playlistIndex);
         byte[] cached = cached(context, key, 10L * 60 * 1000);
         if (cached != null) return protobuf(cached);
         // Loaded next to the watch page, not after it, and only waited for briefly: a video
@@ -510,6 +762,7 @@ public class YoutubeiEndpoint implements Endpoint {
         Future<List<InnertubeEndpoint.Comment>> commentTask = withComments
                 ? LOADERS.submit(new CommentsTask(videoId, COMMENT_PAGE, config)) : null;
         InnertubeEndpoint.WatchPage page = InnertubeEndpoint.watchPage(videoId, PAGE_SIZE, config, context);
+        TasteProfile.get(context).rememberWatch(videoId, page.video.channelId);
         List<InnertubeEndpoint.Comment> comments = new ArrayList<InnertubeEndpoint.Comment>();
         if (commentTask != null) {
             try {
@@ -518,14 +771,61 @@ public class YoutubeiEndpoint implements Endpoint {
                 android.util.Log.i(TAG, "Comments of " + videoId + " were not ready: " + e);
             }
         }
-        String relatedToken = nextToken(RELATED_TOKEN, 0, page.related.size(), true, videoId);
-        String moreComments = comments.size() < COMMENT_PAGE ? ""
+        // With comments switched on the token of the list belongs to them from the start, even
+        // when the first ones were too slow to arrive: a list that still carried the token of
+        // the related videos went on loading those under the comments.
+        String relatedToken = withComments ? ""
+                : nextToken(RELATED_TOKEN, 0, page.related.size(), true, videoId);
+        String moreComments = !withComments ? ""
                 : continuationToken(COMMENTS_TOKEN, comments.size(), videoId);
+        YoutubeiResponses.Queue queue = queue(videoId, playlistId, playlistIndex, config);
         byte[] answer = YoutubeiResponses.next(page, System.currentTimeMillis(), version,
-                relatedToken, moreComments, comments);
+                relatedToken, moreComments, comments, queue);
+        preload(context, config, videoId, page, queue);
         if (!page.video.title.isEmpty()) store(context, key, answer);
         return protobuf(answer);
     }
+
+    /**
+     * The queue of the playlist a video is played as part of, or null. The apps play their way
+     * down this list on their own, so it is also what makes the next video of a playlist start.
+     */
+    private static YoutubeiResponses.Queue queue(String videoId, String playlistId, int index,
+                                                 Config config) {
+        if (playlistId.isEmpty() || !playlistId.matches("[A-Za-z0-9_-]{2,60}")) return null;
+        // A mix (RD...) is made up by YouTube for one video and cannot be read as a playlist.
+        if (playlistId.startsWith("RD")) return null;
+        PlaylistEndpoint.Playlist playlist;
+        try {
+            playlist = PlaylistEndpoint.fetchPlaylist(playlistId, QUEUE_SIZE, config);
+        } catch (Exception e) {
+            android.util.Log.w(TAG, "No queue for " + playlistId + ": " + e);
+            return null;
+        }
+        YoutubeiResponses.Queue queue = new YoutubeiResponses.Queue();
+        queue.playlistId = playlistId;
+        queue.title = playlist.title;
+        queue.author = playlist.author;
+        queue.total = Math.max(playlist.total, playlist.videos.size());
+        queue.videos.addAll(playlist.videos);
+        // The place the app sent is used when it is the video being watched; it can be off when
+        // a playlist changed since, and then the video itself says where in the list it is.
+        queue.index = index >= 0 && index < queue.videos.size()
+                && videoId.equals(queue.videos.get(index).id) ? index : -1;
+        if (queue.index < 0) {
+            for (int i = 0; i < queue.videos.size(); i++) {
+                if (videoId.equals(queue.videos.get(i).id)) {
+                    queue.index = i;
+                    break;
+                }
+            }
+        }
+        if (queue.index < 0) return null;
+        return queue;
+    }
+
+    /** How much of a playlist the queue of the watch page carries. */
+    private static final int QUEUE_SIZE = 100;
 
     /** The comments of a video, which the app asks for with the token of its watch page. */
     private NanoHTTPD.Response commentsContinuation(String[] token, Config config, Context context)
@@ -543,11 +843,40 @@ public class YoutubeiEndpoint implements Endpoint {
         for (int i = offset; i < loaded.size() && page.size() < COMMENT_PAGE; i++) {
             page.add(loaded.get(i));
         }
-        String next = nextToken(COMMENTS_TOKEN, offset, page.size(),
-                loaded.size() > offset + page.size(), videoId);
+        // YouTube is asked, not the page that was just read: a page filled to the last comment
+        // still has more behind it, and the list would otherwise end there.
+        boolean more = InnertubeEndpoint.hasMoreComments(videoId, offset + page.size());
+        String next = nextToken(COMMENTS_TOKEN, offset, page.size(), more, videoId);
         byte[] answer = YoutubeiResponses.commentsContinuation(page, System.currentTimeMillis(), next);
         if (!page.isEmpty()) store(context, key, answer);
+        // The page after this one is read while this one is on screen, so the list does not stop
+        // to wait for it when it is scrolled on.
+        if (!next.isEmpty()) {
+            PREFETCHERS.execute(new CommentsPrefetch(videoId, offset + page.size() + COMMENT_PAGE, config));
+        }
         return protobuf(answer);
+    }
+
+    /** Reads the comments after the ones just sent into the cache; nobody waits for it. */
+    private static final class CommentsPrefetch implements Runnable {
+        private final String videoId;
+        private final int limit;
+        private final Config config;
+
+        CommentsPrefetch(String videoId, int limit, Config config) {
+            this.videoId = videoId;
+            this.limit = limit;
+            this.config = config;
+        }
+
+        @Override
+        public void run() {
+            try {
+                InnertubeEndpoint.comments(videoId, limit, config);
+            } catch (Exception e) {
+                android.util.Log.i(TAG, "Prefetch of comments of " + videoId + " failed: " + e);
+            }
+        }
     }
 
     private static final class CommentsTask implements Callable<List<InnertubeEndpoint.Comment>> {
@@ -590,7 +919,7 @@ public class YoutubeiEndpoint implements Endpoint {
         byte[] answer = YoutubeiResponses.relatedContinuation(page.videos, System.currentTimeMillis(), next);
         if (!page.videos.isEmpty()) store(context, key, answer);
         if (!next.isEmpty()) {
-            LOADERS.execute(new RelatedPrefetch(videoId, offset + page.videos.size(), config));
+            PREFETCHERS.execute(new RelatedPrefetch(videoId, offset + page.videos.size(), config));
         }
         return protobuf(answer);
     }
@@ -634,6 +963,19 @@ public class YoutubeiEndpoint implements Endpoint {
             info.description = details.optString("shortDescription", "");
             info.viewCount = details.optLong("viewCount", 0);
         }
+        // The subtitle tracks of the video, pointed back at this proxy: the apps fetch the link
+        // of a track as it is, and this proxy turns YouTube's answer into what they can read.
+        String base = "http://" + host(session);
+        for (CaptionsEndpoint.Track track : config.getBool("show_captions", true)
+                ? CaptionsEndpoint.tracksOf(player)
+                : java.util.Collections.<CaptionsEndpoint.Track>emptyList()) {
+            info.captions.add(new YoutubeiResponses.CaptionTrack(
+                    CaptionsEndpoint.proxyUrl(base, videoId, track), track.languageName,
+                    track.languageCode, track.vssId, track.translatable));
+        }
+        // These apps switch to the file with only sound the moment the screen goes off, so it
+        // is made ready here, while the video is still being asked for.
+        AudioWarmup.prepare(videoId, config, player);
         String url = PlayerLookup.findProgressive360pUrl(player);
         // Which qualities the app offers and which one it starts with. 360p comes straight from
         // YouTube; everything above it is muxed by this proxy out of the streams of the Invidious
@@ -772,6 +1114,8 @@ public class YoutubeiEndpoint implements Endpoint {
                         System.currentTimeMillis(), ""));
             }
             offset = request.hasParams() ? Math.max(0, request.getParams().getIndex()) : 0;
+            // What is searched for is what the home feed is built out of later on.
+            TasteProfile.get(context).rememberSearch(query);
         }
         String key = "search_" + query + "_" + offset + (continuation ? "_more" : "");
         byte[] cached = cached(context, key, 30L * 60 * 1000);
@@ -919,18 +1263,28 @@ public class YoutubeiEndpoint implements Endpoint {
 
     /**
      * Finished answers. Every page of an endless list has its own key, so a few lists being
-     * scrolled fill this quickly; 96 entries keep a scrolled-back list in memory instead of
-     * reading and decoding it from disk again.
+     * scrolled fill this quickly; the entries keep a scrolled-back list in memory instead of
+     * reading and decoding it from disk again, and how many of them a phone with little heap
+     * can afford is {@link MemoryBudget}'s to say.
      */
+    private static final int MEMORY_ENTRIES = MemoryBudget.entries(64);
     private static final java.util.Map<String, Object[]> MEMORY =
-            new java.util.LinkedHashMap<String, Object[]>(128, 0.75f, true) {
+            new java.util.LinkedHashMap<String, Object[]>(32, 0.75f, true) {
                 @Override
                 protected boolean removeEldestEntry(java.util.Map.Entry<String, Object[]> eldest) {
-                    return size() > 96;
+                    return size() > MEMORY_ENTRIES;
                 }
             };
 
     /** Finished answers, kept in memory and on disk (base64, like the other caches' text files). */
+    /**
+     * Where the finished answers are kept. They are written as the bytes they are: the earlier
+     * copies were base64 text, which cost a third more room and turned every read into a string
+     * of twice the size of the answer before it could be decoded. The name is a new one so those
+     * older files are not read as if they were bytes; they go on the next cache clear.
+     */
+    private static final String ANSWER_CACHE = "youtubei_v2";
+
     private static byte[] cached(Context context, String key, long maxAgeMs) {
         synchronized (MEMORY) {
             Object[] entry = MEMORY.get(key);
@@ -938,10 +1292,10 @@ public class YoutubeiEndpoint implements Endpoint {
                 return (byte[]) entry[0];
             }
         }
-        java.io.File file = HttpClient.cacheFile(context.getCacheDir(), "youtubei_v1", key);
+        java.io.File file = HttpClient.cacheFile(context.getCacheDir(), ANSWER_CACHE, key);
         if (!HttpClient.isFresh(file, maxAgeMs)) return null;
         try {
-            byte[] answer = Base64.decode(HttpClient.readFile(file).trim(), Base64.NO_WRAP);
+            byte[] answer = HttpClient.readBytes(file);
             synchronized (MEMORY) {
                 MEMORY.put(key, new Object[]{answer, file.lastModified()});
             }
@@ -963,8 +1317,8 @@ public class YoutubeiEndpoint implements Endpoint {
             @Override
             public void run() {
                 try {
-                    HttpClient.writeFile(HttpClient.cacheFile(context.getCacheDir(), "youtubei_v1", key),
-                            Base64.encodeToString(answer, Base64.NO_WRAP));
+                    HttpClient.writeBytes(
+                            HttpClient.cacheFile(context.getCacheDir(), ANSWER_CACHE, key), answer);
                 } catch (Exception e) {
                     android.util.Log.w(TAG, "Could not cache " + key + ": " + e);
                 }

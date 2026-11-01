@@ -1,5 +1,65 @@
 # Changelog
 
+## 0.4 - 2026-11-01
+
+- **The old Google Play Music app plays again**, backed by YouTube Music. A separate **Play Music
+  API** switch turns it on; the app (patched to reach this proxy) searches, browses Explore and
+  plays, with the account token ignored so any signed-in account gets through.
+- **Search and Explore come from YouTube Music**, not plain YouTube, so a result carries its real
+  title, artist, album and square album art instead of a video thumbnail and an "official video"
+  title.
+- **The first play waits less.** The audio of the top search result is built ahead of the tap,
+  the whole file is fetched once and remuxed from memory into the classic MP4 the old player can
+  prepare, and a repeated request for the same track reuses that build.
+- **Audio quality** is chosen in Settings -> Playback (high, normal or low); it sets the bitrate
+  served for music and for background and audio-only play.
+- The playback links of an Invidious instance are now fetched at the same time as YouTube's own
+  answer instead of after it, the request log keeps 8 KB of a body instead of 48 KB, and the
+  connection pool is large enough for the lookups a feed fans out to - so a video starts and a
+  feed arrives sooner.
+- **One screen and a Settings screen.** The app now shows the proxy switch and a way to its
+  settings; the settings open as a list of categories - Playback, Watch page, Data, Storage - each of them a
+  page of its own, and every category and every option says what it is for.
+- **Less memory, fewer crashes on old phones.** How many lookups run at once and how many
+  answers are kept are now read from the heap the phone gives the app, the proxy lets go of
+  everything it holds when Android says it is short of memory, reading pages ahead can no longer
+  hold up a request, and the answers kept on disk are written as bytes instead of base64 text.
+
+- **Playlists play on.** A video opened from a playlist now comes with the whole queue, so the
+  apps from version 12 show the list above the related videos, jump to an entry when it is
+  tapped, and start the next one when a video ends.
+- **Playing the next video by itself**, inside a playlist and, outside one, the first related
+  video. It is turned on and off with the app's own **Autoplay** switch, in the "Up next" line
+  above the related videos, which the apps from version 11 get.
+- The buttons that step forwards and backwards beside the play button now appear only while a
+  playlist is being played, as they do on YouTube.
+- The apps from **version 14** get a **Download** button in the row under a video.
+- The **home feed follows what has been searched for**: after three searches it is built out of
+  them, the video last opened and the chart together, instead of the chart alone. What it is
+  built from stays on the phone and **Clear cache** forgets it.
+- **Select in app** no longer needs an Invidious instance: minting the token unlocks it too, the
+  apps then get every quality YouTube has for a video, and the one chosen there is muxed out of
+  YouTube's own streams instead of falling back to 360p.
+- **A proof-of-origin token**, minted on the phone from Android 6 on: YouTube's own program is
+  run in a hidden WebView and the token it mints goes with the player and media requests, which
+  is what the server wants before it serves more than the first minute of a video.
+- **Subtitles** can be turned off in Settings -> Watch page; a video no longer crashes the app
+  from version 12 when it starts (the tracks were sent without the audio track they belong to).
+- The Community tab loads ten posts instead of twenty and their pictures at the size the apps
+  draw them, which is what made that tab crawl, and the proxy keeps its request threads between
+  requests instead of starting one per connection.
+- **Subtitles.** The player answer now carries the tracks of a video and they are served from
+  the proxy at `/api/timedtext`, turned from what YouTube answers with today into the transcript
+  these apps read; the same tracks are also served as the GData caption feed.
+- A **Community tab** on channel pages for the apps from version 11: the posts of the channel,
+  with their pictures, drawn by the view those apps use for comments.
+- The comments scroll on for as long as YouTube has them, and reaching them no longer makes the
+  phone stutter: pages are read from where the last one stopped instead of from the beginning,
+  and the next page is read while the one on screen is being looked at.
+- **Comments are on by default** and sit at the end of the watch page, under a "Comments" line of
+  their own. The related videos then stay at one page: scrolling to the bottom of a video now
+  arrives at the comments and goes on through them instead of loading more related videos.
+
 ## 0.3 - 2026-10-20
 
 The release that serves the 2017 YouTube apps. Those apps (version 12 and up)

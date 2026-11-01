@@ -38,6 +38,8 @@ final class YoutubeiResponses {
     /** SHARE_ARROW: the curved arrow (ic_share); SHARE (48) is the three dots instead. */
     private static final int ICON_SHARE = 100;
     private static final int ICON_ADDTO = 46;
+    /** The circled arrow of the Download button, which the apps from version 14 have a row for. */
+    private static final int ICON_DOWNLOAD = 147;
     /** The bottom bar's own icons */
     private static final int ICON_PIVOT_SUBSCRIPTIONS = 408;
     private static final int ICON_PIVOT_HOME = 406;
@@ -312,6 +314,37 @@ final class YoutubeiResponses {
                         continuationToken))).toByteArray();
     }
 
+    /** More posts of a channel's Community tab, as the answer to a continuation request. */
+    static byte[] communityContinuation(List<ChannelEndpoint.Post> posts, String continuationToken) {
+        VideoListProto.ItemSectionRenderer section = new VideoListProto.ItemSectionRenderer();
+        for (ChannelEndpoint.Post post : posts) {
+            section.addIcsContent(new VideoListProto.ItemSectionRenderer.IcsContents()
+                    .addPost(communityPost(post)));
+        }
+        VideoListProto.Root.ResponseBody.SingleColumnBrowseResultsRenderer.Tabs.TabRenderer
+                .ContentEntry.ContentData.ContentActualData content = tabContent();
+        content.addSection(section);
+        return new VideoListProto.Root().setContinuation(new VideoListProto.Root.ContinuationContents()
+                .addSectionListContinuation(sectionList(content, continuationToken))).toByteArray();
+    }
+
+    /** More playlists of a channel, as the answer to a continuation request. */
+    static byte[] playlistsContinuation(List<ChannelEndpoint.PlaylistSummary> playlists,
+                                        String channelName, String channelId,
+                                        String continuationToken) {
+        VideoListProto.ItemSectionRenderer section = new VideoListProto.ItemSectionRenderer();
+        for (ChannelEndpoint.PlaylistSummary playlist : playlists) {
+            section.addIcsContent(new VideoListProto.ItemSectionRenderer.IcsContents().addPlaylist(
+                    browsePlaylist(playlist.id, playlist.title, channelName, channelId,
+                            playlist.count, playlist.firstVideoId, playlist.thumbnail)));
+        }
+        VideoListProto.Root.ResponseBody.SingleColumnBrowseResultsRenderer.Tabs.TabRenderer
+                .ContentEntry.ContentData.ContentActualData content = tabContent();
+        content.addSection(section);
+        return new VideoListProto.Root().setContinuation(new VideoListProto.Root.ContinuationContents()
+                .addSectionListContinuation(sectionList(content, continuationToken))).toByteArray();
+    }
+
     private static VideoListProto.Root.ResponseBody.SingleColumnBrowseResultsRenderer.Tabs.TabRenderer
             .ContentEntry.ContentData.ContentActualData tabContent() {
         return new VideoListProto.Root.ResponseBody.SingleColumnBrowseResultsRenderer.Tabs.TabRenderer
@@ -513,9 +546,13 @@ final class YoutubeiResponses {
     }
 
     /** UC... channel page: header, Home (latest uploads shelf), Videos and Playlists tabs. */
+    /** Apps from this version on get the Community tab of a channel. */
+    static final int COMMUNITY_TAB_VERSION = 11;
+
     static byte[] channel(ChannelEndpoint.ChannelInfo info, List<InnertubeEndpoint.Video> uploads,
                           List<ChannelEndpoint.PlaylistSummary> playlists, long now,
-                          String uploadsToken) {
+                          String uploadsToken, List<ChannelEndpoint.Post> posts,
+                          int clientMajorVersion, String communityToken, String playlistsToken) {
         String channelId = info.id;
         String name = info.name.isEmpty() ? channelId : info.name;
         VideoListProto.Root root = browseRoot();
@@ -567,6 +604,18 @@ final class YoutubeiResponses {
                     videoSection(uploads, info.avatar, now), uploadsToken));
         }
 
+        if (clientMajorVersion >= COMMUNITY_TAB_VERSION && !posts.isEmpty()) {
+            VideoListProto.ItemSectionRenderer section = new VideoListProto.ItemSectionRenderer();
+            for (ChannelEndpoint.Post post : posts) {
+                section.addIcsContent(new VideoListProto.ItemSectionRenderer.IcsContents()
+                        .addPost(communityPost(post)));
+            }
+            VideoListProto.Root.ResponseBody.SingleColumnBrowseResultsRenderer.Tabs.TabRenderer
+                    .ContentEntry.ContentData.ContentActualData content = tabContent();
+            content.addSection(section);
+            tabs.addTab(tab("Community", "Community", false, 0, content, communityToken));
+        }
+
         if (!playlists.isEmpty()) {
             VideoListProto.ItemSectionRenderer section = new VideoListProto.ItemSectionRenderer();
             for (ChannelEndpoint.PlaylistSummary playlist : playlists) {
@@ -577,9 +626,39 @@ final class YoutubeiResponses {
             VideoListProto.Root.ResponseBody.SingleColumnBrowseResultsRenderer.Tabs.TabRenderer
                     .ContentEntry.ContentData.ContentActualData content = tabContent();
             content.addSection(section);
-            tabs.addTab(tab("Playlists", "Playlists", false, 0, content));
+            tabs.addTab(tab("Playlists", "Playlists", false, 0, content, playlistsToken));
         }
         return finishBrowse(root, tabs, header);
+    }
+
+    /**
+     * One post of a channel's Community tab, as the post renderer the apps draw with their
+     * comment view: who wrote it with their picture, the text, when it was written, and the
+     * picture attached to it when it has one.
+     */
+    private static VideoListProto.CommunityPostThreadRenderer communityPost(ChannelEndpoint.Post post) {
+        VideoListProto.CommunityPostRenderer renderer = new VideoListProto.CommunityPostRenderer()
+                .setPostId(post.id)
+                .setAuthor(browseRuns(post.author))
+                .setAuthorThumbnail(browseThumbnails(avatarOrDefault(post.avatar), 88, 88))
+                .setContent(browseRuns(post.text));
+        if (!post.authorId.isEmpty()) {
+            renderer.setAuthorEndpoint(browseNavigation(post.authorId, null, null));
+        }
+        StringBuilder line = new StringBuilder();
+        if (!post.published.isEmpty()) line.append(post.published);
+        if (!post.likes.isEmpty()) {
+            if (line.length() > 0) line.append(" \u00b7 ");
+            line.append(post.likes).append(" likes");
+        }
+        if (line.length() > 0) renderer.setPublishedTime(browseRuns(line.toString()));
+        if (!post.image.isEmpty()) {
+            renderer.setBackstageAttachment(new VideoListProto.CommunityPostRenderer.Attachment()
+                    .addBackstageImage(new VideoListProto.CommunityPostRenderer.Attachment.Image()
+                            .setPicture(browseThumbnails(post.image, 480, 480))));
+        }
+        return new VideoListProto.CommunityPostThreadRenderer().setPost(
+                new VideoListProto.CommunityPostThreadRenderer.PostWrapper().setPost(renderer));
     }
 
     /** "1.2M subscribers" from YouTube's label ("1.23M subscribers") or a plain number. */
@@ -606,20 +685,22 @@ final class YoutubeiResponses {
         VideoListProto.Root.HeaderRender header = new VideoListProto.Root.HeaderRender().addPlaylistHeader(vl);
 
         VideoListProto.PlaylistData data = new VideoListProto.PlaylistData().setId(playlistId);
-        int index = 1;
-        for (InnertubeEndpoint.Video video : playlist.videos) {
+        for (int index = 0; index < playlist.videos.size(); index++) {
+            InnertubeEndpoint.Video video = playlist.videos.get(index);
             VideoListProto.PlaylistData.PlaylistVideo.Contents contents =
                     new VideoListProto.PlaylistData.PlaylistVideo.Contents()
                             .setId(video.id)
                             .addTitle(browseRuns(video.title))
-                            .addIndex(browseRuns(Integer.toString(index++)))
+                            .addIndex(browseRuns(Integer.toString(index + 1)))
                             .setThumbnail(browseThumbnails(hqThumbnail(video.id), 480, 360))
                             .setOwner(browseAuthor(video.channel, video.channelId))
                             .addLength(browseRuns(lengthText(video.duration)))
                             .addEndpoint(new VideoListProto.PlaylistData.PlaylistVideo.Contents.EndpointData()
                                     .addContent(new VideoListProto.PlaylistData.PlaylistVideo.Contents
                                             .EndpointData.EndpointDataContents()
-                                            .setId(video.id).setPlaylistId(playlistId)));
+                                            .setId(video.id).setPlaylistId(playlistId)
+                                            // The place in the queue the app asks /next for.
+                                            .setIndex(index)));
             data.addVideo(new VideoListProto.PlaylistData.PlaylistVideo().addContent(contents));
         }
         VideoListProto.Root.ResponseBody.SingleColumnBrowseResultsRenderer.Tabs.TabRenderer
@@ -818,6 +899,164 @@ final class YoutubeiResponses {
                 .setAuthorAvatar(nextThumbnails(DEFAULT_AVATAR, 88, 88));
     }
 
+    /** The playlist a video is being played as part of, as the queue of the watch page. */
+    static final class Queue {
+        String playlistId = "";
+        String title = "";
+        /** Whose playlist it is, for the line under its name. */
+        String author = "";
+        /** Which entry is playing, counted from zero. */
+        int index;
+        int total;
+        final List<InnertubeEndpoint.Video> videos = new java.util.ArrayList<InnertubeEndpoint.Video>();
+
+        /** The entry after the one playing, which is what autoplay moves on to. */
+        int next() {
+            return index + 1 < videos.size() ? index + 1 : -1;
+        }
+    }
+
+    /**
+     * A watch endpoint. With a playlist it also carries which entry of it this is, so the app
+     * asks /next for the same queue again and keeps playing down the list.
+     */
+    private static AndroidFullNextProto.WatchNavigation watchNavigation(String videoId,
+                                                                       String playlistId, int index) {
+        AndroidFullNextProto.WatchNavigation.WatchData data =
+                new AndroidFullNextProto.WatchNavigation.WatchData().setVideoId(videoId);
+        if (playlistId != null && !playlistId.isEmpty()) {
+            data.setPlaylistId(playlistId).setIndex(index);
+        }
+        return new AndroidFullNextProto.WatchNavigation().setWatchProperties(data);
+    }
+
+    /** The queue of the playlist: the app plays its way down this list on its own. */
+    private static AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.PlaylistPanel
+            playlistPanel(Queue queue, long now) {
+        AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.PlaylistPanel
+                .PlaylistPanelRenderer panel = new AndroidFullNextProto.Root.Contents
+                .SingleColumnWatchNextResults.PlaylistPanel.PlaylistPanelRenderer()
+                        .setTitle(queue.title)
+                        .setTitleText(nextRuns(queue.title))
+                        .setPlaylistId(queue.playlistId)
+                        .setCurrentIndex(queue.index)
+                        .setTotalVideos(Math.max(queue.total, queue.videos.size()));
+        int total = Math.max(queue.total, queue.videos.size());
+        String byline = total + (total == 1 ? " video" : " videos")
+                + (queue.author.isEmpty() ? "" : " \u00b7 " + queue.author);
+        panel.setShortByline(nextRuns(byline)).setLongByline(nextRuns(byline));
+        for (int i = 0; i < queue.videos.size(); i++) {
+            InnertubeEndpoint.Video video = queue.videos.get(i);
+            AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.PlaylistPanel
+                    .PlaylistPanelRenderer.Items.PlaylistPanelVideoRenderer entry =
+                    new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.PlaylistPanel
+                            .PlaylistPanelRenderer.Items.PlaylistPanelVideoRenderer()
+                            .setVideoId(video.id)
+                            .setTitle(nextRuns(video.title))
+                            .setThumbnail(nextThumbnails(hqThumbnail(video.id), 480, 360))
+                            .setByline(nextRuns(video.channel))
+                            .setLength(nextRuns(lengthText(video.duration)))
+                            .setNavData(watchNavigation(video.id, queue.playlistId, i));
+            if (i == queue.index) entry.setSelected(1);
+            panel.addItem(new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults
+                    .PlaylistPanel.PlaylistPanelRenderer.Items().addVideo(entry));
+        }
+        return new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.PlaylistPanel()
+                .addPanel(panel);
+    }
+
+    /**
+     * What the app plays when this video ends. The set it reads is the one whose mode is 1: the
+     * endpoint in field 2 for AUTOPLAY, in field 3 for the next button, and the one wrapped in
+     * field 5 for AUTONAV, which is the move the app makes by itself.
+     */
+    private static AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay
+            autoplaySet(String videoId) {
+        // Only what plays by itself. The next and previous endpoints are left out on purpose:
+        // the app draws the buttons that step through a list beside the play button as soon as
+        // it has them, and a video that is not part of a list has nothing to step to.
+        AndroidFullNextProto.WatchNavigation target = watchNavigation(videoId, "", 0);
+        return autoplay(newSet().setAutoplayVideo(target).setAutonavVideo(autonav(target)));
+    }
+
+    /** The playlist being played: what comes next, and the buttons that step through it. */
+    private static AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay
+            queueSet(Queue queue) {
+        AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay.AutoplayRenderer
+                .AutoplaySet set = newSet();
+        if (queue.next() >= 0) {
+            AndroidFullNextProto.WatchNavigation next = watchNavigation(
+                    queue.videos.get(queue.next()).id, queue.playlistId, queue.next());
+            set.setAutoplayVideo(next).setNextButtonVideo(next).setAutonavVideo(autonav(next));
+        }
+        if (queue.index > 0) {
+            set.setPreviousButtonVideo(watchNavigation(queue.videos.get(queue.index - 1).id,
+                    queue.playlistId, queue.index - 1));
+        }
+        return autoplay(set);
+    }
+
+    private static AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay
+            .AutoplayRenderer.AutoplaySet newSet() {
+        return new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults
+                .Autoplay.AutoplayRenderer.AutoplaySet().setMode(1);
+    }
+
+    private static AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay
+            .AutoplayRenderer.AutoplaySet.Autonav autonav(AndroidFullNextProto.WatchNavigation target) {
+        return new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay
+                .AutoplayRenderer.AutoplaySet.Autonav()
+                        .addVideo(new AndroidFullNextProto.Root.Contents
+                                .SingleColumnWatchNextResults.Autoplay.AutoplayRenderer
+                                .AutoplaySet.Autonav.AutonavVideo().setNavData(target));
+    }
+
+    private static AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay
+            autoplay(AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay
+                    .AutoplayRenderer.AutoplaySet set) {
+        return new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay()
+                .addAutoplay(new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults
+                        .Autoplay.AutoplayRenderer().addSet(set).setCountDownSecs(8));
+    }
+
+    /**
+     * "Up next" with the Autoplay switch on its right, as the header above the related videos.
+     * The switch itself is the app's own: it draws a toggleButtonRenderer as a Switch and reads
+     * and writes its autonav setting with it, so only the name of the switch is sent.
+     */
+    /**
+     * The line the comments start with, which is what sets them apart from the related videos
+     * above them. It belongs to the section itself (itemSectionHeaderRenderer), so it stays with
+     * the comments however the list is scrolled.
+     */
+    private static AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults
+            .SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer.Header
+            commentsHeader() {
+        return new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults
+                .SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer
+                .Header().addSectionHeader(new AndroidFullNextProto.Root.Contents
+                        .SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results
+                        .ResultsContents.ItemSectionRenderer.Header.ItemSectionHeaderRenderer()
+                                .setTitle(nextRuns("Comments")));
+    }
+
+    private static AndroidFullNextProto.ShelfRenderer relatedShelf(
+            List<InnertubeEndpoint.Video> related, long now) {
+        AndroidFullNextProto.ShelfRenderer.Contents.ShelfContents items =
+                new AndroidFullNextProto.ShelfRenderer.Contents.ShelfContents();
+        for (InnertubeEndpoint.Video video : related) {
+            items.addItem(new AndroidFullNextProto.ShelfRenderer.Contents.ShelfContents.Items()
+                    .addVideo(nextVideo(video, now)));
+        }
+        return new AndroidFullNextProto.ShelfRenderer()
+                .setTitle(nextRuns("Up next"))
+                .setContent(new AndroidFullNextProto.ShelfRenderer.Contents().setShelfContent(items))
+                .setAutoplayToggle(new AndroidFullNextProto.ShelfRenderer.Toggle().addButton(
+                        new AndroidFullNextProto.ToggleButtonRenderer()
+                                .setDefaultText(nextRuns("Autoplay"))
+                                .setToggledText(nextRuns("Autoplay"))));
+    }
+
     /**
      * The watch page: video metadata, channel with subscribe button, related videos. Apps from
      * version 12 get the metadata as slimVideoMetadataRenderer: they still parse
@@ -826,7 +1065,7 @@ final class YoutubeiResponses {
      */
     static byte[] next(InnertubeEndpoint.WatchPage page, long now, int clientMajorVersion,
                        String relatedToken, String commentsToken,
-                       List<InnertubeEndpoint.Comment> comments) {
+                       List<InnertubeEndpoint.Comment> comments, Queue queue) {
         InnertubeEndpoint.Video video = page.video;
         String channelId = video.channelId;
         long views = parseCount(video.views);
@@ -861,49 +1100,80 @@ final class YoutubeiResponses {
         String subscribers = subscriberText(page.subscribers);
         if (!subscribers.isEmpty()) author.setSubscribeCount(nextRuns(subscribers));
 
-        AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents
-                .Results.ResultsContents sections = new AndroidFullNextProto.Root.Contents
-                .SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents();
-        if (clientMajorVersion >= PIVOT_BAR_VERSION) {
-            sections.addItemSectionRender(nextSection().addContent(nextSectionContents()
-                    .addSlimVideoMetadata(slimMetadata(page, subscribe, now))));
-        } else {
-            sections.addItemSectionRender(nextSection().addContent(nextSectionContents().addVideoMetadata(metadata)));
-            sections.addItemSectionRender(nextSection().addContent(nextSectionContents().addAuthorData(author)));
-        }
-        // The comments ride along with the watch page. A section that only carries the token is
-        // never asked for: nothing of it is on screen, so nothing triggers the continuation.
-        if (!comments.isEmpty() || (commentsToken != null && !commentsToken.isEmpty())) {
-            AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults
-                    .SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer
-                    commentSection = nextSection();
-            for (InnertubeEndpoint.Comment comment : comments) {
-                commentSection.addContent(nextSectionContents().addCommentThread(commentThread(comment, now)));
-            }
-            if (commentsToken != null && !commentsToken.isEmpty()) {
-                commentSection.addCommentRequest(commentRequest(commentsToken));
-            }
-            sections.addItemSectionRender(commentSection);
-        }
-        sections.addItemSectionRender(relatedSection(page.related, now));
-
+        // One entry of the list per section: the app reads each entry as a single renderer and
+        // merges what arrives in one of them, so sections written together would end up as one
+        // and two headers would end up as a single header.
         AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults
                 .SingleColumnWatchNextResultsContents.Results results =
                 new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults
-                        .SingleColumnWatchNextResultsContents.Results().addContent(sections);
-        if (relatedToken != null && !relatedToken.isEmpty()) {
-            results.addContinuation(nextContinuations(relatedToken));
+                        .SingleColumnWatchNextResultsContents.Results();
+        if (clientMajorVersion >= PIVOT_BAR_VERSION) {
+            results.addContent(listEntry().addItemSectionRender(nextSection().addContent(
+                    nextSectionContents().addSlimVideoMetadata(
+                            slimMetadata(page, subscribe, now, clientMajorVersion)))));
+        } else {
+            results.addContent(listEntry().addItemSectionRender(nextSection()
+                    .addContent(nextSectionContents().addVideoMetadata(metadata))));
+            results.addContent(listEntry().addItemSectionRender(nextSection()
+                    .addContent(nextSectionContents().addAuthorData(author))));
+        }
+        // The related videos. From version 11 they go into a shelf of the section list, which is
+        // what carries "Up next" and the app's own Autoplay switch above them; the older apps
+        // get the plain section they have always had.
+        if (clientMajorVersion >= AUTOPLAY_SWITCH_VERSION && !page.related.isEmpty()) {
+            results.addContent(listEntry().addShelf(relatedShelf(page.related, now)));
+        } else {
+            results.addContent(listEntry().addItemSectionRender(relatedSection(page.related, now)));
+        }
+        // The comments come after the related videos, under a header of their own. The list of
+        // related videos then ends after one page - the token of the list goes to the comments
+        // instead - so scrolling to the bottom of the watch page arrives at the comments and
+        // goes on through them.
+        if (!comments.isEmpty() || (commentsToken != null && !commentsToken.isEmpty())) {
+            AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults
+                    .SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer
+                    commentSection = nextSection().setSectionHeader(commentsHeader());
+            for (InnertubeEndpoint.Comment comment : comments) {
+                commentSection.addContent(nextSectionContents().addCommentThread(commentThread(comment, now)));
+            }
+            results.addContent(listEntry().addItemSectionRender(commentSection));
+        }
+        // One token for the whole list: the comments when they are switched on - whether the
+        // first ones made it into this answer or not - and more related videos otherwise.
+        String listToken = commentsToken == null || commentsToken.isEmpty()
+                ? relatedToken : commentsToken;
+        if (listToken != null && !listToken.isEmpty()) {
+            results.addContinuation(nextContinuations(listToken));
+        }
+        AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults watchResults =
+                new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults().addContent(
+                        new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults
+                                .SingleColumnWatchNextResultsContents().addResult(results));
+        if (queue != null && !queue.videos.isEmpty()) {
+            watchResults.setPlaylist(playlistPanel(queue, now));
+        }
+        // Where the app goes when the video ends. In a playlist that is the next entry of the
+        // queue, and the queue is also what the buttons beside the play button step through;
+        // outside one it is the first related video, played only when autoplay is switched on.
+        if (queue != null) {
+            watchResults.setAutoplayNext(queueSet(queue));
+        } else if (!page.related.isEmpty()) {
+            watchResults.setAutoplayNext(autoplaySet(page.related.get(0).id));
         }
         return new AndroidFullNextProto.Root()
-                .addContent(new AndroidFullNextProto.Root.Contents().addNextResults(
-                        new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults().addContent(
-                                new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults
-                                        .SingleColumnWatchNextResultsContents().addResult(results))))
+                .addContent(new AndroidFullNextProto.Root.Contents().addNextResults(watchResults))
                 .setNavigationEndpoint(new AndroidFullNextProto.NavigationData().setNavProperties(
                         new AndroidFullNextProto.NavigationData.NavData().setNavId(video.id)))
                 .setPoverlays(new AndroidFullNextProto.Root.PlayerOverlays().setOverlay(
                         new AndroidFullNextProto.Root.PlayerOverlays.PlayerOverlaysRenderer()))
                 .toByteArray();
+    }
+
+    /** One entry of the section list, which holds exactly one renderer. */
+    private static AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults
+            .SingleColumnWatchNextResultsContents.Results.ResultsContents listEntry() {
+        return new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults
+                .SingleColumnWatchNextResultsContents.Results.ResultsContents();
     }
 
     private static AndroidFullNextProto.Continuations nextContinuations(String token) {
@@ -952,12 +1222,19 @@ final class YoutubeiResponses {
         for (InnertubeEndpoint.Comment comment : comments) {
             section.addContent(nextSectionContents().addCommentThread(commentThread(comment, now)));
         }
+        AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults
+                .SingleColumnWatchNextResultsContents.Results results =
+                new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults
+                        .SingleColumnWatchNextResultsContents.Results()
+                        .addContent(listEntry().addItemSectionRender(section));
         if (continuationToken != null && !continuationToken.isEmpty()) {
-            section.addCommentRequest(commentRequest(continuationToken));
+            results.addContinuation(nextContinuations(continuationToken));
         }
+        // The same kind of answer the related videos give: the comments are the end of the list
+        // of the watch page, and the app asks for the next page of that list as it scrolls.
         return new AndroidFullNextProto.Root().setContinuation(
                 new AndroidFullNextProto.Root.ContinuationContents()
-                        .addItemSectionContinuation(section)).toByteArray();
+                        .addSectionListContinuation(results)).toByteArray();
     }
 
     /** The token the app sends back to ask for the comments of a video. */
@@ -970,14 +1247,10 @@ final class YoutubeiResponses {
     static byte[] relatedContinuation(List<InnertubeEndpoint.Video> related, long now,
                                       String continuationToken) {
         AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults
-                .SingleColumnWatchNextResultsContents.Results.ResultsContents sections =
-                new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults
-                        .SingleColumnWatchNextResultsContents.Results.ResultsContents();
-        sections.addItemSectionRender(relatedSection(related, now));
-        AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults
                 .SingleColumnWatchNextResultsContents.Results results =
                 new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults
-                        .SingleColumnWatchNextResultsContents.Results().addContent(sections);
+                        .SingleColumnWatchNextResultsContents.Results()
+                        .addContent(listEntry().addItemSectionRender(relatedSection(related, now)));
         if (continuationToken != null && !continuationToken.isEmpty()) {
             results.addContinuation(nextContinuations(continuationToken));
         }
@@ -1058,10 +1331,16 @@ final class YoutubeiResponses {
      * like and dislike buttons, the channel row and the description (the apps show it after the
      * panel is expanded).
      */
+    /** Apps from this version on get "Up next" with the Autoplay switch over the related videos. */
+    static final int AUTOPLAY_SWITCH_VERSION = 11;
+
+    /** Apps from this version on draw a Download button in the row under a video. */
+    private static final int DOWNLOAD_BUTTON_VERSION = 14;
+
     private static AndroidFullNextProto.SlimVideoMetadataRenderer slimMetadata(
             InnertubeEndpoint.WatchPage page,
             AndroidFullNextProto.AuthorRendererData.SubscribeButtonData.SubContents subscribe,
-            long now) {
+            long now, int clientMajorVersion) {
         InnertubeEndpoint.Video video = page.video;
         long views = parseCount(video.views);
         long likes = parseCount(video.likes);
@@ -1079,7 +1358,10 @@ final class YoutubeiResponses {
         slim.addButtons(slimButton(ICON_LIKE, likes > 0 ? shortNumber(likes) : "Like"));
         slim.addButtons(slimButton(ICON_DISLIKE, "Dislike"));
         slim.addButtons(slimButton(ICON_SHARE, "Share", shareEndpoint(video.id, video.title)));
-        slim.addButtons(slimButton(ICON_ADDTO, "Add to"));
+        if (clientMajorVersion >= DOWNLOAD_BUTTON_VERSION) {
+            slim.addButtons(slimButton(ICON_DOWNLOAD, "Download"));
+        }
+        slim.addButtons(slimButton(ICON_ADDTO, "Save"));
 
         AndroidFullNextProto.SlimOwner.SlimOwnerRenderer owner =
                 new AndroidFullNextProto.SlimOwner.SlimOwnerRenderer()
@@ -1119,6 +1401,24 @@ final class YoutubeiResponses {
         /** Set when there is nothing to play; the app shows it instead of starting the player. */
         String error = "";
         final java.util.List<StreamFormat> formats = new java.util.ArrayList<StreamFormat>();
+        final java.util.List<CaptionTrack> captions = new java.util.ArrayList<CaptionTrack>();
+    }
+
+    /** One subtitle track of the player answer. */
+    static final class CaptionTrack {
+        final String url;
+        final String name;
+        final String languageCode;
+        final String vssId;
+        final boolean translatable;
+
+        CaptionTrack(String url, String name, String languageCode, String vssId, boolean translatable) {
+            this.url = url;
+            this.name = name;
+            this.languageCode = languageCode;
+            this.vssId = vssId;
+            this.translatable = translatable;
+        }
     }
 
     static final class StreamFormat {
@@ -1257,6 +1557,29 @@ final class YoutubeiResponses {
                 formats.addDashFormat(entry);
             }
             root.addFormats(formats);
+        }
+
+        // The subtitle tracks. The app fetches the link of a track as it is, so it points back
+        // at this proxy, which turns YouTube's own answer into the transcript these apps read.
+        if (!info.captions.isEmpty()) {
+            AndroidPlayerProto.Root.CaptionTracks.Contents tracks =
+                    new AndroidPlayerProto.Root.CaptionTracks.Contents();
+            for (CaptionTrack track : info.captions) {
+                tracks.addTrack(new AndroidPlayerProto.Root.CaptionTracks.Contents.CaptionTrack()
+                        .setUrl(track.url)
+                        .addName(new AndroidPlayerProto.TextRuns().addRun(
+                                new AndroidPlayerProto.TextRuns.TextRun().setText(track.name)))
+                        .setVssId(track.vssId)
+                        .setLanguageCode(track.languageCode)
+                        .setIsTranslatable(track.translatable ? 1 : 0));
+            }
+            // The audio track the subtitles belong to. Without it the app has nothing to read
+            // the list of tracks out of, and starting the video ends in a NullPointerException.
+            AndroidPlayerProto.Root.CaptionTracks.Contents.AudioTracks audio =
+                    new AndroidPlayerProto.Root.CaptionTracks.Contents.AudioTracks();
+            for (int i = 0; i < info.captions.size(); i++) audio.addCaptionTrackIndices(i);
+            tracks.addAudioTrack(audio.setDefaultCaptionTrackIndex(0)).setDefaultAudioTrackIndex(0);
+            root.addCaptions(new AndroidPlayerProto.Root.CaptionTracks().addContent(tracks));
         }
 
         root.addVideoMetadata(new AndroidPlayerProto.Root.Metadata()

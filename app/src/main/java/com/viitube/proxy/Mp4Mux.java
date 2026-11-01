@@ -93,9 +93,38 @@ final class Mp4Mux {
      */
     static Plan prepareBest(JSONObject videoFormat, JSONObject audioFormat, String videoUrl,
                             String audioUrl) throws IOException {
+        return prepareBest(videoFormat, audioFormat, videoUrl, audioUrl, false);
+    }
+
+    /**
+     * Above this many fragments the classic layout costs more than it is worth: its sample
+     * tables are built from the header of every fragment, so a video of twenty-five minutes
+     * waits through hundreds of requests before its first byte, and the tables themselves are
+     * megabytes of arrays. A player that reads a fragmented file is given one instead, which
+     * needs no headers read in advance and starts at once.
+     */
+    private static final int FRAGMENTED_ABOVE = 160;
+
+    /**
+     * {@code newPlayer} says the player on the other side is one that reads a fragmented file
+     * (Android 6 and up). Short videos keep the classic layout either way: it seeks by index and
+     * plays on every player there is.
+     */
+    static Plan prepareBest(JSONObject videoFormat, JSONObject audioFormat, String videoUrl,
+                            String audioUrl, boolean newPlayer) throws IOException {
         Source video = loadSource(videoFormat, videoUrl, 1);
         Source audio = loadSource(audioFormat, audioUrl, 2);
-        if (video.pieces.size() + audio.pieces.size() <= CLASSIC_MAX_FRAGMENTS) {
+        int fragments = video.pieces.size() + audio.pieces.size();
+        if (newPlayer && fragments > FRAGMENTED_ABOVE) return prepareFragmented(video, audio);
+        if (fragments <= CLASSIC_MAX_FRAGMENTS) {
+            // Reading the header of every fragment and holding the sample tables of all of them
+            // is what a phone with a small heap cannot do; it is given the single file with
+            // sound of the instance instead, which the caller falls back to.
+            if (MemoryBudget.SMALL_HEAP && fragments > CLASSIC_MAX_FRAGMENTS / 2) {
+                throw new IOException("too long to mux on a phone with " 
+                        + (Runtime.getRuntime().maxMemory() / (1024 * 1024)) + " MB of heap: "
+                        + fragments + " fragments");
+            }
             // No fragmented fallback here: Samsung's Android 4.4 player crashes on it.
             return prepareClassic(video, audio);
         }
@@ -148,7 +177,7 @@ final class Mp4Mux {
             throw new IOException("unexpected layout of format " + format.optInt("itag"));
         }
         // init and index are adjacent: one request for both
-        byte[] head = HttpClient.getRange(url, 0, indexEnd, USER_AGENT);
+        byte[] head = read(url, 0, indexEnd);
 
         Source source = new Source();
         source.url = url;
@@ -391,6 +420,102 @@ final class Mp4Mux {
 
     private static final ExecutorService HEADERS = Executors.newFixedThreadPool(8, new DownloadThreads());
 
+    /**
+     * The audio stream of a video, remuxed from its fragments into one classic MP4 (a single moov
+     * with a full sample table, then one mdat). Android's MediaPlayer cannot prepare the raw
+     * fragmented DASH audio, but it plays this; the Play Music app is served it as audio/mp4.
+     */
+    private static final java.util.Map<String, byte[]> BUFFERS =
+            java.util.Collections.synchronizedMap(new java.util.HashMap<String, byte[]>());
+
+    /** Keep a whole stream in memory, keyed by a "mem:&lt;id&gt;" url, so the remux reads it without HTTP. */
+    static void putBuffer(String id, byte[] data) {
+        BUFFERS.put(id, data);
+    }
+
+    static void dropBuffer(String id) {
+        BUFFERS.remove(id);
+    }
+
+    /** Bytes of a source: out of the in-memory buffer for a "mem:" url, over HTTP otherwise. */
+    private static byte[] read(String url, long start, long end) throws IOException {
+        if (url.startsWith("mem:")) {
+            byte[] data = BUFFERS.get(url.substring(4));
+            if (data == null) throw new IOException("buffer gone: " + url);
+            int from = (int) Math.max(0, start);
+            int to = (int) Math.min(data.length - 1, end);
+            if (from > to) return new byte[0];
+            byte[] out = new byte[to - from + 1];
+            System.arraycopy(data, from, out, 0, out.length);
+            return out;
+        }
+        return HttpClient.getRange(url, start, end, USER_AGENT);
+    }
+
+    static Plan prepareAudioClassic(JSONObject audioFormat, String audioUrl) throws IOException {
+        return prepareClassicAudio(loadSource(audioFormat, audioUrl, 1));
+    }
+
+    private static Plan prepareClassicAudio(Source audio) throws IOException {
+        List<Future<byte[]>> audioHeaders = requestHeaders(audio);
+        Samples audioSamples = readSamples(audio, audioHeaders, false);
+
+        Plan plan = new Plan();
+        plan.classic = true;
+        plan.durationSeconds = audioSamples.mediaDuration / (double) audio.mediaTimescale;
+        plan.pieces.addAll(audioSamples.chunks);
+        sortByStart(plan.pieces);
+        long payload = 0;
+        for (Piece piece : plan.pieces) payload += piece.size;
+        boolean large = payload > 0xF0000000L;
+
+        byte[] ftyp = classicFtyp();
+        byte[] moov = classicMoovAudio(audio, audioSamples, plan.durationSeconds, large);
+        long offset = ftyp.length + moov.length + (large ? 16 : 8);
+        for (Piece piece : plan.pieces) {
+            piece.outputOffset = offset;
+            offset += piece.size;
+        }
+        moov = classicMoovAudio(audio, audioSamples, plan.durationSeconds, large);
+
+        ByteArrayOutputStream init = new ByteArrayOutputStream(ftyp.length + moov.length + 16);
+        init.write(ftyp);
+        init.write(moov);
+        byte[] mdat = new byte[large ? 16 : 8];
+        if (large) {
+            putU32(mdat, 0, 1);
+            putU64(mdat, 8, payload + 16);
+        } else {
+            putU32(mdat, 0, payload + 8);
+        }
+        mdat[4] = 'm'; mdat[5] = 'd'; mdat[6] = 'a'; mdat[7] = 't';
+        init.write(mdat);
+        plan.init = init.toByteArray();
+        plan.length = plan.init.length + payload;
+        return plan;
+    }
+
+    /** A moov with one audio track, built from the fragment sample tables. */
+    private static byte[] classicMoovAudio(Source audio, Samples audioSamples, double duration,
+                                           boolean large) throws IOException {
+        byte[] mvhd = boxCopy(audio.moov, "mvhd");
+        int version = mvhd[8] & 0xff;
+        long movieDuration = Math.round(duration * audio.movieTimescale);
+        writeDuration(mvhd, 8 + 4 + (version == 1 ? 16 : 8) + 4, version, movieDuration);
+        putU32(mvhd, mvhd.length - 4, 2);
+
+        byte[] audioTrak = patchTrak(boxCopy(audio.moov, "trak"), 1,
+                Math.round(audioSamples.mediaDuration * audio.movieTimescale
+                        / (double) audio.mediaTimescale),
+                audioSamples.mediaDuration, 1.0);
+        audioTrak = replaceStbl(audioTrak, buildStbl(audioTrak, audioSamples, false, large));
+
+        ByteArrayOutputStream body = new ByteArrayOutputStream();
+        body.write(mvhd);
+        body.write(audioTrak);
+        return wrap("moov", body.toByteArray());
+    }
+
     private static Plan prepareClassic(Source video, Source audio) throws IOException {
         long started = System.currentTimeMillis();
         // Queue the headers of both tracks before waiting for any of them.
@@ -448,10 +573,19 @@ final class Mp4Mux {
         return ftyp;
     }
 
+    /**
+     * How many fragment headers are asked for at a time. A long video has hundreds of them, and
+     * asking for all at once means hundreds of answers waiting in memory at the same time, which
+     * on a phone of 2013 is the whole heap. The rest is asked for as the read moves along.
+     */
+    private static final int HEADERS_IN_FLIGHT = 48;
+
     /** Builds the sample tables of a track from its fragment headers (downloaded in parallel). */
     private static List<Future<byte[]>> requestHeaders(Source source) {
         List<Future<byte[]>> headers = new ArrayList<Future<byte[]>>();
-        for (Piece piece : source.pieces) headers.add(HEADERS.submit(new HeaderDownload(piece)));
+        for (int i = 0; i < source.pieces.size() && i < HEADERS_IN_FLIGHT; i++) {
+            headers.add(HEADERS.submit(new HeaderDownload(source.pieces.get(i))));
+        }
         return headers;
     }
 
@@ -461,17 +595,24 @@ final class Mp4Mux {
         Samples samples = new Samples();
         try {
             for (int i = 0; i < source.pieces.size(); i++) {
+                // One more header is asked for as each one is read, so the number on its way
+                // stays at HEADERS_IN_FLIGHT instead of growing with the length of the video.
+                if (headers.size() < source.pieces.size()) {
+                    headers.add(HEADERS.submit(new HeaderDownload(source.pieces.get(headers.size()))));
+                }
                 byte[] moof;
                 try {
                     moof = headers.get(i).get();
                 } catch (Exception e) {
                     throw new IOException("fragment header " + i + ": " + e);
                 }
+                // Read, so the bytes are let go of before the next hundred arrive.
+                headers.set(i, null);
                 readMoof(moof, source.pieces.get(i), defaults, source.mediaTimescale, video, samples);
             }
             buildChunks(samples, source.mediaTimescale, source.url, source.pieces.get(0).track);
         } finally {
-            for (Future<byte[]> future : headers) future.cancel(true);
+            for (Future<byte[]> future : headers) if (future != null) future.cancel(true);
         }
         return samples;
     }
@@ -487,12 +628,12 @@ final class Mp4Mux {
         @Override
         public byte[] call() throws Exception {
             int guess = Math.min(piece.size, 16384);
-            byte[] head = HttpClient.getRange(piece.url, piece.offset, piece.offset + guess - 1, USER_AGENT);
+            byte[] head = read(piece.url, piece.offset, piece.offset + guess - 1);
             int[] moof = findBox(head, 0, head.length, "moof");
             if (moof != null) return slice(head, moof[0], moof[1]);
             long size = u32(head, 0);
             if (!"moof".equals(type(head, 4)) || size > piece.size) throw new IOException("no moof");
-            return HttpClient.getRange(piece.url, piece.offset, piece.offset + size - 1, USER_AGENT);
+            return read(piece.url, piece.offset, piece.offset + size - 1);
         }
     }
 
@@ -710,6 +851,9 @@ final class Mp4Mux {
         public synchronized Thread newThread(Runnable task) {
             Thread thread = new Thread(task, "mux-download-" + (++count));
             thread.setDaemon(true);
+            // Below the threads that answer the player: on a phone of 2013 a mux running at
+            // normal priority takes the whole processor, and the picture on screen stops with it.
+            thread.setPriority(Thread.MIN_PRIORITY + 2);
             return thread;
         }
     }
@@ -739,8 +883,7 @@ final class Mp4Mux {
 
         @Override
         public byte[] call() throws Exception {
-            byte[] data = HttpClient.getRange(piece.url, piece.runOffset,
-                    piece.runOffset + piece.runSize - 1, USER_AGENT);
+            byte[] data = read(piece.url, piece.runOffset, piece.runOffset + piece.runSize - 1);
             if (piece.fragment) patchFragment(data, piece.sequence, piece.track);
             return data;
         }

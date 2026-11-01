@@ -162,6 +162,8 @@ message playlistData {
                 message contents {
                     string id = 1;
                     string playlistId = 2;
+                    /** Which entry of the playlist this is, counted from zero. */
+                    int32 index = 3;
                 }
                 repeated contents content = 48687757;
             }
@@ -213,9 +215,38 @@ message videoWithContextRenderer {
     }
     repeated overlays overlay = 15;
 }
+/**
+ * One entry of a channel's Community tab. The apps have no renderer of their own for a post:
+ * they draw it with the one they draw comments with (commentRenderer, 62285947, inside a
+ * commentThreadRenderer, 62285833), which is also how the 2017 app itself shows them - its
+ * presenter (rai) reads the picture of a post out of the attachment in field 24.
+ */
+message communityPostRenderer {
+    optional textRuns author = 1;
+    optional thumbnails authorThumbnail = 2;
+    optional browseNavigation authorEndpoint = 3;
+    optional textRuns content = 4;
+    string postId = 9;
+    /** The picture of the post (backstageImageRenderer, 120744665). */
+    message attachment {
+        message image {
+            optional thumbnails picture = 1;
+        }
+        repeated image backstageImage = 120744665;
+    }
+    optional attachment backstageAttachment = 24;
+    optional textRuns publishedTime = 28;
+}
+message communityPostThreadRenderer {
+    message postWrapper {
+        optional communityPostRenderer post = 62285947;
+    }
+    optional postWrapper post = 1;
+}
 message itemSectionRenderer {
     message icsContents {
         repeated compactVideoRenderer video = 50630979;
+        repeated communityPostThreadRenderer post = 62285833;
         repeated playlistRenderer playlist = 50742631;
         repeated aboutRenderer about = 52191200;
         repeated channelRenderer channel = 50794305;

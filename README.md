@@ -9,6 +9,7 @@ YouTube; the app does not download or transcode video.
 
 - Innertube-backed search, channel profiles, uploads, playlists, related videos,
   and comments.
+- Playlist queues and playing the next video by itself, for the protobuf API.
 - YouTube Data API v3-backed popular feeds and optional upload metadata.
 - Playback redirects for supported progressive MP4 formats.
 - A second API for the 2015-2016 YouTube Android apps: the protobuf Innertube
@@ -52,6 +53,13 @@ On Windows:
 ```bat
 gradlew.bat :app:assembleRelease
 ```
+
+Its dexer (D8 4.0.52) fails with a `NullPointerException` on an **anonymous inner class that
+holds on to the instance around it** - a listener written as `new View.OnClickListener() { ... }`
+inside an activity. Write those as named `static` classes that take what they need in their
+constructor; the error names the class (`MainActivity$2.class: D8: java.lang.NullPointerException`)
+and whether it shows at all depends on the JDK the build runs on, so it can pass here and fail on
+the next machine. Lambdas are fine: they do not become classes of their own.
 
 The unsigned APK is written to:
 
@@ -226,12 +234,14 @@ port, with the same data as the GData feeds:
 | `POST /youtubei/v1/browse` `FEwhat_to_watch` | Home. Apps from version 12 get one Home tab and navigate with the bottom bar (below); version 11 gets Home, Trending and Account tabs above the feed, older apps Home and Music. |
 | `browse` `FEtrending`, `FEmusic` | The popular chart and the region's music chart. |
 | `browse` `FEsubscriptions`, `FElibrary`, `FEaccount` | The pages behind the bottom bar's other items: links to the feeds this proxy serves, since signing in is not supported. |
-| `browse` `UC...` (or `@handle`) | Channel header (avatar, banner, subscribers), latest uploads, Videos and Playlists tabs. |
+| `browse` `UC...` (or `@handle`) | Channel header (avatar, banner, subscribers), latest uploads, Videos, Community (apps from version 11) and Playlists tabs. |
 | `browse` `VL...` | Playlist header and up to 100 videos. |
-| `POST /youtubei/v1/next` | Watch page: title, views, date, likes, description, channel with avatar and subscribers, related videos. |
+| `POST /youtubei/v1/next` | Watch page: title, views, date, likes, description, channel with avatar and subscribers, related videos, the queue of the playlist the video is played from and what to play when it ends. |
 | `POST /youtubei/v1/player` | Video details and the 360p MP4 stream (direct googlevideo.com URL). With the experimental 720p mode, the stream muxed by the proxy is added as itag 22. |
 | `POST /youtubei/v1/search` | 20 results per page, with the channels and playlists YouTube found first; `SearchRequestParams.index` selects a page and a continuation token the next one. |
 | `POST /youtubei/v1/guide`, `navigation/resolve_url` | Side menu; links to videos, channels, handles, playlists and searches. Apps from version 12 also get the bottom bar from the guide answer. |
+| `GET /api/timedtext` | Subtitles: `type=list&v=ID` is the list of tracks, `v=ID&lang=xx` one track as the plain transcript XML. |
+| `GET /feeds/api/videos/ID/captions` | The same tracks as the caption feed of the GData API, for the apps that ask for that. |
 | `config`, `deviceregistration/v1/devices`, `c2dm/register3`, `device_204` | Start-up stubs. |
 
 ### The 2017 apps (version 12 and newer)
@@ -326,6 +336,11 @@ install can fail; the proxy then logs the failure and serves plain HTTP only.
 
 ## Configuration
 
+The app itself has one screen: the switch that runs the proxy, and **Settings**. Settings opens
+a list of categories - Playback, Watch page, Data, Storage - and each of them is a page of its
+own, with its options and a line under each saying what it does. Settings are written to `files/config.json`, so they can also be pushed with
+`adb push config.json /data/data/net.truehosting.ytproxy/files/config.json`.
+
 **Invidious instance** in the app is optional; with one set, playback comes from it. The proxy
 asks the instance for `/api/v1/videos/{id}?local=true`, which answers with links the instance
 serves itself. YouTube rarely offers itag 22 (720p in one file) any more, so 720p is muxed here
@@ -337,7 +352,32 @@ redirects and the protobuf player answer, and is kept for ten minutes. Leave the
 use YouTube directly, as before. Public instances often refuse requests from outside their own
 network, so an instance of your own is the reliable choice.
 
-The **Playback format** setting gains **Select in app** while an instance is entered: the player
+**SABR** is a playback format of its own, for the apps from version 11. It is how YouTube's own
+apps fetch media today: instead of a link to a file, the server is asked over `POST` which
+streams are wanted and from which moment, and answers with a stream of parts (UMP) carrying the
+pieces of a fragmented MP4. The proxy speaks that protocol itself (`SabrClient`, following
+yt2009's `yt2009sabr.js` and the UMP reader it is based on), writes both streams to this phone
+and hands the app one file put together out of them by the muxer this proxy already had. The
+request is made as an iPhone, because that is the client the server still serves without a
+proof-of-origin token; the settings of the stream (`videoPlaybackUstreamerConfig`) and the
+address (`serverAbrStreamingUrl`) come from that client's player answer, and every answer says
+where its pieces belong, so a piece that is sent twice is written once. Every quality the video
+has is offered, each one a link of its own (`?sabr=1&q=720`).
+
+It reads the video before playback starts - a few seconds for a three-minute one - and it runs
+into the same wall as the direct links: **without a proof-of-origin token the server serves only
+the first minute** of a longer video, which is what the token below is for. It says so itself, in the policy message of its answer
+(`60000` ms), and asking again from a later moment, with the cookie of the previous answer, or
+with a fresh player answer, brings nothing; the other clients (`ANDROID_VR`, `TVHTML5`) are
+refused the player answer altogether. A video that cannot be read in full therefore falls back
+to the plain link, which is also why an Invidious instance remains the way to play a whole video
+above 360p.
+
+The **Playback format** setting gains **Select in app** while an Invidious instance is entered
+**or** the phone mints a proof-of-origin token (Android 6 and newer), because both are ways to
+read a stream above 360p to its end; with a token the qualities come from YouTube's own answer
+and the quality chosen in the app is muxed out of YouTube's own streams, with no instance in
+between. It: the player
 answer then lists every quality the instance has (360p straight from YouTube, the higher ones
 muxed by this proxy), so the choice is made in the app's own quality menu. A link this proxy
 writes carries the quality in `?q=720`; the legacy clients can ask with `fmt=22` instead. The
@@ -360,20 +400,92 @@ though it brings its video along. The audio is always the original track - an an
 stream per dubbed language and only the link says which is which (`xtags=acont=original` against
 `acont=dubbed:lang=pl`), so a Polish video is no longer played with its English AI dub.
 
-**Show comments** in the app adds them under the video for apps from version 12. It is off by
-default: those apps have no place of their own for comments, so they end up in a section under
-the video, and loading them makes a watch page slower. They are fetched next to the watch page
-and waited for at most four seconds, so a video with slow comments still opens at once.
+**Show comments** in the app puts them under the video for apps from version 12, and is on by
+default. They are fetched next to the watch page and waited for at most four seconds, so a video
+with slow comments still opens at once.
 
-**Comments** are answered on the protobuf API as well. They ride along with the watch page, in a
-section of their own - a section that carries only a continuation token is never asked for,
-because nothing of it is on screen to trigger it. The token for the next twenty goes with them,
-and the answer to that token is an `itemSectionContinuation` of `commentThreadRenderer`
-(`62285833`), each holding a `commentRenderer` (`62285947`) whose author is field 1, the picture
-field 2, the author's channel field 3, the text field 4 and the time field 28 - the numbers come
-from the app's own presenter. Twenty comments per page, with the token for the next ones; the
-data is the same lookup the GData comment feed uses, which today means YouTube's comment
-entities rather than the old renderers.
+**Comments** come after the related videos, under a `shelfHeaderRenderer` of their own that says
+"Comments", and they are the end of the watch page: the one continuation token of the section
+list goes to them instead of to the related videos, so the related list stays at the page it was
+sent with and scrolling to the bottom carries on through the comments. The answer to that token
+is a `sectionListContinuation` holding an item section of `commentThreadRenderer` (`62285833`),
+each with a `commentRenderer` (`62285947`) whose author is field 1, the picture field 2, the
+author's channel field 3, the text field 4 and the time field 28 - the numbers come from the
+app's own presenter. Twenty comments per page, with the token for the next ones, and the list
+goes on for as long as YouTube has more: what has been read is kept with YouTube's token for the
+comments behind it, so a page is one request instead of reading every page from the first one
+again - which is what made the phone stutter the moment the list reached the comments. The page
+after the one on screen is read ahead on the prefetch pool, and whether the list ends is asked of
+YouTube rather than guessed from the page just sent. The data is the same lookup the GData
+comment feed uses, which today means YouTube's comment entities rather than the old renderers. With comments switched off the token stays with the related videos and
+that list is the endless one again.
+
+Every section is its own entry of the section list. The app reads an entry as a single renderer
+and merges what arrives inside one of them, so sections written into the same entry become one
+section and two headers become a single header.
+
+**Playing on by itself** works through the two things the apps build their playback queue from,
+both next to the results of the watch page:
+
+- The **queue of a playlist** (`playlistPanelRenderer`, `50631000`, in field 2 of
+  `singleColumnWatchNextResults`): its title is field 1, the entries field 2, the entry playing
+  field 3, the playlist field 5 and how long it is field 6; the name also goes in field 7 as a
+  formatted string and "N videos - channel" in fields 16 and 17, which is what the later apps
+  draw under it. Each entry is a `playlistPanelVideoRenderer` (`51779701`)
+  with the title in field 1, the thumbnail in 3, the channel in 4, "this one is playing" in 6,
+  its watch endpoint in 7, the length in 9 and the video in 10. The app turns those entries into
+  its own queue (`ups`, `gwf`) and walks down it, so the next video of a playlist starts when one
+  ends, and tapping an entry jumps to it. The watch endpoints carry the playlist and the place in
+  it, which is what the apps send back in fields 4 and 7 of the next `/next` request, so the
+  queue survives every move; the proxy reads the place from there and falls back to looking the
+  video up in the playlist when a playlist changed in between. Mixes (`RD...`) are left out:
+  YouTube makes them up for one video and they cannot be read as a playlist.
+- The **autoplay set** (`autoplayRenderer`, `46659098`, field 3): the app reads the set whose
+  mode is 1 and takes the endpoint in field 2 for AUTOPLAY, field 3 for the next button, field 4
+  for the previous one and the `111631903` renderer in field 5 for AUTONAV - the move it makes by
+  itself. A video on its own is sent fields 2 and 5 only, and deliberately not 3 and 4: the app
+  draws the buttons that step forwards and backwards beside the play button as soon as it has
+  those endpoints, and outside a list there is nothing to step to. Inside a playlist all four
+  are sent, which is where those buttons belong.
+
+The **Autoplay switch** is the app's own, and the apps from version 11 get it. "Up next" with
+the switch on its right is the header of a `shelfRenderer` (`51845067`) that carries the related
+videos themselves: its title is field 1, its contents field 5 (`57988071`, the same shelf the
+channel pages use) and the `toggleButtonRenderer` (`79971800`) field 30. The videos have to be
+inside it - the app's section-list model (`tqx`) reads a shelf of that list only through its
+contents and drops a shelf that carries none, which is why a header sent on its own never
+appeared. The app draws the toggle as a `Switch` and both reads and writes its own autonav
+setting with it (`hvu`, `fso`), so only the name of the switch is sent and the state belongs to
+the app - which is why there is no autoplay setting in the proxy. Older apps get the plain
+section of related videos they have always had.
+
+The **Community tab** of a channel is served to the apps from version 11 on. The posts come
+from the channel's Posts tab (`browse` with `params` `EgVwb3N0c_IGBAoCSgA=`), where each one is a
+`backstagePostThreadRenderer` with the text, who wrote it, when, the likes and what is attached.
+The apps have no renderer of their own for a post, so they are sent as the renderer those apps
+draw a comment with - `commentThreadRenderer` (`62285833`) around a `commentRenderer`
+(`62285947`) - which is what the 2017 app does itself: its presenter (`rai`) draws both with the
+`backstage_post` layout and reads the picture of a post out of the attachment in field 24
+(`backstageImageRenderer`, `120744665`). Twenty posts, loaded next to the header, the uploads and
+the playlists; a channel without posts simply has no such tab.
+
+**Subtitles** are served to every app, and **Offer subtitles** in the settings turns them off.
+The player answer carries the tracks of the video
+(`playerCaptionsTracklistRenderer`, `51621377`, in field 10): the link is field 1, the name field
+2, the vssId field 3 and the language field 4 - the app fetches that link exactly as it is
+(`abaq` of YouTube 12.45.56 builds the request straight from it), so it points back at this proxy
+at `/api/timedtext`. YouTube answers with `<timedtext format="3"><p t="1360" d="1680">` today,
+and the apps read `<transcript><text start="1.36" dur="1.68">` (`/transcript/text` of their
+parser, class `abar`), so the cues are turned around here, the words an automatic track splits
+into `<s>` pieces are put back into one line, and the result is kept on the phone for a day. The
+same tracks are also served as the GData caption feed for the older apps. The tracks go with
+the audio track they belong to (field 2 of the tracklist, with the places of the subtitle tracks
+in it): the app reads the subtitles of a video out of that one, and a tracklist without it is a
+`NullPointerException` in `abco.b()` the moment a video starts.
+
+The row under a video is Like, Dislike, Share and Save, and from **version 14** a **Download**
+button between Share and Save (icon `147`, one the app has a drawable for). The older apps do
+not get it, because their row has no place for a fifth button.
 
 The **Share** button under a video opens the system share sheet: its endpoint (`106983893`) is an
 ACTION_SEND intent spelled out as a message - the extras, the type and the chooser title - which
@@ -405,6 +517,49 @@ and counts may legitimately be empty or zero.
 
 Do not put personal API keys, signing keys, or other secrets into source files
 or commit them to GitHub.
+
+## A home feed of someone's own
+
+The apps of today fill their home screen from the account that is signed in. There is no account
+here, so the proxy keeps what this phone searched for and which videos it opened - in
+`files/taste.json`, and nowhere else - and once there have been three searches the home feed is
+built out of them: the three newest searches are asked for again, the video last opened brings
+its related videos along, and the chart fills the rest. The sources take turns, so the feed is
+not one search followed by another, and it is kept for fifteen minutes under a key that changes
+with every new search. **Clear cache** forgets it and the feed goes back to the plain chart.
+
+## The proof-of-origin token
+
+YouTube serves the first minute of a video to a client it cannot place, and the whole of it to
+one that proves itself. The proof is made by a program of YouTube's own that only runs in a
+browser, so from **Android 6** on the proxy runs it in a hidden WebView: `PoTokenMinter` loads
+`assets/po_token.html` with `www.youtube.com` as its address, so the page's requests are
+same-origin, and the page then does what the published protocol says - `POST /api/jnn/v1/Create`
+with the request key, a challenge that comes back as one scrambled string (every byte moved
+along by 97, and what comes out is `[messageId, script, url, hash, program, globalName, ...]`),
+the script run so the program registers itself under that name, its snapshot handed to
+`POST /api/jnn/v1/GenerateIT`, and the integrity token that answers used to mint a token bound to
+one identifier. Two are used, as the protocol wants: one bound to the **visitor** of this session, which goes
+into the player request as `serviceIntegrityDimensions.poToken`, travels on every stream link as
+`pot=`, and makes the requests carry that same visitor id in `X-Goog-Visitor-Id`; and one bound
+to the **video**, which goes into the media request of SABR. With a token in hand the
+browser-like clients are tried first for the muxer, because a token belongs to a browser session
+and it is their links it opens.
+Tokens are kept for six hours. **Mint a proof-of-origin token** in the settings turns it off, and
+it is off by itself on anything older than Android 6, whose browser cannot run the program.
+
+## Memory on an old phone
+
+A YouTube answer is a megabyte of JSON and holding one costs several times that while it is
+parsed, so what decides whether a phone of 2013 runs out of memory is how many lookups run at
+once and how many answers are kept. `MemoryBudget` reads the heap the phone actually gives the
+app (`Runtime.maxMemory()`) and halves the pools and quarters the caches below 112 MB; the
+lookups a request fans out run in a pool with a queue in front of it, while reading the next page
+of a list ahead has a small pool of its own that throws work away rather than make a request wait
+for it. `android:largeHeap` asks for the bigger heap where there is one, Android's low-memory
+callbacks let go of everything held in memory (the files stay), and the protobuf answers are kept
+on disk as the bytes they are instead of base64 text, which used to cost a third more room and
+turn every read into a string twice the size of the answer.
 
 ## Project layout
 

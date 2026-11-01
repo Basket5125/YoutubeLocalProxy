@@ -966,20 +966,23 @@ public final class AndroidPlayerProto {
 
                 /** proto: android_player.root.captionTracks.contents.audioTracks */
                 public static final class AudioTracks extends ProtoMessage {
-                    private int mInt2 = 0;
-                    private boolean hasInt2;
-                    private int mInt3 = 0;
-                    private boolean hasInt3;
+                    private final java.util.List<Integer> mCaptionTrackIndices = new java.util.ArrayList<Integer>();
+                    private int mDefaultCaptionTrackIndex = 0;
+                    private boolean hasDefaultCaptionTrackIndex;
                     private int mInt5 = 0;
                     private boolean hasInt5;
                     private int mInt6 = 0;
                     private boolean hasInt6;
-                    public AudioTracks setInt2(int value) { mInt2 = value; hasInt2 = true; return this; }
-                    public int getInt2() { return mInt2; }
-                    public boolean hasInt2() { return hasInt2; }
-                    public AudioTracks setInt3(int value) { mInt3 = value; hasInt3 = true; return this; }
-                    public int getInt3() { return mInt3; }
-                    public boolean hasInt3() { return hasInt3; }
+                    public AudioTracks addCaptionTrackIndices(int value) {
+                        mCaptionTrackIndices.add(value);
+                        return this;
+                    }
+                    public java.util.List<Integer> getCaptionTrackIndicesList() { return mCaptionTrackIndices; }
+                    public int getCaptionTrackIndicesCount() { return mCaptionTrackIndices.size(); }
+                    public int getCaptionTrackIndices(int index) { return mCaptionTrackIndices.get(index); }
+                    public AudioTracks setDefaultCaptionTrackIndex(int value) { mDefaultCaptionTrackIndex = value; hasDefaultCaptionTrackIndex = true; return this; }
+                    public int getDefaultCaptionTrackIndex() { return mDefaultCaptionTrackIndex; }
+                    public boolean hasDefaultCaptionTrackIndex() { return hasDefaultCaptionTrackIndex; }
                     public AudioTracks setInt5(int value) { mInt5 = value; hasInt5 = true; return this; }
                     public int getInt5() { return mInt5; }
                     public boolean hasInt5() { return hasInt5; }
@@ -989,8 +992,12 @@ public final class AndroidPlayerProto {
 
                     @Override
                     public void writeTo(ProtoWriter writer) {
-                        if (hasInt2) writer.writeInt32(2, mInt2);
-                        if (hasInt3) writer.writeInt32(3, mInt3);
+                        if (!mCaptionTrackIndices.isEmpty()) {
+                            ProtoWriter packed = new ProtoWriter();
+                            for (int i = 0; i < mCaptionTrackIndices.size(); i++) packed.writeInt32NoTag(mCaptionTrackIndices.get(i));
+                            writer.writeBytes(2, packed.toByteArray());
+                        }
+                        if (hasDefaultCaptionTrackIndex) writer.writeInt32(3, mDefaultCaptionTrackIndex);
                         if (hasInt5) writer.writeInt32(5, mInt5);
                         if (hasInt6) writer.writeInt32(6, mInt6);
                     }
@@ -1001,14 +1008,17 @@ public final class AndroidPlayerProto {
                             int tag = reader.readTag();
                             switch (tag >>> 3) {
                                 case 2:
-                                    if ((tag & 7) != 0) { reader.skip(tag); break; }
-                                    mInt2 = reader.readInt32();
-                                    hasInt2 = true;
+                                    if ((tag & 7) == 2) {
+                                        ProtoReader packed = reader.readMessage();
+                                        while (packed.hasMore()) mCaptionTrackIndices.add(packed.readInt32());
+                                    } else if ((tag & 7) == 0) {
+                                        mCaptionTrackIndices.add(reader.readInt32());
+                                    } else reader.skip(tag);
                                     break;
                                 case 3:
                                     if ((tag & 7) != 0) { reader.skip(tag); break; }
-                                    mInt3 = reader.readInt32();
-                                    hasInt3 = true;
+                                    mDefaultCaptionTrackIndex = reader.readInt32();
+                                    hasDefaultCaptionTrackIndex = true;
                                     break;
                                 case 5:
                                     if ((tag & 7) != 0) { reader.skip(tag); break; }

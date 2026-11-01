@@ -105,9 +105,16 @@ message root {
                 string trackName = 11;
             }
             repeated captionTrack track = 1;
+            /**
+             * An audio track of the video and the subtitle tracks that belong to it. One of
+             * these has to be sent with the tracks: the app takes the one that
+             * defaultAudioTrackIndex points at, reads the subtitles of the video out of its
+             * list of indices (class abco of YouTube 12.45.56), and starting a video with
+             * nothing there is a NullPointerException in abco.b().
+             */
             message audioTracks {
-                optional int32 int2 = 2;
-                optional int32 int3 = 3;
+                repeated int32 captionTrackIndices = 2;
+                optional int32 defaultCaptionTrackIndex = 3;
                 optional int32 int5 = 5;
                 optional int32 int6 = 6;
             }

@@ -13,6 +13,22 @@ import java.io.InputStream;
  */
 public class TemplateStore {
 
+    /** An asset that is not a template, read straight out of the app. */
+    public static String loadRaw(Context context, String name) {
+        try {
+            InputStream in = context.getAssets().open(name);
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            byte[] buffer = new byte[4096];
+            int n;
+            while ((n = in.read(buffer)) != -1) out.write(buffer, 0, n);
+            in.close();
+            return out.toString("UTF-8");
+        } catch (IOException e) {
+            android.util.Log.w("TemplateStore", "Could not read " + name + ": " + e);
+            return "";
+        }
+    }
+
     public static String load(Context context, String name) throws IOException {
         File custom = new File(new File(context.getFilesDir(), "templates"), name);
         if (custom.exists()) {

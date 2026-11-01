@@ -7,6 +7,55 @@ message navigationData {
     }
     optional navData navProperties = 48687757;
 }
+/**
+ * A watchEndpoint (48687757). The playlist and the place in it are what make the app keep a
+ * queue: it asks /next again with them when it moves on to the following video.
+ */
+message watchNavigation {
+    message watchData {
+        string videoId = 1;
+        string playlistId = 2;
+        int32 index = 3;
+    }
+    optional watchData watchProperties = 48687757;
+}
+/**
+ * A button with two states (toggleButtonRenderer, 79971800). In the header above the related
+ * videos it is drawn as the Autoplay switch; the app keeps that state itself (its autonav
+ * setting), so only the label has to be sent.
+ */
+message toggleButtonRenderer {
+    optional int32 isToggled = 3;
+    optional int32 isDisabled = 4;
+    optional iconContainer defaultIcon = 5;
+    optional textRuns defaultText = 6;
+    optional iconContainer toggledIcon = 8;
+    /** What the switch is called; the app reads this one for both states. */
+    optional textRuns toggledText = 9;
+}
+/**
+ * A shelf (shelfRenderer, 51845067): a list with "Up next" above it and the Autoplay switch on
+ * its right. It sits in the section list next to the item sections, and the videos go inside it:
+ * the app (tqx) reads a shelf of the section list only when it carries its contents in field 5,
+ * and drops it when it does not.
+ */
+message shelfRenderer {
+    optional textRuns title = 1;
+    message contents {
+        message shelfContents {
+            message items {
+                repeated compactVideoRenderer video = 50630979;
+            }
+            repeated items item = 1;
+        }
+        optional shelfContents shelfContent = 57988071;
+    }
+    optional contents content = 5;
+    message toggle {
+        repeated toggleButtonRenderer button = 79971800;
+    }
+    optional toggle autoplayToggle = 30;
+}
 message textRuns {
     message textRun {
         string text = 1;
@@ -267,9 +316,23 @@ message root {
                             }
                             repeated contents content = 1;
                             repeated nextRequest commentRequest = 2;
+                            /**
+                             * The line a section starts with (itemSectionHeaderRenderer,
+                             * 61393757, presenter hqz): what separates the comments from the
+                             * related videos above them.
+                             */
+                            message header {
+                                message itemSectionHeaderRenderer {
+                                    optional textRuns title = 1;
+                                }
+                                repeated itemSectionHeaderRenderer sectionHeader = 61393757;
+                            }
+                            optional header sectionHeader = 5;
                             string identifier = 7;
                         }
                         repeated itemSectionRenderer itemSectionRender = 50195462;
+                        /** The related videos with "Up next" and the Autoplay switch above them. */
+                        repeated shelfRenderer shelf = 51845067;
                     }
                     repeated contents content = 1;
                     repeated continuations continuation = 2;
@@ -277,6 +340,71 @@ message root {
                 repeated results result = 49399797;
             }
             repeated contents content = 1;
+            /**
+             * The queue of the playlist being played (playlistPanelRenderer, 50631000). The app
+             * builds its playback queue out of it, which is what plays the next video when one
+             * ends, and shows it as the list above the related videos.
+             */
+            message playlistPanel {
+                message playlistPanelRenderer {
+                    message items {
+                        /** One entry of the queue (playlistPanelVideoRenderer, 51779701). */
+                        message playlistPanelVideoRenderer {
+                            optional textRuns title = 1;
+                            optional thumbnails thumbnail = 3;
+                            /** The lighter line under the title: the channel. */
+                            optional textRuns byline = 4;
+                            /** The entry playing right now, which the app marks. */
+                            optional int32 selected = 6;
+                            optional watchNavigation navData = 7;
+                            optional textRuns length = 9;
+                            string videoId = 10;
+                        }
+                        repeated playlistPanelVideoRenderer video = 51779701;
+                    }
+                    string title = 1;
+                    repeated items item = 2;
+                    /** Which entry is playing, counted from zero. */
+                    int32 currentIndex = 3;
+                    string playlistId = 5;
+                    int32 totalVideos = 6;
+                    /** The same title as a formatted string, which newer apps read instead. */
+                    optional textRuns titleText = 7;
+                    optional int32 isInfinite = 8;
+                    /** Whose playlist it is; drawn under the title by the apps that have a line
+                     * for it. */
+                    optional textRuns shortByline = 16;
+                    optional textRuns longByline = 17;
+                }
+                repeated playlistPanelRenderer panel = 50631000;
+            }
+            optional playlistPanel playlist = 2;
+            /**
+             * What to play when this video ends (autoplayRenderer, 46659098). The app reads the
+             * set whose mode is 1: field 2 for AUTOPLAY, field 3 for the next button and the
+             * renderer in field 5 for AUTONAV, which is the one that starts by itself.
+             */
+            message autoplay {
+                message autoplayRenderer {
+                    message autoplaySet {
+                        message autonav {
+                            message autonavVideo {
+                                optional watchNavigation navData = 1;
+                            }
+                            repeated autonavVideo video = 111631903;
+                        }
+                        int32 mode = 1;
+                        optional watchNavigation autoplayVideo = 2;
+                        optional watchNavigation nextButtonVideo = 3;
+                        optional watchNavigation previousButtonVideo = 4;
+                        optional autonav autonavVideo = 5;
+                    }
+                    repeated autoplaySet set = 1;
+                    int32 countDownSecs = 3;
+                }
+                repeated autoplayRenderer autoplay = 46659098;
+            }
+            optional autoplay autoplayNext = 3;
         }
         repeated singleColumnWatchNextResults nextResults = 51779735;
     }

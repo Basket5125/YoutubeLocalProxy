@@ -140,7 +140,7 @@ public class PlaylistEndpoint implements Endpoint {
             new java.util.LinkedHashMap<String, LoadedPlaylist>(16, 0.75f, true) {
                 @Override
                 protected boolean removeEldestEntry(java.util.Map.Entry<String, LoadedPlaylist> eldest) {
-                    return size() > 24;
+                    return size() > MemoryBudget.entries(24);
                 }
             };
     private static final java.util.Map<String, Object> LOCKS = new java.util.HashMap<String, Object>();

@@ -128,6 +128,84 @@ public class HttpClient {
      * Downloads bytes {@code start}..{@code end} (inclusive) of a media URL. Used by the
      * experimental muxer; the response bodies are not written to the crash log.
      */
+    /** POSTs bytes and reads the answer as bytes; the media protocol speaks protobuf. */
+    public static byte[] postBytes(String urlStr, byte[] body, String userAgent, String contentType,
+                                   int connectTimeout, int readTimeout) throws IOException {
+        HttpURLConnection conn = null;
+        try {
+            conn = (HttpURLConnection) new URL(urlStr).openConnection();
+            conn.setRequestMethod("POST");
+            conn.setDoOutput(true);
+            conn.setRequestProperty("User-Agent", userAgent);
+            conn.setRequestProperty("Content-Type", contentType);
+            conn.setRequestProperty("Accept-Encoding", "gzip");
+            conn.setFixedLengthStreamingMode(body.length);
+            conn.setConnectTimeout(connectTimeout);
+            conn.setReadTimeout(readTimeout);
+            java.io.OutputStream out = conn.getOutputStream();
+            try {
+                out.write(body);
+            } finally {
+                out.close();
+            }
+            int status = conn.getResponseCode();
+            InputStream in = status >= 400 ? conn.getErrorStream() : conn.getInputStream();
+            if (in == null) throw new IOException("HTTP " + status + " with no body");
+            ByteArrayOutputStream collected = new ByteArrayOutputStream(1 << 16);
+            try {
+                InputStream source = decode(conn, in);
+                byte[] buffer = new byte[16384];
+                int n;
+                while ((n = source.read(buffer)) > 0) collected.write(buffer, 0, n);
+            } finally {
+                in.close();
+            }
+            if (status < 200 || status >= 300) {
+                throw new IOException("HTTP " + status + " from " + urlStr);
+            }
+            return collected.toByteArray();
+        } catch (IOException error) {
+            if (conn != null) conn.disconnect();
+            throw error;
+        }
+    }
+
+    /**
+     * Reads a page and gives back the first group of the first match of a pattern, without ever
+     * holding the whole page: the player script is megabytes long and all that is wanted from
+     * it is one number.
+     */
+    public static String findInUrl(String urlStr, java.util.regex.Pattern pattern, String userAgent)
+            throws IOException {
+        HttpURLConnection conn = (HttpURLConnection) new URL(urlStr).openConnection();
+        conn.setRequestProperty("User-Agent", userAgent);
+        conn.setRequestProperty("Accept-Encoding", "gzip");
+        conn.setConnectTimeout(10000);
+        conn.setReadTimeout(20000);
+        InputStream in = null;
+        try {
+            int status = conn.getResponseCode();
+            if (status < 200 || status >= 300) throw new IOException("HTTP " + status + " from " + urlStr);
+            in = decode(conn, conn.getInputStream());
+            java.io.BufferedReader reader = new java.io.BufferedReader(
+                    new java.io.InputStreamReader(in, "UTF-8"), 1 << 16);
+            char[] buffer = new char[1 << 16];
+            StringBuilder window = new StringBuilder(1 << 17);
+            int read;
+            while ((read = reader.read(buffer)) > 0) {
+                window.append(buffer, 0, read);
+                java.util.regex.Matcher match = pattern.matcher(window);
+                if (match.find()) return match.group(1);
+                // Keep the tail, so a match split across two reads is still found.
+                if (window.length() > 1 << 16) window.delete(0, window.length() - 4096);
+            }
+            return "";
+        } finally {
+            if (in != null) in.close();
+            conn.disconnect();
+        }
+    }
+
     public static byte[] getRange(String urlStr, long start, long end, String userAgent)
             throws IOException {
         int expected = (int) (end - start + 1);
@@ -228,6 +306,36 @@ public class HttpClient {
             writeFile(f, content);
             if (!complete) f.setLastModified(System.currentTimeMillis() - maxAgeMs - 1000);
         } catch (IOException ignored) { }
+    }
+
+    /** Reads a file as it is on disk; for answers that are bytes and not text. */
+    public static byte[] readBytes(File f) throws IOException {
+        FileInputStream in = new FileInputStream(f);
+        try {
+            long size = f.length();
+            byte[] out = new byte[(int) size];
+            int read = 0;
+            while (read < out.length) {
+                int n = in.read(out, read, out.length - read);
+                if (n < 0) break;
+                read += n;
+            }
+            if (read == out.length) return out;
+            byte[] shorter = new byte[read];
+            System.arraycopy(out, 0, shorter, 0, read);
+            return shorter;
+        } finally {
+            in.close();
+        }
+    }
+
+    public static void writeBytes(File f, byte[] content) throws IOException {
+        FileOutputStream out = new FileOutputStream(f);
+        try {
+            out.write(content);
+        } finally {
+            out.close();
+        }
     }
 
     public static void writeFile(File f, String content) throws IOException {

@@ -42,6 +42,20 @@ public class VideoRedirectEndpoint implements Endpoint {
         }
     }
 
+    /**
+     * Whether the player asking for the file is a new enough one to read a fragmented MP4. The
+     * apps say which Android they run on in their user agent; from 6 on the player behind them
+     * is ExoPlayer, which reads one. The player of Android 5 and older is left on the classic
+     * layout, because that is the one it was tested on.
+     */
+    private static boolean newPlayer(NanoHTTPD.IHTTPSession session) {
+        String agent = session.getHeaders().get("user-agent");
+        if (agent == null) return false;
+        java.util.regex.Matcher android = java.util.regex.Pattern
+                .compile("Android (\\d+)").matcher(agent);
+        return android.find() && Integer.parseInt(android.group(1)) >= 6;
+    }
+
     private static NanoHTTPD.Response muxed(NanoHTTPD.IHTTPSession session, String videoId,
                                             Config config) throws Exception {
         return muxed(session, videoId, config, 720);
@@ -83,7 +97,8 @@ public class VideoRedirectEndpoint implements Endpoint {
                 urls = new String[]{PlayerLookup.formatUrl(formats[0]),
                         PlayerLookup.formatUrl(formats[1])};
             }
-            plan = Mp4Mux.prepareBest(formats[0], formats[1], urls[0], urls[1]);
+            plan = Mp4Mux.prepareBest(formats[0], formats[1], urls[0], urls[1],
+                    newPlayer(session));
             android.util.Log.i("Mp4Mux", videoId + ": " + (plan.classic ? "classic" : "fragmented")
                     + " MP4, video itag " + formats[0].optInt("itag") + " + audio itag "
                     + formats[1].optInt("itag") + ", " + plan.pieces.size() + " chunks, "

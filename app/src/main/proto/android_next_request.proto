@@ -1,0 +1,16 @@
+syntax = "proto3";
+package android_next_request;
+
+/**
+ * The watch-page request of the apps (/youtubei/v1/next). Only the fields this proxy reads are
+ * listed; the playlist and the place in it are what the apps send when a video is played as
+ * part of a playlist, and they are what the answer's queue has to be built from.
+ */
+message root {
+    string videoId = 2;
+    string playlistId = 4;
+    string params = 6;
+    /** Which entry of the playlist is being opened, counted from zero. */
+    int32 playlistIndex = 7;
+    string continuation = 8;
+}

@@ -26,14 +26,28 @@ final class CacheReset {
 
     private CacheReset() { }
 
-    static Result clear(Context context) {
+    /**
+     * Lets go of everything held in memory, keeping the files. Android calls for this when it is
+     * short of memory, and letting go then is what keeps the proxy from being killed while a
+     * video plays.
+     */
+    static void trimMemory(Context context) {
         YoutubeiEndpoint.clearMemory();
         InnertubeEndpoint.clearMemory();
         PlaylistEndpoint.clearMemory();
         ChannelEndpoint.clearMemory();
-        PlayerLookup.clearPlayerCache(context);
+        PlayerLookup.clearMemory();
         PlayerLookup.clearMetadataCache();
         InvidiousLookup.clearMemory();
+        AudioWarmup.clearMemory();
+    }
+
+    static Result clear(Context context) {
+        trimMemory(context);
+        // What was searched for is what the home feed is built out of, so clearing also means
+        // starting that over.
+        TasteProfile.get(context).forget();
+        PlayerLookup.clearPlayerCache(context);
         Result result = new Result();
         File cacheDir = context.getCacheDir();
         if (cacheDir != null) deleteContents(cacheDir, result);

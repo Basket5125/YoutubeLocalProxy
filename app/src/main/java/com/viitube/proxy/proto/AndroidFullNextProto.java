@@ -73,6 +73,384 @@ public final class AndroidFullNextProto {
         }
     }
 
+    /** proto: android_full_next.watchNavigation */
+    public static final class WatchNavigation extends ProtoMessage {
+
+        /** proto: android_full_next.watchNavigation.watchData */
+        public static final class WatchData extends ProtoMessage {
+            private String mVideoId = "";
+            private String mPlaylistId = "";
+            private int mIndex = 0;
+            public WatchData setVideoId(String value) { mVideoId = value == null ? "" : value; return this; }
+            public String getVideoId() { return mVideoId; }
+            public WatchData setPlaylistId(String value) { mPlaylistId = value == null ? "" : value; return this; }
+            public String getPlaylistId() { return mPlaylistId; }
+            public WatchData setIndex(int value) { mIndex = value; return this; }
+            public int getIndex() { return mIndex; }
+
+            @Override
+            public void writeTo(ProtoWriter writer) {
+                if (mVideoId.length() > 0) writer.writeString(1, mVideoId);
+                if (mPlaylistId.length() > 0) writer.writeString(2, mPlaylistId);
+                if (mIndex != 0) writer.writeInt32(3, mIndex);
+            }
+
+            @Override
+            public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                while (reader.hasMore()) {
+                    int tag = reader.readTag();
+                    switch (tag >>> 3) {
+                        case 1:
+                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                            mVideoId = reader.readString();
+                            break;
+                        case 2:
+                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                            mPlaylistId = reader.readString();
+                            break;
+                        case 3:
+                            if ((tag & 7) != 0) { reader.skip(tag); break; }
+                            mIndex = reader.readInt32();
+                            break;
+                        default:
+                            reader.skip(tag);
+                    }
+                }
+            }
+
+            public static WatchData parseFrom(byte[] data) throws java.io.IOException {
+                WatchData message = new WatchData();
+                message.mergeFrom(new ProtoReader(data, 0, data.length));
+                return message;
+            }
+        }
+        private AndroidFullNextProto.WatchNavigation.WatchData mWatchProperties;
+        public WatchNavigation setWatchProperties(AndroidFullNextProto.WatchNavigation.WatchData value) { mWatchProperties = value; return this; }
+        public AndroidFullNextProto.WatchNavigation.WatchData getWatchProperties() { return mWatchProperties; }
+        public boolean hasWatchProperties() { return mWatchProperties != null; }
+
+        @Override
+        public void writeTo(ProtoWriter writer) {
+            if (mWatchProperties != null) writer.writeMessage(48687757, mWatchProperties);
+        }
+
+        @Override
+        public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+            while (reader.hasMore()) {
+                int tag = reader.readTag();
+                switch (tag >>> 3) {
+                    case 48687757:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mWatchProperties == null) mWatchProperties = new AndroidFullNextProto.WatchNavigation.WatchData();
+                        mWatchProperties.mergeFrom(reader.readMessage());
+                        break;
+                    default:
+                        reader.skip(tag);
+                }
+            }
+        }
+
+        public static WatchNavigation parseFrom(byte[] data) throws java.io.IOException {
+            WatchNavigation message = new WatchNavigation();
+            message.mergeFrom(new ProtoReader(data, 0, data.length));
+            return message;
+        }
+    }
+
+    /** proto: android_full_next.toggleButtonRenderer */
+    public static final class ToggleButtonRenderer extends ProtoMessage {
+        private int mIsToggled = 0;
+        private boolean hasIsToggled;
+        private int mIsDisabled = 0;
+        private boolean hasIsDisabled;
+        private AndroidFullNextProto.IconContainer mDefaultIcon;
+        private AndroidFullNextProto.TextRuns mDefaultText;
+        private AndroidFullNextProto.IconContainer mToggledIcon;
+        private AndroidFullNextProto.TextRuns mToggledText;
+        public ToggleButtonRenderer setIsToggled(int value) { mIsToggled = value; hasIsToggled = true; return this; }
+        public int getIsToggled() { return mIsToggled; }
+        public boolean hasIsToggled() { return hasIsToggled; }
+        public ToggleButtonRenderer setIsDisabled(int value) { mIsDisabled = value; hasIsDisabled = true; return this; }
+        public int getIsDisabled() { return mIsDisabled; }
+        public boolean hasIsDisabled() { return hasIsDisabled; }
+        public ToggleButtonRenderer setDefaultIcon(AndroidFullNextProto.IconContainer value) { mDefaultIcon = value; return this; }
+        public AndroidFullNextProto.IconContainer getDefaultIcon() { return mDefaultIcon; }
+        public boolean hasDefaultIcon() { return mDefaultIcon != null; }
+        public ToggleButtonRenderer setDefaultText(AndroidFullNextProto.TextRuns value) { mDefaultText = value; return this; }
+        public AndroidFullNextProto.TextRuns getDefaultText() { return mDefaultText; }
+        public boolean hasDefaultText() { return mDefaultText != null; }
+        public ToggleButtonRenderer setToggledIcon(AndroidFullNextProto.IconContainer value) { mToggledIcon = value; return this; }
+        public AndroidFullNextProto.IconContainer getToggledIcon() { return mToggledIcon; }
+        public boolean hasToggledIcon() { return mToggledIcon != null; }
+        public ToggleButtonRenderer setToggledText(AndroidFullNextProto.TextRuns value) { mToggledText = value; return this; }
+        public AndroidFullNextProto.TextRuns getToggledText() { return mToggledText; }
+        public boolean hasToggledText() { return mToggledText != null; }
+
+        @Override
+        public void writeTo(ProtoWriter writer) {
+            if (hasIsToggled) writer.writeInt32(3, mIsToggled);
+            if (hasIsDisabled) writer.writeInt32(4, mIsDisabled);
+            if (mDefaultIcon != null) writer.writeMessage(5, mDefaultIcon);
+            if (mDefaultText != null) writer.writeMessage(6, mDefaultText);
+            if (mToggledIcon != null) writer.writeMessage(8, mToggledIcon);
+            if (mToggledText != null) writer.writeMessage(9, mToggledText);
+        }
+
+        @Override
+        public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+            while (reader.hasMore()) {
+                int tag = reader.readTag();
+                switch (tag >>> 3) {
+                    case 3:
+                        if ((tag & 7) != 0) { reader.skip(tag); break; }
+                        mIsToggled = reader.readInt32();
+                        hasIsToggled = true;
+                        break;
+                    case 4:
+                        if ((tag & 7) != 0) { reader.skip(tag); break; }
+                        mIsDisabled = reader.readInt32();
+                        hasIsDisabled = true;
+                        break;
+                    case 5:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mDefaultIcon == null) mDefaultIcon = new AndroidFullNextProto.IconContainer();
+                        mDefaultIcon.mergeFrom(reader.readMessage());
+                        break;
+                    case 6:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mDefaultText == null) mDefaultText = new AndroidFullNextProto.TextRuns();
+                        mDefaultText.mergeFrom(reader.readMessage());
+                        break;
+                    case 8:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mToggledIcon == null) mToggledIcon = new AndroidFullNextProto.IconContainer();
+                        mToggledIcon.mergeFrom(reader.readMessage());
+                        break;
+                    case 9:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mToggledText == null) mToggledText = new AndroidFullNextProto.TextRuns();
+                        mToggledText.mergeFrom(reader.readMessage());
+                        break;
+                    default:
+                        reader.skip(tag);
+                }
+            }
+        }
+
+        public static ToggleButtonRenderer parseFrom(byte[] data) throws java.io.IOException {
+            ToggleButtonRenderer message = new ToggleButtonRenderer();
+            message.mergeFrom(new ProtoReader(data, 0, data.length));
+            return message;
+        }
+    }
+
+    /** proto: android_full_next.shelfRenderer */
+    public static final class ShelfRenderer extends ProtoMessage {
+
+        /** proto: android_full_next.shelfRenderer.contents */
+        public static final class Contents extends ProtoMessage {
+
+            /** proto: android_full_next.shelfRenderer.contents.shelfContents */
+            public static final class ShelfContents extends ProtoMessage {
+
+                /** proto: android_full_next.shelfRenderer.contents.shelfContents.items */
+                public static final class Items extends ProtoMessage {
+                    private final java.util.List<AndroidFullNextProto.CompactVideoRenderer> mVideo = new java.util.ArrayList<AndroidFullNextProto.CompactVideoRenderer>();
+                    public Items addVideo(AndroidFullNextProto.CompactVideoRenderer value) {
+                        if (value == null) throw new NullPointerException("video");
+                        mVideo.add(value);
+                        return this;
+                    }
+                    public java.util.List<AndroidFullNextProto.CompactVideoRenderer> getVideoList() { return mVideo; }
+                    public int getVideoCount() { return mVideo.size(); }
+                    public AndroidFullNextProto.CompactVideoRenderer getVideo(int index) { return mVideo.get(index); }
+
+                    @Override
+                    public void writeTo(ProtoWriter writer) {
+                        for (int i = 0; i < mVideo.size(); i++) writer.writeMessage(50630979, mVideo.get(i));
+                    }
+
+                    @Override
+                    public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                        while (reader.hasMore()) {
+                            int tag = reader.readTag();
+                            switch (tag >>> 3) {
+                                case 50630979:
+                                    if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                    { AndroidFullNextProto.CompactVideoRenderer item = new AndroidFullNextProto.CompactVideoRenderer(); item.mergeFrom(reader.readMessage()); mVideo.add(item); }
+                                    break;
+                                default:
+                                    reader.skip(tag);
+                            }
+                        }
+                    }
+
+                    public static Items parseFrom(byte[] data) throws java.io.IOException {
+                        Items message = new Items();
+                        message.mergeFrom(new ProtoReader(data, 0, data.length));
+                        return message;
+                    }
+                }
+                private final java.util.List<AndroidFullNextProto.ShelfRenderer.Contents.ShelfContents.Items> mItem = new java.util.ArrayList<AndroidFullNextProto.ShelfRenderer.Contents.ShelfContents.Items>();
+                public ShelfContents addItem(AndroidFullNextProto.ShelfRenderer.Contents.ShelfContents.Items value) {
+                    if (value == null) throw new NullPointerException("item");
+                    mItem.add(value);
+                    return this;
+                }
+                public java.util.List<AndroidFullNextProto.ShelfRenderer.Contents.ShelfContents.Items> getItemList() { return mItem; }
+                public int getItemCount() { return mItem.size(); }
+                public AndroidFullNextProto.ShelfRenderer.Contents.ShelfContents.Items getItem(int index) { return mItem.get(index); }
+
+                @Override
+                public void writeTo(ProtoWriter writer) {
+                    for (int i = 0; i < mItem.size(); i++) writer.writeMessage(1, mItem.get(i));
+                }
+
+                @Override
+                public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                    while (reader.hasMore()) {
+                        int tag = reader.readTag();
+                        switch (tag >>> 3) {
+                            case 1:
+                                if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                { AndroidFullNextProto.ShelfRenderer.Contents.ShelfContents.Items item = new AndroidFullNextProto.ShelfRenderer.Contents.ShelfContents.Items(); item.mergeFrom(reader.readMessage()); mItem.add(item); }
+                                break;
+                            default:
+                                reader.skip(tag);
+                        }
+                    }
+                }
+
+                public static ShelfContents parseFrom(byte[] data) throws java.io.IOException {
+                    ShelfContents message = new ShelfContents();
+                    message.mergeFrom(new ProtoReader(data, 0, data.length));
+                    return message;
+                }
+            }
+            private AndroidFullNextProto.ShelfRenderer.Contents.ShelfContents mShelfContent;
+            public Contents setShelfContent(AndroidFullNextProto.ShelfRenderer.Contents.ShelfContents value) { mShelfContent = value; return this; }
+            public AndroidFullNextProto.ShelfRenderer.Contents.ShelfContents getShelfContent() { return mShelfContent; }
+            public boolean hasShelfContent() { return mShelfContent != null; }
+
+            @Override
+            public void writeTo(ProtoWriter writer) {
+                if (mShelfContent != null) writer.writeMessage(57988071, mShelfContent);
+            }
+
+            @Override
+            public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                while (reader.hasMore()) {
+                    int tag = reader.readTag();
+                    switch (tag >>> 3) {
+                        case 57988071:
+                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                            if (mShelfContent == null) mShelfContent = new AndroidFullNextProto.ShelfRenderer.Contents.ShelfContents();
+                            mShelfContent.mergeFrom(reader.readMessage());
+                            break;
+                        default:
+                            reader.skip(tag);
+                    }
+                }
+            }
+
+            public static Contents parseFrom(byte[] data) throws java.io.IOException {
+                Contents message = new Contents();
+                message.mergeFrom(new ProtoReader(data, 0, data.length));
+                return message;
+            }
+        }
+
+        /** proto: android_full_next.shelfRenderer.toggle */
+        public static final class Toggle extends ProtoMessage {
+            private final java.util.List<AndroidFullNextProto.ToggleButtonRenderer> mButton = new java.util.ArrayList<AndroidFullNextProto.ToggleButtonRenderer>();
+            public Toggle addButton(AndroidFullNextProto.ToggleButtonRenderer value) {
+                if (value == null) throw new NullPointerException("button");
+                mButton.add(value);
+                return this;
+            }
+            public java.util.List<AndroidFullNextProto.ToggleButtonRenderer> getButtonList() { return mButton; }
+            public int getButtonCount() { return mButton.size(); }
+            public AndroidFullNextProto.ToggleButtonRenderer getButton(int index) { return mButton.get(index); }
+
+            @Override
+            public void writeTo(ProtoWriter writer) {
+                for (int i = 0; i < mButton.size(); i++) writer.writeMessage(79971800, mButton.get(i));
+            }
+
+            @Override
+            public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                while (reader.hasMore()) {
+                    int tag = reader.readTag();
+                    switch (tag >>> 3) {
+                        case 79971800:
+                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                            { AndroidFullNextProto.ToggleButtonRenderer item = new AndroidFullNextProto.ToggleButtonRenderer(); item.mergeFrom(reader.readMessage()); mButton.add(item); }
+                            break;
+                        default:
+                            reader.skip(tag);
+                    }
+                }
+            }
+
+            public static Toggle parseFrom(byte[] data) throws java.io.IOException {
+                Toggle message = new Toggle();
+                message.mergeFrom(new ProtoReader(data, 0, data.length));
+                return message;
+            }
+        }
+        private AndroidFullNextProto.TextRuns mTitle;
+        private AndroidFullNextProto.ShelfRenderer.Contents mContent;
+        private AndroidFullNextProto.ShelfRenderer.Toggle mAutoplayToggle;
+        public ShelfRenderer setTitle(AndroidFullNextProto.TextRuns value) { mTitle = value; return this; }
+        public AndroidFullNextProto.TextRuns getTitle() { return mTitle; }
+        public boolean hasTitle() { return mTitle != null; }
+        public ShelfRenderer setContent(AndroidFullNextProto.ShelfRenderer.Contents value) { mContent = value; return this; }
+        public AndroidFullNextProto.ShelfRenderer.Contents getContent() { return mContent; }
+        public boolean hasContent() { return mContent != null; }
+        public ShelfRenderer setAutoplayToggle(AndroidFullNextProto.ShelfRenderer.Toggle value) { mAutoplayToggle = value; return this; }
+        public AndroidFullNextProto.ShelfRenderer.Toggle getAutoplayToggle() { return mAutoplayToggle; }
+        public boolean hasAutoplayToggle() { return mAutoplayToggle != null; }
+
+        @Override
+        public void writeTo(ProtoWriter writer) {
+            if (mTitle != null) writer.writeMessage(1, mTitle);
+            if (mContent != null) writer.writeMessage(5, mContent);
+            if (mAutoplayToggle != null) writer.writeMessage(30, mAutoplayToggle);
+        }
+
+        @Override
+        public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+            while (reader.hasMore()) {
+                int tag = reader.readTag();
+                switch (tag >>> 3) {
+                    case 1:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mTitle == null) mTitle = new AndroidFullNextProto.TextRuns();
+                        mTitle.mergeFrom(reader.readMessage());
+                        break;
+                    case 5:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mContent == null) mContent = new AndroidFullNextProto.ShelfRenderer.Contents();
+                        mContent.mergeFrom(reader.readMessage());
+                        break;
+                    case 30:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mAutoplayToggle == null) mAutoplayToggle = new AndroidFullNextProto.ShelfRenderer.Toggle();
+                        mAutoplayToggle.mergeFrom(reader.readMessage());
+                        break;
+                    default:
+                        reader.skip(tag);
+                }
+            }
+        }
+
+        public static ShelfRenderer parseFrom(byte[] data) throws java.io.IOException {
+            ShelfRenderer message = new ShelfRenderer();
+            message.mergeFrom(new ProtoReader(data, 0, data.length));
+            return message;
+        }
+    }
+
     /** proto: android_full_next.textRuns */
     public static final class TextRuns extends ProtoMessage {
 
@@ -2735,8 +3113,83 @@ public final class AndroidFullNextProto {
                                         return message;
                                     }
                                 }
+
+                                /** proto: android_full_next.root.contents.singleColumnWatchNextResults.contents.results.contents.itemSectionRenderer.header */
+                                public static final class Header extends ProtoMessage {
+
+                                    /** proto: android_full_next.root.contents.singleColumnWatchNextResults.contents.results.contents.itemSectionRenderer.header.itemSectionHeaderRenderer */
+                                    public static final class ItemSectionHeaderRenderer extends ProtoMessage {
+                                        private AndroidFullNextProto.TextRuns mTitle;
+                                        public ItemSectionHeaderRenderer setTitle(AndroidFullNextProto.TextRuns value) { mTitle = value; return this; }
+                                        public AndroidFullNextProto.TextRuns getTitle() { return mTitle; }
+                                        public boolean hasTitle() { return mTitle != null; }
+
+                                        @Override
+                                        public void writeTo(ProtoWriter writer) {
+                                            if (mTitle != null) writer.writeMessage(1, mTitle);
+                                        }
+
+                                        @Override
+                                        public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                                            while (reader.hasMore()) {
+                                                int tag = reader.readTag();
+                                                switch (tag >>> 3) {
+                                                    case 1:
+                                                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                                        if (mTitle == null) mTitle = new AndroidFullNextProto.TextRuns();
+                                                        mTitle.mergeFrom(reader.readMessage());
+                                                        break;
+                                                    default:
+                                                        reader.skip(tag);
+                                                }
+                                            }
+                                        }
+
+                                        public static ItemSectionHeaderRenderer parseFrom(byte[] data) throws java.io.IOException {
+                                            ItemSectionHeaderRenderer message = new ItemSectionHeaderRenderer();
+                                            message.mergeFrom(new ProtoReader(data, 0, data.length));
+                                            return message;
+                                        }
+                                    }
+                                    private final java.util.List<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer.Header.ItemSectionHeaderRenderer> mSectionHeader = new java.util.ArrayList<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer.Header.ItemSectionHeaderRenderer>();
+                                    public Header addSectionHeader(AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer.Header.ItemSectionHeaderRenderer value) {
+                                        if (value == null) throw new NullPointerException("sectionHeader");
+                                        mSectionHeader.add(value);
+                                        return this;
+                                    }
+                                    public java.util.List<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer.Header.ItemSectionHeaderRenderer> getSectionHeaderList() { return mSectionHeader; }
+                                    public int getSectionHeaderCount() { return mSectionHeader.size(); }
+                                    public AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer.Header.ItemSectionHeaderRenderer getSectionHeader(int index) { return mSectionHeader.get(index); }
+
+                                    @Override
+                                    public void writeTo(ProtoWriter writer) {
+                                        for (int i = 0; i < mSectionHeader.size(); i++) writer.writeMessage(61393757, mSectionHeader.get(i));
+                                    }
+
+                                    @Override
+                                    public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                                        while (reader.hasMore()) {
+                                            int tag = reader.readTag();
+                                            switch (tag >>> 3) {
+                                                case 61393757:
+                                                    if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                                    { AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer.Header.ItemSectionHeaderRenderer item = new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer.Header.ItemSectionHeaderRenderer(); item.mergeFrom(reader.readMessage()); mSectionHeader.add(item); }
+                                                    break;
+                                                default:
+                                                    reader.skip(tag);
+                                            }
+                                        }
+                                    }
+
+                                    public static Header parseFrom(byte[] data) throws java.io.IOException {
+                                        Header message = new Header();
+                                        message.mergeFrom(new ProtoReader(data, 0, data.length));
+                                        return message;
+                                    }
+                                }
                                 private final java.util.List<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer.ItemSectionRendererContents> mContent = new java.util.ArrayList<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer.ItemSectionRendererContents>();
                                 private final java.util.List<AndroidFullNextProto.NextRequest> mCommentRequest = new java.util.ArrayList<AndroidFullNextProto.NextRequest>();
+                                private AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer.Header mSectionHeader;
                                 private String mIdentifier = "";
                                 public ItemSectionRenderer addContent(AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer.ItemSectionRendererContents value) {
                                     if (value == null) throw new NullPointerException("content");
@@ -2754,6 +3207,9 @@ public final class AndroidFullNextProto {
                                 public java.util.List<AndroidFullNextProto.NextRequest> getCommentRequestList() { return mCommentRequest; }
                                 public int getCommentRequestCount() { return mCommentRequest.size(); }
                                 public AndroidFullNextProto.NextRequest getCommentRequest(int index) { return mCommentRequest.get(index); }
+                                public ItemSectionRenderer setSectionHeader(AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer.Header value) { mSectionHeader = value; return this; }
+                                public AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer.Header getSectionHeader() { return mSectionHeader; }
+                                public boolean hasSectionHeader() { return mSectionHeader != null; }
                                 public ItemSectionRenderer setIdentifier(String value) { mIdentifier = value == null ? "" : value; return this; }
                                 public String getIdentifier() { return mIdentifier; }
 
@@ -2761,6 +3217,7 @@ public final class AndroidFullNextProto {
                                 public void writeTo(ProtoWriter writer) {
                                     for (int i = 0; i < mContent.size(); i++) writer.writeMessage(1, mContent.get(i));
                                     for (int i = 0; i < mCommentRequest.size(); i++) writer.writeMessage(2, mCommentRequest.get(i));
+                                    if (mSectionHeader != null) writer.writeMessage(5, mSectionHeader);
                                     if (mIdentifier.length() > 0) writer.writeString(7, mIdentifier);
                                 }
 
@@ -2776,6 +3233,11 @@ public final class AndroidFullNextProto {
                                             case 2:
                                                 if ((tag & 7) != 2) { reader.skip(tag); break; }
                                                 { AndroidFullNextProto.NextRequest item = new AndroidFullNextProto.NextRequest(); item.mergeFrom(reader.readMessage()); mCommentRequest.add(item); }
+                                                break;
+                                            case 5:
+                                                if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                                if (mSectionHeader == null) mSectionHeader = new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer.Header();
+                                                mSectionHeader.mergeFrom(reader.readMessage());
                                                 break;
                                             case 7:
                                                 if ((tag & 7) != 2) { reader.skip(tag); break; }
@@ -2794,6 +3256,7 @@ public final class AndroidFullNextProto {
                                 }
                             }
                             private final java.util.List<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer> mItemSectionRender = new java.util.ArrayList<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer>();
+                            private final java.util.List<AndroidFullNextProto.ShelfRenderer> mShelf = new java.util.ArrayList<AndroidFullNextProto.ShelfRenderer>();
                             public ResultsContents addItemSectionRender(AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer value) {
                                 if (value == null) throw new NullPointerException("itemSectionRender");
                                 mItemSectionRender.add(value);
@@ -2802,10 +3265,19 @@ public final class AndroidFullNextProto {
                             public java.util.List<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer> getItemSectionRenderList() { return mItemSectionRender; }
                             public int getItemSectionRenderCount() { return mItemSectionRender.size(); }
                             public AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer getItemSectionRender(int index) { return mItemSectionRender.get(index); }
+                            public ResultsContents addShelf(AndroidFullNextProto.ShelfRenderer value) {
+                                if (value == null) throw new NullPointerException("shelf");
+                                mShelf.add(value);
+                                return this;
+                            }
+                            public java.util.List<AndroidFullNextProto.ShelfRenderer> getShelfList() { return mShelf; }
+                            public int getShelfCount() { return mShelf.size(); }
+                            public AndroidFullNextProto.ShelfRenderer getShelf(int index) { return mShelf.get(index); }
 
                             @Override
                             public void writeTo(ProtoWriter writer) {
                                 for (int i = 0; i < mItemSectionRender.size(); i++) writer.writeMessage(50195462, mItemSectionRender.get(i));
+                                for (int i = 0; i < mShelf.size(); i++) writer.writeMessage(51845067, mShelf.get(i));
                             }
 
                             @Override
@@ -2816,6 +3288,10 @@ public final class AndroidFullNextProto {
                                         case 50195462:
                                             if ((tag & 7) != 2) { reader.skip(tag); break; }
                                             { AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer item = new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results.ResultsContents.ItemSectionRenderer(); item.mergeFrom(reader.readMessage()); mItemSectionRender.add(item); }
+                                            break;
+                                        case 51845067:
+                                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                            { AndroidFullNextProto.ShelfRenderer item = new AndroidFullNextProto.ShelfRenderer(); item.mergeFrom(reader.readMessage()); mShelf.add(item); }
                                             break;
                                         default:
                                             reader.skip(tag);
@@ -2915,7 +3391,526 @@ public final class AndroidFullNextProto {
                         return message;
                     }
                 }
+
+                /** proto: android_full_next.root.contents.singleColumnWatchNextResults.playlistPanel */
+                public static final class PlaylistPanel extends ProtoMessage {
+
+                    /** proto: android_full_next.root.contents.singleColumnWatchNextResults.playlistPanel.playlistPanelRenderer */
+                    public static final class PlaylistPanelRenderer extends ProtoMessage {
+
+                        /** proto: android_full_next.root.contents.singleColumnWatchNextResults.playlistPanel.playlistPanelRenderer.items */
+                        public static final class Items extends ProtoMessage {
+
+                            /** proto: android_full_next.root.contents.singleColumnWatchNextResults.playlistPanel.playlistPanelRenderer.items.playlistPanelVideoRenderer */
+                            public static final class PlaylistPanelVideoRenderer extends ProtoMessage {
+                                private AndroidFullNextProto.TextRuns mTitle;
+                                private AndroidFullNextProto.Thumbnails mThumbnail;
+                                private AndroidFullNextProto.TextRuns mByline;
+                                private int mSelected = 0;
+                                private boolean hasSelected;
+                                private AndroidFullNextProto.WatchNavigation mNavData;
+                                private AndroidFullNextProto.TextRuns mLength;
+                                private String mVideoId = "";
+                                public PlaylistPanelVideoRenderer setTitle(AndroidFullNextProto.TextRuns value) { mTitle = value; return this; }
+                                public AndroidFullNextProto.TextRuns getTitle() { return mTitle; }
+                                public boolean hasTitle() { return mTitle != null; }
+                                public PlaylistPanelVideoRenderer setThumbnail(AndroidFullNextProto.Thumbnails value) { mThumbnail = value; return this; }
+                                public AndroidFullNextProto.Thumbnails getThumbnail() { return mThumbnail; }
+                                public boolean hasThumbnail() { return mThumbnail != null; }
+                                public PlaylistPanelVideoRenderer setByline(AndroidFullNextProto.TextRuns value) { mByline = value; return this; }
+                                public AndroidFullNextProto.TextRuns getByline() { return mByline; }
+                                public boolean hasByline() { return mByline != null; }
+                                public PlaylistPanelVideoRenderer setSelected(int value) { mSelected = value; hasSelected = true; return this; }
+                                public int getSelected() { return mSelected; }
+                                public boolean hasSelected() { return hasSelected; }
+                                public PlaylistPanelVideoRenderer setNavData(AndroidFullNextProto.WatchNavigation value) { mNavData = value; return this; }
+                                public AndroidFullNextProto.WatchNavigation getNavData() { return mNavData; }
+                                public boolean hasNavData() { return mNavData != null; }
+                                public PlaylistPanelVideoRenderer setLength(AndroidFullNextProto.TextRuns value) { mLength = value; return this; }
+                                public AndroidFullNextProto.TextRuns getLength() { return mLength; }
+                                public boolean hasLength() { return mLength != null; }
+                                public PlaylistPanelVideoRenderer setVideoId(String value) { mVideoId = value == null ? "" : value; return this; }
+                                public String getVideoId() { return mVideoId; }
+
+                                @Override
+                                public void writeTo(ProtoWriter writer) {
+                                    if (mTitle != null) writer.writeMessage(1, mTitle);
+                                    if (mThumbnail != null) writer.writeMessage(3, mThumbnail);
+                                    if (mByline != null) writer.writeMessage(4, mByline);
+                                    if (hasSelected) writer.writeInt32(6, mSelected);
+                                    if (mNavData != null) writer.writeMessage(7, mNavData);
+                                    if (mLength != null) writer.writeMessage(9, mLength);
+                                    if (mVideoId.length() > 0) writer.writeString(10, mVideoId);
+                                }
+
+                                @Override
+                                public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                                    while (reader.hasMore()) {
+                                        int tag = reader.readTag();
+                                        switch (tag >>> 3) {
+                                            case 1:
+                                                if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                                if (mTitle == null) mTitle = new AndroidFullNextProto.TextRuns();
+                                                mTitle.mergeFrom(reader.readMessage());
+                                                break;
+                                            case 3:
+                                                if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                                if (mThumbnail == null) mThumbnail = new AndroidFullNextProto.Thumbnails();
+                                                mThumbnail.mergeFrom(reader.readMessage());
+                                                break;
+                                            case 4:
+                                                if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                                if (mByline == null) mByline = new AndroidFullNextProto.TextRuns();
+                                                mByline.mergeFrom(reader.readMessage());
+                                                break;
+                                            case 6:
+                                                if ((tag & 7) != 0) { reader.skip(tag); break; }
+                                                mSelected = reader.readInt32();
+                                                hasSelected = true;
+                                                break;
+                                            case 7:
+                                                if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                                if (mNavData == null) mNavData = new AndroidFullNextProto.WatchNavigation();
+                                                mNavData.mergeFrom(reader.readMessage());
+                                                break;
+                                            case 9:
+                                                if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                                if (mLength == null) mLength = new AndroidFullNextProto.TextRuns();
+                                                mLength.mergeFrom(reader.readMessage());
+                                                break;
+                                            case 10:
+                                                if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                                mVideoId = reader.readString();
+                                                break;
+                                            default:
+                                                reader.skip(tag);
+                                        }
+                                    }
+                                }
+
+                                public static PlaylistPanelVideoRenderer parseFrom(byte[] data) throws java.io.IOException {
+                                    PlaylistPanelVideoRenderer message = new PlaylistPanelVideoRenderer();
+                                    message.mergeFrom(new ProtoReader(data, 0, data.length));
+                                    return message;
+                                }
+                            }
+                            private final java.util.List<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.PlaylistPanel.PlaylistPanelRenderer.Items.PlaylistPanelVideoRenderer> mVideo = new java.util.ArrayList<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.PlaylistPanel.PlaylistPanelRenderer.Items.PlaylistPanelVideoRenderer>();
+                            public Items addVideo(AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.PlaylistPanel.PlaylistPanelRenderer.Items.PlaylistPanelVideoRenderer value) {
+                                if (value == null) throw new NullPointerException("video");
+                                mVideo.add(value);
+                                return this;
+                            }
+                            public java.util.List<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.PlaylistPanel.PlaylistPanelRenderer.Items.PlaylistPanelVideoRenderer> getVideoList() { return mVideo; }
+                            public int getVideoCount() { return mVideo.size(); }
+                            public AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.PlaylistPanel.PlaylistPanelRenderer.Items.PlaylistPanelVideoRenderer getVideo(int index) { return mVideo.get(index); }
+
+                            @Override
+                            public void writeTo(ProtoWriter writer) {
+                                for (int i = 0; i < mVideo.size(); i++) writer.writeMessage(51779701, mVideo.get(i));
+                            }
+
+                            @Override
+                            public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                                while (reader.hasMore()) {
+                                    int tag = reader.readTag();
+                                    switch (tag >>> 3) {
+                                        case 51779701:
+                                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                            { AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.PlaylistPanel.PlaylistPanelRenderer.Items.PlaylistPanelVideoRenderer item = new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.PlaylistPanel.PlaylistPanelRenderer.Items.PlaylistPanelVideoRenderer(); item.mergeFrom(reader.readMessage()); mVideo.add(item); }
+                                            break;
+                                        default:
+                                            reader.skip(tag);
+                                    }
+                                }
+                            }
+
+                            public static Items parseFrom(byte[] data) throws java.io.IOException {
+                                Items message = new Items();
+                                message.mergeFrom(new ProtoReader(data, 0, data.length));
+                                return message;
+                            }
+                        }
+                        private String mTitle = "";
+                        private final java.util.List<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.PlaylistPanel.PlaylistPanelRenderer.Items> mItem = new java.util.ArrayList<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.PlaylistPanel.PlaylistPanelRenderer.Items>();
+                        private int mCurrentIndex = 0;
+                        private String mPlaylistId = "";
+                        private int mTotalVideos = 0;
+                        private AndroidFullNextProto.TextRuns mTitleText;
+                        private int mIsInfinite = 0;
+                        private boolean hasIsInfinite;
+                        private AndroidFullNextProto.TextRuns mShortByline;
+                        private AndroidFullNextProto.TextRuns mLongByline;
+                        public PlaylistPanelRenderer setTitle(String value) { mTitle = value == null ? "" : value; return this; }
+                        public String getTitle() { return mTitle; }
+                        public PlaylistPanelRenderer addItem(AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.PlaylistPanel.PlaylistPanelRenderer.Items value) {
+                            if (value == null) throw new NullPointerException("item");
+                            mItem.add(value);
+                            return this;
+                        }
+                        public java.util.List<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.PlaylistPanel.PlaylistPanelRenderer.Items> getItemList() { return mItem; }
+                        public int getItemCount() { return mItem.size(); }
+                        public AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.PlaylistPanel.PlaylistPanelRenderer.Items getItem(int index) { return mItem.get(index); }
+                        public PlaylistPanelRenderer setCurrentIndex(int value) { mCurrentIndex = value; return this; }
+                        public int getCurrentIndex() { return mCurrentIndex; }
+                        public PlaylistPanelRenderer setPlaylistId(String value) { mPlaylistId = value == null ? "" : value; return this; }
+                        public String getPlaylistId() { return mPlaylistId; }
+                        public PlaylistPanelRenderer setTotalVideos(int value) { mTotalVideos = value; return this; }
+                        public int getTotalVideos() { return mTotalVideos; }
+                        public PlaylistPanelRenderer setTitleText(AndroidFullNextProto.TextRuns value) { mTitleText = value; return this; }
+                        public AndroidFullNextProto.TextRuns getTitleText() { return mTitleText; }
+                        public boolean hasTitleText() { return mTitleText != null; }
+                        public PlaylistPanelRenderer setIsInfinite(int value) { mIsInfinite = value; hasIsInfinite = true; return this; }
+                        public int getIsInfinite() { return mIsInfinite; }
+                        public boolean hasIsInfinite() { return hasIsInfinite; }
+                        public PlaylistPanelRenderer setShortByline(AndroidFullNextProto.TextRuns value) { mShortByline = value; return this; }
+                        public AndroidFullNextProto.TextRuns getShortByline() { return mShortByline; }
+                        public boolean hasShortByline() { return mShortByline != null; }
+                        public PlaylistPanelRenderer setLongByline(AndroidFullNextProto.TextRuns value) { mLongByline = value; return this; }
+                        public AndroidFullNextProto.TextRuns getLongByline() { return mLongByline; }
+                        public boolean hasLongByline() { return mLongByline != null; }
+
+                        @Override
+                        public void writeTo(ProtoWriter writer) {
+                            if (mTitle.length() > 0) writer.writeString(1, mTitle);
+                            for (int i = 0; i < mItem.size(); i++) writer.writeMessage(2, mItem.get(i));
+                            if (mCurrentIndex != 0) writer.writeInt32(3, mCurrentIndex);
+                            if (mPlaylistId.length() > 0) writer.writeString(5, mPlaylistId);
+                            if (mTotalVideos != 0) writer.writeInt32(6, mTotalVideos);
+                            if (mTitleText != null) writer.writeMessage(7, mTitleText);
+                            if (hasIsInfinite) writer.writeInt32(8, mIsInfinite);
+                            if (mShortByline != null) writer.writeMessage(16, mShortByline);
+                            if (mLongByline != null) writer.writeMessage(17, mLongByline);
+                        }
+
+                        @Override
+                        public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                            while (reader.hasMore()) {
+                                int tag = reader.readTag();
+                                switch (tag >>> 3) {
+                                    case 1:
+                                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                        mTitle = reader.readString();
+                                        break;
+                                    case 2:
+                                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                        { AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.PlaylistPanel.PlaylistPanelRenderer.Items item = new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.PlaylistPanel.PlaylistPanelRenderer.Items(); item.mergeFrom(reader.readMessage()); mItem.add(item); }
+                                        break;
+                                    case 3:
+                                        if ((tag & 7) != 0) { reader.skip(tag); break; }
+                                        mCurrentIndex = reader.readInt32();
+                                        break;
+                                    case 5:
+                                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                        mPlaylistId = reader.readString();
+                                        break;
+                                    case 6:
+                                        if ((tag & 7) != 0) { reader.skip(tag); break; }
+                                        mTotalVideos = reader.readInt32();
+                                        break;
+                                    case 7:
+                                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                        if (mTitleText == null) mTitleText = new AndroidFullNextProto.TextRuns();
+                                        mTitleText.mergeFrom(reader.readMessage());
+                                        break;
+                                    case 8:
+                                        if ((tag & 7) != 0) { reader.skip(tag); break; }
+                                        mIsInfinite = reader.readInt32();
+                                        hasIsInfinite = true;
+                                        break;
+                                    case 16:
+                                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                        if (mShortByline == null) mShortByline = new AndroidFullNextProto.TextRuns();
+                                        mShortByline.mergeFrom(reader.readMessage());
+                                        break;
+                                    case 17:
+                                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                        if (mLongByline == null) mLongByline = new AndroidFullNextProto.TextRuns();
+                                        mLongByline.mergeFrom(reader.readMessage());
+                                        break;
+                                    default:
+                                        reader.skip(tag);
+                                }
+                            }
+                        }
+
+                        public static PlaylistPanelRenderer parseFrom(byte[] data) throws java.io.IOException {
+                            PlaylistPanelRenderer message = new PlaylistPanelRenderer();
+                            message.mergeFrom(new ProtoReader(data, 0, data.length));
+                            return message;
+                        }
+                    }
+                    private final java.util.List<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.PlaylistPanel.PlaylistPanelRenderer> mPanel = new java.util.ArrayList<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.PlaylistPanel.PlaylistPanelRenderer>();
+                    public PlaylistPanel addPanel(AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.PlaylistPanel.PlaylistPanelRenderer value) {
+                        if (value == null) throw new NullPointerException("panel");
+                        mPanel.add(value);
+                        return this;
+                    }
+                    public java.util.List<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.PlaylistPanel.PlaylistPanelRenderer> getPanelList() { return mPanel; }
+                    public int getPanelCount() { return mPanel.size(); }
+                    public AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.PlaylistPanel.PlaylistPanelRenderer getPanel(int index) { return mPanel.get(index); }
+
+                    @Override
+                    public void writeTo(ProtoWriter writer) {
+                        for (int i = 0; i < mPanel.size(); i++) writer.writeMessage(50631000, mPanel.get(i));
+                    }
+
+                    @Override
+                    public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                        while (reader.hasMore()) {
+                            int tag = reader.readTag();
+                            switch (tag >>> 3) {
+                                case 50631000:
+                                    if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                    { AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.PlaylistPanel.PlaylistPanelRenderer item = new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.PlaylistPanel.PlaylistPanelRenderer(); item.mergeFrom(reader.readMessage()); mPanel.add(item); }
+                                    break;
+                                default:
+                                    reader.skip(tag);
+                            }
+                        }
+                    }
+
+                    public static PlaylistPanel parseFrom(byte[] data) throws java.io.IOException {
+                        PlaylistPanel message = new PlaylistPanel();
+                        message.mergeFrom(new ProtoReader(data, 0, data.length));
+                        return message;
+                    }
+                }
+
+                /** proto: android_full_next.root.contents.singleColumnWatchNextResults.autoplay */
+                public static final class Autoplay extends ProtoMessage {
+
+                    /** proto: android_full_next.root.contents.singleColumnWatchNextResults.autoplay.autoplayRenderer */
+                    public static final class AutoplayRenderer extends ProtoMessage {
+
+                        /** proto: android_full_next.root.contents.singleColumnWatchNextResults.autoplay.autoplayRenderer.autoplaySet */
+                        public static final class AutoplaySet extends ProtoMessage {
+
+                            /** proto: android_full_next.root.contents.singleColumnWatchNextResults.autoplay.autoplayRenderer.autoplaySet.autonav */
+                            public static final class Autonav extends ProtoMessage {
+
+                                /** proto: android_full_next.root.contents.singleColumnWatchNextResults.autoplay.autoplayRenderer.autoplaySet.autonav.autonavVideo */
+                                public static final class AutonavVideo extends ProtoMessage {
+                                    private AndroidFullNextProto.WatchNavigation mNavData;
+                                    public AutonavVideo setNavData(AndroidFullNextProto.WatchNavigation value) { mNavData = value; return this; }
+                                    public AndroidFullNextProto.WatchNavigation getNavData() { return mNavData; }
+                                    public boolean hasNavData() { return mNavData != null; }
+
+                                    @Override
+                                    public void writeTo(ProtoWriter writer) {
+                                        if (mNavData != null) writer.writeMessage(1, mNavData);
+                                    }
+
+                                    @Override
+                                    public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                                        while (reader.hasMore()) {
+                                            int tag = reader.readTag();
+                                            switch (tag >>> 3) {
+                                                case 1:
+                                                    if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                                    if (mNavData == null) mNavData = new AndroidFullNextProto.WatchNavigation();
+                                                    mNavData.mergeFrom(reader.readMessage());
+                                                    break;
+                                                default:
+                                                    reader.skip(tag);
+                                            }
+                                        }
+                                    }
+
+                                    public static AutonavVideo parseFrom(byte[] data) throws java.io.IOException {
+                                        AutonavVideo message = new AutonavVideo();
+                                        message.mergeFrom(new ProtoReader(data, 0, data.length));
+                                        return message;
+                                    }
+                                }
+                                private final java.util.List<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay.AutoplayRenderer.AutoplaySet.Autonav.AutonavVideo> mVideo = new java.util.ArrayList<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay.AutoplayRenderer.AutoplaySet.Autonav.AutonavVideo>();
+                                public Autonav addVideo(AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay.AutoplayRenderer.AutoplaySet.Autonav.AutonavVideo value) {
+                                    if (value == null) throw new NullPointerException("video");
+                                    mVideo.add(value);
+                                    return this;
+                                }
+                                public java.util.List<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay.AutoplayRenderer.AutoplaySet.Autonav.AutonavVideo> getVideoList() { return mVideo; }
+                                public int getVideoCount() { return mVideo.size(); }
+                                public AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay.AutoplayRenderer.AutoplaySet.Autonav.AutonavVideo getVideo(int index) { return mVideo.get(index); }
+
+                                @Override
+                                public void writeTo(ProtoWriter writer) {
+                                    for (int i = 0; i < mVideo.size(); i++) writer.writeMessage(111631903, mVideo.get(i));
+                                }
+
+                                @Override
+                                public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                                    while (reader.hasMore()) {
+                                        int tag = reader.readTag();
+                                        switch (tag >>> 3) {
+                                            case 111631903:
+                                                if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                                { AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay.AutoplayRenderer.AutoplaySet.Autonav.AutonavVideo item = new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay.AutoplayRenderer.AutoplaySet.Autonav.AutonavVideo(); item.mergeFrom(reader.readMessage()); mVideo.add(item); }
+                                                break;
+                                            default:
+                                                reader.skip(tag);
+                                        }
+                                    }
+                                }
+
+                                public static Autonav parseFrom(byte[] data) throws java.io.IOException {
+                                    Autonav message = new Autonav();
+                                    message.mergeFrom(new ProtoReader(data, 0, data.length));
+                                    return message;
+                                }
+                            }
+                            private int mMode = 0;
+                            private AndroidFullNextProto.WatchNavigation mAutoplayVideo;
+                            private AndroidFullNextProto.WatchNavigation mNextButtonVideo;
+                            private AndroidFullNextProto.WatchNavigation mPreviousButtonVideo;
+                            private AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay.AutoplayRenderer.AutoplaySet.Autonav mAutonavVideo;
+                            public AutoplaySet setMode(int value) { mMode = value; return this; }
+                            public int getMode() { return mMode; }
+                            public AutoplaySet setAutoplayVideo(AndroidFullNextProto.WatchNavigation value) { mAutoplayVideo = value; return this; }
+                            public AndroidFullNextProto.WatchNavigation getAutoplayVideo() { return mAutoplayVideo; }
+                            public boolean hasAutoplayVideo() { return mAutoplayVideo != null; }
+                            public AutoplaySet setNextButtonVideo(AndroidFullNextProto.WatchNavigation value) { mNextButtonVideo = value; return this; }
+                            public AndroidFullNextProto.WatchNavigation getNextButtonVideo() { return mNextButtonVideo; }
+                            public boolean hasNextButtonVideo() { return mNextButtonVideo != null; }
+                            public AutoplaySet setPreviousButtonVideo(AndroidFullNextProto.WatchNavigation value) { mPreviousButtonVideo = value; return this; }
+                            public AndroidFullNextProto.WatchNavigation getPreviousButtonVideo() { return mPreviousButtonVideo; }
+                            public boolean hasPreviousButtonVideo() { return mPreviousButtonVideo != null; }
+                            public AutoplaySet setAutonavVideo(AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay.AutoplayRenderer.AutoplaySet.Autonav value) { mAutonavVideo = value; return this; }
+                            public AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay.AutoplayRenderer.AutoplaySet.Autonav getAutonavVideo() { return mAutonavVideo; }
+                            public boolean hasAutonavVideo() { return mAutonavVideo != null; }
+
+                            @Override
+                            public void writeTo(ProtoWriter writer) {
+                                if (mMode != 0) writer.writeInt32(1, mMode);
+                                if (mAutoplayVideo != null) writer.writeMessage(2, mAutoplayVideo);
+                                if (mNextButtonVideo != null) writer.writeMessage(3, mNextButtonVideo);
+                                if (mPreviousButtonVideo != null) writer.writeMessage(4, mPreviousButtonVideo);
+                                if (mAutonavVideo != null) writer.writeMessage(5, mAutonavVideo);
+                            }
+
+                            @Override
+                            public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                                while (reader.hasMore()) {
+                                    int tag = reader.readTag();
+                                    switch (tag >>> 3) {
+                                        case 1:
+                                            if ((tag & 7) != 0) { reader.skip(tag); break; }
+                                            mMode = reader.readInt32();
+                                            break;
+                                        case 2:
+                                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                            if (mAutoplayVideo == null) mAutoplayVideo = new AndroidFullNextProto.WatchNavigation();
+                                            mAutoplayVideo.mergeFrom(reader.readMessage());
+                                            break;
+                                        case 3:
+                                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                            if (mNextButtonVideo == null) mNextButtonVideo = new AndroidFullNextProto.WatchNavigation();
+                                            mNextButtonVideo.mergeFrom(reader.readMessage());
+                                            break;
+                                        case 4:
+                                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                            if (mPreviousButtonVideo == null) mPreviousButtonVideo = new AndroidFullNextProto.WatchNavigation();
+                                            mPreviousButtonVideo.mergeFrom(reader.readMessage());
+                                            break;
+                                        case 5:
+                                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                            if (mAutonavVideo == null) mAutonavVideo = new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay.AutoplayRenderer.AutoplaySet.Autonav();
+                                            mAutonavVideo.mergeFrom(reader.readMessage());
+                                            break;
+                                        default:
+                                            reader.skip(tag);
+                                    }
+                                }
+                            }
+
+                            public static AutoplaySet parseFrom(byte[] data) throws java.io.IOException {
+                                AutoplaySet message = new AutoplaySet();
+                                message.mergeFrom(new ProtoReader(data, 0, data.length));
+                                return message;
+                            }
+                        }
+                        private final java.util.List<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay.AutoplayRenderer.AutoplaySet> mSet = new java.util.ArrayList<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay.AutoplayRenderer.AutoplaySet>();
+                        private int mCountDownSecs = 0;
+                        public AutoplayRenderer addSet(AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay.AutoplayRenderer.AutoplaySet value) {
+                            if (value == null) throw new NullPointerException("set");
+                            mSet.add(value);
+                            return this;
+                        }
+                        public java.util.List<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay.AutoplayRenderer.AutoplaySet> getSetList() { return mSet; }
+                        public int getSetCount() { return mSet.size(); }
+                        public AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay.AutoplayRenderer.AutoplaySet getSet(int index) { return mSet.get(index); }
+                        public AutoplayRenderer setCountDownSecs(int value) { mCountDownSecs = value; return this; }
+                        public int getCountDownSecs() { return mCountDownSecs; }
+
+                        @Override
+                        public void writeTo(ProtoWriter writer) {
+                            for (int i = 0; i < mSet.size(); i++) writer.writeMessage(1, mSet.get(i));
+                            if (mCountDownSecs != 0) writer.writeInt32(3, mCountDownSecs);
+                        }
+
+                        @Override
+                        public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                            while (reader.hasMore()) {
+                                int tag = reader.readTag();
+                                switch (tag >>> 3) {
+                                    case 1:
+                                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                        { AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay.AutoplayRenderer.AutoplaySet item = new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay.AutoplayRenderer.AutoplaySet(); item.mergeFrom(reader.readMessage()); mSet.add(item); }
+                                        break;
+                                    case 3:
+                                        if ((tag & 7) != 0) { reader.skip(tag); break; }
+                                        mCountDownSecs = reader.readInt32();
+                                        break;
+                                    default:
+                                        reader.skip(tag);
+                                }
+                            }
+                        }
+
+                        public static AutoplayRenderer parseFrom(byte[] data) throws java.io.IOException {
+                            AutoplayRenderer message = new AutoplayRenderer();
+                            message.mergeFrom(new ProtoReader(data, 0, data.length));
+                            return message;
+                        }
+                    }
+                    private final java.util.List<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay.AutoplayRenderer> mAutoplay = new java.util.ArrayList<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay.AutoplayRenderer>();
+                    public Autoplay addAutoplay(AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay.AutoplayRenderer value) {
+                        if (value == null) throw new NullPointerException("autoplay");
+                        mAutoplay.add(value);
+                        return this;
+                    }
+                    public java.util.List<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay.AutoplayRenderer> getAutoplayList() { return mAutoplay; }
+                    public int getAutoplayCount() { return mAutoplay.size(); }
+                    public AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay.AutoplayRenderer getAutoplay(int index) { return mAutoplay.get(index); }
+
+                    @Override
+                    public void writeTo(ProtoWriter writer) {
+                        for (int i = 0; i < mAutoplay.size(); i++) writer.writeMessage(46659098, mAutoplay.get(i));
+                    }
+
+                    @Override
+                    public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                        while (reader.hasMore()) {
+                            int tag = reader.readTag();
+                            switch (tag >>> 3) {
+                                case 46659098:
+                                    if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                    { AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay.AutoplayRenderer item = new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay.AutoplayRenderer(); item.mergeFrom(reader.readMessage()); mAutoplay.add(item); }
+                                    break;
+                                default:
+                                    reader.skip(tag);
+                            }
+                        }
+                    }
+
+                    public static Autoplay parseFrom(byte[] data) throws java.io.IOException {
+                        Autoplay message = new Autoplay();
+                        message.mergeFrom(new ProtoReader(data, 0, data.length));
+                        return message;
+                    }
+                }
                 private final java.util.List<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents> mContent = new java.util.ArrayList<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents>();
+                private AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.PlaylistPanel mPlaylist;
+                private AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay mAutoplayNext;
                 public SingleColumnWatchNextResults addContent(AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents value) {
                     if (value == null) throw new NullPointerException("content");
                     mContent.add(value);
@@ -2924,10 +3919,18 @@ public final class AndroidFullNextProto {
                 public java.util.List<AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents> getContentList() { return mContent; }
                 public int getContentCount() { return mContent.size(); }
                 public AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents getContent(int index) { return mContent.get(index); }
+                public SingleColumnWatchNextResults setPlaylist(AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.PlaylistPanel value) { mPlaylist = value; return this; }
+                public AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.PlaylistPanel getPlaylist() { return mPlaylist; }
+                public boolean hasPlaylist() { return mPlaylist != null; }
+                public SingleColumnWatchNextResults setAutoplayNext(AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay value) { mAutoplayNext = value; return this; }
+                public AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay getAutoplayNext() { return mAutoplayNext; }
+                public boolean hasAutoplayNext() { return mAutoplayNext != null; }
 
                 @Override
                 public void writeTo(ProtoWriter writer) {
                     for (int i = 0; i < mContent.size(); i++) writer.writeMessage(1, mContent.get(i));
+                    if (mPlaylist != null) writer.writeMessage(2, mPlaylist);
+                    if (mAutoplayNext != null) writer.writeMessage(3, mAutoplayNext);
                 }
 
                 @Override
@@ -2938,6 +3941,16 @@ public final class AndroidFullNextProto {
                             case 1:
                                 if ((tag & 7) != 2) { reader.skip(tag); break; }
                                 { AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents item = new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents(); item.mergeFrom(reader.readMessage()); mContent.add(item); }
+                                break;
+                            case 2:
+                                if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                if (mPlaylist == null) mPlaylist = new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.PlaylistPanel();
+                                mPlaylist.mergeFrom(reader.readMessage());
+                                break;
+                            case 3:
+                                if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                if (mAutoplayNext == null) mAutoplayNext = new AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay();
+                                mAutoplayNext.mergeFrom(reader.readMessage());
                                 break;
                             default:
                                 reader.skip(tag);

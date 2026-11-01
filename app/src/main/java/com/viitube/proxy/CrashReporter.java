@@ -25,7 +25,12 @@ public final class CrashReporter {
 
     private static final String REPORT_URL = "http://crashlogs.truehosting.net/ytproxy";
     private static final int MAX_LOG_BYTES = 1024 * 1024;
-    private static final int MAX_EVENT_CHARS = 48 * 1024;
+    /**
+     * How much of a request or an answer the log keeps. Every YouTube call copies this much on
+     * the thread that made it and the log thread then escapes and writes it, so a smaller head
+     * of the body costs the proxy far less and still says what went wrong.
+     */
+    private static final int MAX_EVENT_CHARS = 8 * 1024;
     private static Context appContext;
 
     private CrashReporter() { }

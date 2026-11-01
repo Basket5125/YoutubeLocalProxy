@@ -31,6 +31,8 @@ public class ProxyService extends Service {
         super.onCreate();
 
         HttpClient.initTls();
+        // The phone can mint the token YouTube wants with a stream; this is where it runs.
+        PlayerLookup.useTokensFrom(this);
         PlayerLookup.clearPlayerCache(this);
         Config config = Config.get(this);
         if (!config.getBool("proxy_enabled", true)) {

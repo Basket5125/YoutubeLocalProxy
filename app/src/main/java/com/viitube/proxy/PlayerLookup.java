@@ -23,6 +23,7 @@ public class PlayerLookup {
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
             + "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36,gzip(gfe)";
 
+
     private static final PlayerProfile[] PLAYBACK_PROFILES = {
         new PlayerProfile("ANDROID", "21.29.366", ANDROID_USER_AGENT, "3", "MOBILE",
             "Android", "14", "Google", "Pixel 7", "", 34),
@@ -59,6 +60,10 @@ public class PlayerLookup {
     public static java.util.List<JSONObject> fetchPlaybackCandidatesForMux(String videoId, Config config) {
         java.util.List<JSONObject> players = new java.util.ArrayList<JSONObject>();
         for (PlayerProfile profile : MUX_PROFILES) {
+            // Never the browser: its links carry an "n" that has to be put through the player
+            // script before the server serves them at full speed, and this proxy cannot run
+            // that script, so a stream muxed out of one of them arrives a trickle at a time.
+            if (profile.name.startsWith("WEB") || "MWEB".equals(profile.name)) continue;
             try {
                 JSONObject player = fetchProfilePlayer(videoId, config, profile);
                 if (findMuxFormats(player, 720) != null) players.add(player);
@@ -68,6 +73,40 @@ public class PlayerLookup {
             }
         }
         return players;
+    }
+
+
+    private static String signatureTimestamp = "";
+    private static long signatureTimestampTime;
+
+    /**
+     * The number the browser sends with a player request to say which player script it has. The
+     * answers of the browser client are refused without it, and it is read out of that script,
+     * which is named by the page that loads the player. Kept for a day.
+     */
+    static synchronized String signatureTimestamp(Config config) {
+        if (!signatureTimestamp.isEmpty()
+                && System.currentTimeMillis() - signatureTimestampTime < 24L * 3600 * 1000) {
+            return signatureTimestamp;
+        }
+        try {
+            String hash = HttpClient.findInUrl("https://www.youtube.com/iframe_api",
+                    // The page writes the address with escaped slashes, so the backslash may be there.
+                    java.util.regex.Pattern.compile("player\\\\?/([a-zA-Z0-9_-]{6,})\\\\?/"),
+                    WEB_USER_AGENT);
+            if (hash.isEmpty()) return signatureTimestamp;
+            String found = HttpClient.findInUrl("https://www.youtube.com/s/player/" + hash
+                            + "/player_ias.vflset/en_US/base.js",
+                    java.util.regex.Pattern.compile("signatureTimestamp[:=](\\d+)"), WEB_USER_AGENT);
+            if (!found.isEmpty()) {
+                signatureTimestamp = found;
+                signatureTimestampTime = System.currentTimeMillis();
+                android.util.Log.i("PlayerLookup", "player " + hash + ", signature timestamp " + found);
+            }
+        } catch (Exception error) {
+            android.util.Log.w("PlayerLookup", "No signature timestamp: " + error);
+        }
+        return signatureTimestamp;
     }
 
     private static String visitorData;
@@ -92,18 +131,24 @@ public class PlayerLookup {
         return visitorData == null ? "" : visitorData;
     }
 
-    private static final int PLAYER_CACHE_LIMIT = 64;
+    /** A player answer is the heaviest thing this proxy keeps, so few of them are held. */
+    private static final int PLAYER_CACHE_LIMIT = MemoryBudget.entries(64);
     private static final Map<String, JSONObject> PLAYER_CACHE =
             new LinkedHashMap<String, JSONObject>(16, 0.75f, true);
     private static final Map<String, Object> PLAYER_LOCKS = new HashMap<String, Object>();
     private static long playerCacheGeneration;
 
-    public static void clearPlayerCache(Context context) {
+    /** Lets go of the player answers held in memory, keeping the ones on disk. */
+    public static void clearMemory() {
         synchronized (PLAYER_CACHE) {
             PLAYER_CACHE.clear();
             PLAYER_LOCKS.clear();
             playerCacheGeneration++;
         }
+    }
+
+    public static void clearPlayerCache(Context context) {
+        clearMemory();
         File cacheDir = context.getCacheDir();
         deleteRecursively(new File(cacheDir, "videoinfo_v2"));
         deleteRecursively(new File(cacheDir, "upload_player_v1"));
@@ -318,7 +363,12 @@ public class PlayerLookup {
                 if (!profile.osVersion.isEmpty()) client.put("osVersion", profile.osVersion);
                 if (!profile.deviceMake.isEmpty()) client.put("deviceMake", profile.deviceMake);
                 if (!profile.deviceModel.isEmpty()) client.put("deviceModel", profile.deviceModel);
-                String visitor = "ANDROID_VR".equals(profile.name) ? freshVisitorData(config)
+                // The token belongs to one visitor, so when one is minted every request carries
+                // that same visitor id; otherwise nothing changes from what worked before.
+                boolean minting = PoTokenMinter.supported(config);
+                String visitor = "ANDROID_VR".equals(profile.name)
+                        || (minting && (profile.name.startsWith("WEB") || "MWEB".equals(profile.name)))
+                        ? freshVisitorData(config)
                         : config.getString("visitor_data", "");
                 if (!visitor.isEmpty()) client.put("visitorData", visitor);
                 if (profile.androidSdkVersion > 0) {
@@ -335,10 +385,35 @@ public class PlayerLookup {
                         .put("videoId", videoId)
                         .put("contentCheckOk", true)
                         .put("racyCheckOk", true);
+                // The browser client is refused without the number of the player script it
+                // claims to have, and it says more about itself than the app clients do.
+                if (profile.name.startsWith("WEB") || "MWEB".equals(profile.name)) {
+                    client.put("browserName", "Chrome").put("browserVersion", "131.0.0.0")
+                            .put("originalUrl", "https://www.youtube.com/watch?v=" + videoId);
+                    String timestamp = signatureTimestamp(config);
+                    if (!timestamp.isEmpty()) {
+                        payload.put("playbackContext", new JSONObject().put("contentPlaybackContext",
+                                new JSONObject().put("html5Preference", "HTML5_PREF_WANTS")
+                                        .put("signatureTimestamp", Integer.parseInt(timestamp))));
+                    }
+                }
+                // The proof this phone is a real client. With it the links of the answer play
+                // the whole video; without it the server stops after the first minute. The one
+                // sent here belongs to the session, and it is the one put on the links as well.
+                if (profile.name.startsWith("WEB") || "MWEB".equals(profile.name)) {
+                    String token = sessionToken(config);
+                    if (!token.isEmpty()) {
+                        payload.put("serviceIntegrityDimensions",
+                                new JSONObject().put("poToken", token));
+                    }
+                }
                 java.util.Map<String, String> headers = new HashMap<String, String>();
                 headers.put("X-YouTube-Client-Name", profile.protoId);
                 headers.put("X-YouTube-Client-Version", profile.version);
-                if ("ANDROID_VR".equals(profile.name) && !visitor.isEmpty()) {
+                // The server matches the visitor of the request against the one the token was
+                // made for, so it goes in the header of the browser's requests as well.
+                if (!visitor.isEmpty() && ("ANDROID_VR".equals(profile.name)
+                        || profile.name.startsWith("WEB") || "MWEB".equals(profile.name))) {
                     headers.put("X-Goog-Visitor-Id", visitor);
                 }
                 return InnertubeEndpoint.request("player", payload, config,
@@ -346,6 +421,39 @@ public class PlayerLookup {
             }
         });
     }
+
+    /** Where the phone's own token comes from; set once the app has a context to run it in. */
+    private static Context tokenContext;
+
+    static void useTokensFrom(Context context) {
+        tokenContext = context == null ? null : context.getApplicationContext();
+    }
+
+    /** The token for a video, bound to it; this is the one the media protocol asks for. */
+    static String poToken(String videoId, Config config) {
+        Context context = tokenContext;
+        if (context == null || !PoTokenMinter.supported(config)) return "";
+        return PoTokenMinter.get(context).token(videoId);
+    }
+
+    /** The token this proxy adds to the stream links, kept as the last one minted. */
+    private static volatile String sessionToken = "";
+
+    /**
+     * The token of this session. The links of a stream are let through for the visitor they
+     * were made for, so the token is minted for the same visitor id the requests carry and goes
+     * on those links as "pot".
+     */
+    static String sessionToken(Config config) {
+        Context context = tokenContext;
+        if (context == null || !PoTokenMinter.supported(config)) return "";
+        String visitor = freshVisitorData(config);
+        if (visitor.isEmpty()) return "";
+        String token = PoTokenMinter.get(context).token(visitor);
+        if (!token.isEmpty()) sessionToken = token;
+        return token;
+    }
+
 
     /**
      * Video-only H.264 stream up to {@code maxHeight} and an AAC stream for the experimental
@@ -418,7 +526,24 @@ public class PlayerLookup {
         return best;
     }
 
-    /** Direct (deciphered) URL of an adaptive format. */
+    /** The heights of the H.264 streams of a player answer, so the apps can offer them. */
+    public static java.util.List<Integer> heights(JSONObject player) {
+        java.util.List<Integer> heights = new java.util.ArrayList<Integer>();
+        JSONArray formats = adaptiveFormats(player);
+        if (formats == null) return heights;
+        for (int i = 0; i < formats.length(); i++) {
+            JSONObject format = formats.optJSONObject(i);
+            if (format == null || !"video/mp4".equals(baseMimeType(format))) continue;
+            if (!format.optString("mimeType", "").toLowerCase(java.util.Locale.US).contains("avc1")) {
+                continue;
+            }
+            Integer height = Integer.valueOf(qualityHeight(format));
+            if (height.intValue() > 0 && !heights.contains(height)) heights.add(height);
+        }
+        return heights;
+    }
+
+    /** Direct (deciphered) URL of an adaptive format, with the token of this session on it. */
     public static String formatUrl(JSONObject format) {
         return playableFormatUrl(format);
     }

@@ -1694,15 +1694,19 @@ public final class VideoListProto {
                     public static final class EndpointDataContents extends ProtoMessage {
                         private String mId = "";
                         private String mPlaylistId = "";
+                        private int mIndex = 0;
                         public EndpointDataContents setId(String value) { mId = value == null ? "" : value; return this; }
                         public String getId() { return mId; }
                         public EndpointDataContents setPlaylistId(String value) { mPlaylistId = value == null ? "" : value; return this; }
                         public String getPlaylistId() { return mPlaylistId; }
+                        public EndpointDataContents setIndex(int value) { mIndex = value; return this; }
+                        public int getIndex() { return mIndex; }
 
                         @Override
                         public void writeTo(ProtoWriter writer) {
                             if (mId.length() > 0) writer.writeString(1, mId);
                             if (mPlaylistId.length() > 0) writer.writeString(2, mPlaylistId);
+                            if (mIndex != 0) writer.writeInt32(3, mIndex);
                         }
 
                         @Override
@@ -1717,6 +1721,10 @@ public final class VideoListProto {
                                     case 2:
                                         if ((tag & 7) != 2) { reader.skip(tag); break; }
                                         mPlaylistId = reader.readString();
+                                        break;
+                                    case 3:
+                                        if ((tag & 7) != 0) { reader.skip(tag); break; }
+                                        mIndex = reader.readInt32();
                                         break;
                                     default:
                                         reader.skip(tag);
@@ -2353,12 +2361,250 @@ public final class VideoListProto {
         }
     }
 
+    /** proto: browse_proto.communityPostRenderer */
+    public static final class CommunityPostRenderer extends ProtoMessage {
+
+        /** proto: browse_proto.communityPostRenderer.attachment */
+        public static final class Attachment extends ProtoMessage {
+
+            /** proto: browse_proto.communityPostRenderer.attachment.image */
+            public static final class Image extends ProtoMessage {
+                private VideoListProto.Thumbnails mPicture;
+                public Image setPicture(VideoListProto.Thumbnails value) { mPicture = value; return this; }
+                public VideoListProto.Thumbnails getPicture() { return mPicture; }
+                public boolean hasPicture() { return mPicture != null; }
+
+                @Override
+                public void writeTo(ProtoWriter writer) {
+                    if (mPicture != null) writer.writeMessage(1, mPicture);
+                }
+
+                @Override
+                public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                    while (reader.hasMore()) {
+                        int tag = reader.readTag();
+                        switch (tag >>> 3) {
+                            case 1:
+                                if ((tag & 7) != 2) { reader.skip(tag); break; }
+                                if (mPicture == null) mPicture = new VideoListProto.Thumbnails();
+                                mPicture.mergeFrom(reader.readMessage());
+                                break;
+                            default:
+                                reader.skip(tag);
+                        }
+                    }
+                }
+
+                public static Image parseFrom(byte[] data) throws java.io.IOException {
+                    Image message = new Image();
+                    message.mergeFrom(new ProtoReader(data, 0, data.length));
+                    return message;
+                }
+            }
+            private final java.util.List<VideoListProto.CommunityPostRenderer.Attachment.Image> mBackstageImage = new java.util.ArrayList<VideoListProto.CommunityPostRenderer.Attachment.Image>();
+            public Attachment addBackstageImage(VideoListProto.CommunityPostRenderer.Attachment.Image value) {
+                if (value == null) throw new NullPointerException("backstageImage");
+                mBackstageImage.add(value);
+                return this;
+            }
+            public java.util.List<VideoListProto.CommunityPostRenderer.Attachment.Image> getBackstageImageList() { return mBackstageImage; }
+            public int getBackstageImageCount() { return mBackstageImage.size(); }
+            public VideoListProto.CommunityPostRenderer.Attachment.Image getBackstageImage(int index) { return mBackstageImage.get(index); }
+
+            @Override
+            public void writeTo(ProtoWriter writer) {
+                for (int i = 0; i < mBackstageImage.size(); i++) writer.writeMessage(120744665, mBackstageImage.get(i));
+            }
+
+            @Override
+            public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                while (reader.hasMore()) {
+                    int tag = reader.readTag();
+                    switch (tag >>> 3) {
+                        case 120744665:
+                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                            { VideoListProto.CommunityPostRenderer.Attachment.Image item = new VideoListProto.CommunityPostRenderer.Attachment.Image(); item.mergeFrom(reader.readMessage()); mBackstageImage.add(item); }
+                            break;
+                        default:
+                            reader.skip(tag);
+                    }
+                }
+            }
+
+            public static Attachment parseFrom(byte[] data) throws java.io.IOException {
+                Attachment message = new Attachment();
+                message.mergeFrom(new ProtoReader(data, 0, data.length));
+                return message;
+            }
+        }
+        private VideoListProto.TextRuns mAuthor;
+        private VideoListProto.Thumbnails mAuthorThumbnail;
+        private VideoListProto.BrowseNavigation mAuthorEndpoint;
+        private VideoListProto.TextRuns mContent;
+        private String mPostId = "";
+        private VideoListProto.CommunityPostRenderer.Attachment mBackstageAttachment;
+        private VideoListProto.TextRuns mPublishedTime;
+        public CommunityPostRenderer setAuthor(VideoListProto.TextRuns value) { mAuthor = value; return this; }
+        public VideoListProto.TextRuns getAuthor() { return mAuthor; }
+        public boolean hasAuthor() { return mAuthor != null; }
+        public CommunityPostRenderer setAuthorThumbnail(VideoListProto.Thumbnails value) { mAuthorThumbnail = value; return this; }
+        public VideoListProto.Thumbnails getAuthorThumbnail() { return mAuthorThumbnail; }
+        public boolean hasAuthorThumbnail() { return mAuthorThumbnail != null; }
+        public CommunityPostRenderer setAuthorEndpoint(VideoListProto.BrowseNavigation value) { mAuthorEndpoint = value; return this; }
+        public VideoListProto.BrowseNavigation getAuthorEndpoint() { return mAuthorEndpoint; }
+        public boolean hasAuthorEndpoint() { return mAuthorEndpoint != null; }
+        public CommunityPostRenderer setContent(VideoListProto.TextRuns value) { mContent = value; return this; }
+        public VideoListProto.TextRuns getContent() { return mContent; }
+        public boolean hasContent() { return mContent != null; }
+        public CommunityPostRenderer setPostId(String value) { mPostId = value == null ? "" : value; return this; }
+        public String getPostId() { return mPostId; }
+        public CommunityPostRenderer setBackstageAttachment(VideoListProto.CommunityPostRenderer.Attachment value) { mBackstageAttachment = value; return this; }
+        public VideoListProto.CommunityPostRenderer.Attachment getBackstageAttachment() { return mBackstageAttachment; }
+        public boolean hasBackstageAttachment() { return mBackstageAttachment != null; }
+        public CommunityPostRenderer setPublishedTime(VideoListProto.TextRuns value) { mPublishedTime = value; return this; }
+        public VideoListProto.TextRuns getPublishedTime() { return mPublishedTime; }
+        public boolean hasPublishedTime() { return mPublishedTime != null; }
+
+        @Override
+        public void writeTo(ProtoWriter writer) {
+            if (mAuthor != null) writer.writeMessage(1, mAuthor);
+            if (mAuthorThumbnail != null) writer.writeMessage(2, mAuthorThumbnail);
+            if (mAuthorEndpoint != null) writer.writeMessage(3, mAuthorEndpoint);
+            if (mContent != null) writer.writeMessage(4, mContent);
+            if (mPostId.length() > 0) writer.writeString(9, mPostId);
+            if (mBackstageAttachment != null) writer.writeMessage(24, mBackstageAttachment);
+            if (mPublishedTime != null) writer.writeMessage(28, mPublishedTime);
+        }
+
+        @Override
+        public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+            while (reader.hasMore()) {
+                int tag = reader.readTag();
+                switch (tag >>> 3) {
+                    case 1:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mAuthor == null) mAuthor = new VideoListProto.TextRuns();
+                        mAuthor.mergeFrom(reader.readMessage());
+                        break;
+                    case 2:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mAuthorThumbnail == null) mAuthorThumbnail = new VideoListProto.Thumbnails();
+                        mAuthorThumbnail.mergeFrom(reader.readMessage());
+                        break;
+                    case 3:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mAuthorEndpoint == null) mAuthorEndpoint = new VideoListProto.BrowseNavigation();
+                        mAuthorEndpoint.mergeFrom(reader.readMessage());
+                        break;
+                    case 4:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mContent == null) mContent = new VideoListProto.TextRuns();
+                        mContent.mergeFrom(reader.readMessage());
+                        break;
+                    case 9:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        mPostId = reader.readString();
+                        break;
+                    case 24:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mBackstageAttachment == null) mBackstageAttachment = new VideoListProto.CommunityPostRenderer.Attachment();
+                        mBackstageAttachment.mergeFrom(reader.readMessage());
+                        break;
+                    case 28:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mPublishedTime == null) mPublishedTime = new VideoListProto.TextRuns();
+                        mPublishedTime.mergeFrom(reader.readMessage());
+                        break;
+                    default:
+                        reader.skip(tag);
+                }
+            }
+        }
+
+        public static CommunityPostRenderer parseFrom(byte[] data) throws java.io.IOException {
+            CommunityPostRenderer message = new CommunityPostRenderer();
+            message.mergeFrom(new ProtoReader(data, 0, data.length));
+            return message;
+        }
+    }
+
+    /** proto: browse_proto.communityPostThreadRenderer */
+    public static final class CommunityPostThreadRenderer extends ProtoMessage {
+
+        /** proto: browse_proto.communityPostThreadRenderer.postWrapper */
+        public static final class PostWrapper extends ProtoMessage {
+            private VideoListProto.CommunityPostRenderer mPost;
+            public PostWrapper setPost(VideoListProto.CommunityPostRenderer value) { mPost = value; return this; }
+            public VideoListProto.CommunityPostRenderer getPost() { return mPost; }
+            public boolean hasPost() { return mPost != null; }
+
+            @Override
+            public void writeTo(ProtoWriter writer) {
+                if (mPost != null) writer.writeMessage(62285947, mPost);
+            }
+
+            @Override
+            public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+                while (reader.hasMore()) {
+                    int tag = reader.readTag();
+                    switch (tag >>> 3) {
+                        case 62285947:
+                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                            if (mPost == null) mPost = new VideoListProto.CommunityPostRenderer();
+                            mPost.mergeFrom(reader.readMessage());
+                            break;
+                        default:
+                            reader.skip(tag);
+                    }
+                }
+            }
+
+            public static PostWrapper parseFrom(byte[] data) throws java.io.IOException {
+                PostWrapper message = new PostWrapper();
+                message.mergeFrom(new ProtoReader(data, 0, data.length));
+                return message;
+            }
+        }
+        private VideoListProto.CommunityPostThreadRenderer.PostWrapper mPost;
+        public CommunityPostThreadRenderer setPost(VideoListProto.CommunityPostThreadRenderer.PostWrapper value) { mPost = value; return this; }
+        public VideoListProto.CommunityPostThreadRenderer.PostWrapper getPost() { return mPost; }
+        public boolean hasPost() { return mPost != null; }
+
+        @Override
+        public void writeTo(ProtoWriter writer) {
+            if (mPost != null) writer.writeMessage(1, mPost);
+        }
+
+        @Override
+        public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+            while (reader.hasMore()) {
+                int tag = reader.readTag();
+                switch (tag >>> 3) {
+                    case 1:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mPost == null) mPost = new VideoListProto.CommunityPostThreadRenderer.PostWrapper();
+                        mPost.mergeFrom(reader.readMessage());
+                        break;
+                    default:
+                        reader.skip(tag);
+                }
+            }
+        }
+
+        public static CommunityPostThreadRenderer parseFrom(byte[] data) throws java.io.IOException {
+            CommunityPostThreadRenderer message = new CommunityPostThreadRenderer();
+            message.mergeFrom(new ProtoReader(data, 0, data.length));
+            return message;
+        }
+    }
+
     /** proto: browse_proto.itemSectionRenderer */
     public static final class ItemSectionRenderer extends ProtoMessage {
 
         /** proto: browse_proto.itemSectionRenderer.icsContents */
         public static final class IcsContents extends ProtoMessage {
             private final java.util.List<VideoListProto.CompactVideoRenderer> mVideo = new java.util.ArrayList<VideoListProto.CompactVideoRenderer>();
+            private final java.util.List<VideoListProto.CommunityPostThreadRenderer> mPost = new java.util.ArrayList<VideoListProto.CommunityPostThreadRenderer>();
             private final java.util.List<VideoListProto.PlaylistRenderer> mPlaylist = new java.util.ArrayList<VideoListProto.PlaylistRenderer>();
             private final java.util.List<VideoListProto.AboutRenderer> mAbout = new java.util.ArrayList<VideoListProto.AboutRenderer>();
             private final java.util.List<VideoListProto.ChannelRenderer> mChannel = new java.util.ArrayList<VideoListProto.ChannelRenderer>();
@@ -2372,6 +2618,14 @@ public final class VideoListProto {
             public java.util.List<VideoListProto.CompactVideoRenderer> getVideoList() { return mVideo; }
             public int getVideoCount() { return mVideo.size(); }
             public VideoListProto.CompactVideoRenderer getVideo(int index) { return mVideo.get(index); }
+            public IcsContents addPost(VideoListProto.CommunityPostThreadRenderer value) {
+                if (value == null) throw new NullPointerException("post");
+                mPost.add(value);
+                return this;
+            }
+            public java.util.List<VideoListProto.CommunityPostThreadRenderer> getPostList() { return mPost; }
+            public int getPostCount() { return mPost.size(); }
+            public VideoListProto.CommunityPostThreadRenderer getPost(int index) { return mPost.get(index); }
             public IcsContents addPlaylist(VideoListProto.PlaylistRenderer value) {
                 if (value == null) throw new NullPointerException("playlist");
                 mPlaylist.add(value);
@@ -2416,6 +2670,7 @@ public final class VideoListProto {
             @Override
             public void writeTo(ProtoWriter writer) {
                 for (int i = 0; i < mVideo.size(); i++) writer.writeMessage(50630979, mVideo.get(i));
+                for (int i = 0; i < mPost.size(); i++) writer.writeMessage(62285833, mPost.get(i));
                 for (int i = 0; i < mPlaylist.size(); i++) writer.writeMessage(50742631, mPlaylist.get(i));
                 for (int i = 0; i < mAbout.size(); i++) writer.writeMessage(52191200, mAbout.get(i));
                 for (int i = 0; i < mChannel.size(); i++) writer.writeMessage(50794305, mChannel.get(i));
@@ -2431,6 +2686,10 @@ public final class VideoListProto {
                         case 50630979:
                             if ((tag & 7) != 2) { reader.skip(tag); break; }
                             { VideoListProto.CompactVideoRenderer item = new VideoListProto.CompactVideoRenderer(); item.mergeFrom(reader.readMessage()); mVideo.add(item); }
+                            break;
+                        case 62285833:
+                            if ((tag & 7) != 2) { reader.skip(tag); break; }
+                            { VideoListProto.CommunityPostThreadRenderer item = new VideoListProto.CommunityPostThreadRenderer(); item.mergeFrom(reader.readMessage()); mPost.add(item); }
                             break;
                         case 50742631:
                             if ((tag & 7) != 2) { reader.skip(tag); break; }

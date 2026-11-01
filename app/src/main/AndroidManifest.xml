@@ -8,6 +8,7 @@
         android:name=".CrashApplication"
         android:allowBackup="true"
         android:label="YouTube Proxy"
+        android:largeHeap="true"
         android:icon="@android:drawable/ic_menu_info_details">
 
         <activity
@@ -18,6 +19,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".SettingsActivity"
+            android:label="Settings"
+            android:exported="false" />
 
         <service
             android:name=".ProxyService"

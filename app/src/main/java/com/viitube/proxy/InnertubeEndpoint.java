@@ -167,10 +167,10 @@ public class InnertubeEndpoint implements Endpoint {
                 // Quiet weeks: widen to this month.
                 collectPopular("", POPULAR_THIS_MONTH, gl, resultLimit, config, found);
             }
-            java.util.Collections.sort(found, (left, right) -> {
-                int countOrder = Long.compare(viewCount(right.views), viewCount(left.views));
-                return countOrder != 0 ? countOrder : left.id.compareTo(right.id);
-            });
+            // Left in the order YouTube answered in. Sorted by view count instead, the list
+            // stopped being the region's: a search this wide also returns what the rest of the
+            // world watched, and those videos have the view counts that sort to the top - which
+            // is how a feed in Poland filled up with Indian serials.
             if (hasCategory) {
                 for (Video video : found) if (!containsVideo(videos, video.id)) videos.add(video);
             } else {
@@ -216,7 +216,7 @@ public class InnertubeEndpoint implements Endpoint {
             String chart = musicChartPlaylist(gl, chartTitle, config);
             if (!chart.isEmpty()) {
                 for (Video video : PlaylistEndpoint.fetchPlaylist(chart, limit, config).videos) {
-                    if (isPopularCandidate(video)) videos.add(video);
+                    if (isPopularCandidate(video, gl)) videos.add(video);
                 }
             }
         } catch (Exception e) {
@@ -235,7 +235,7 @@ public class InnertubeEndpoint implements Endpoint {
             List<Video> found = new ArrayList<Video>();
             collectVideoObjects(response, found, Integer.MAX_VALUE);
             for (Video video : found) {
-                if (isPopularCandidate(video) && !containsVideo(videos, video.id)) videos.add(video);
+                if (isPopularCandidate(video, gl) && !containsVideo(videos, video.id)) videos.add(video);
             }
             String continuation = PlaylistEndpoint.findContinuation(response);
             if (videos.size() >= limit || continuation.isEmpty()) break;
@@ -243,6 +243,79 @@ public class InnertubeEndpoint implements Endpoint {
             next.getJSONObject("context").getJSONObject("client").put("gl", gl);
             response = post("search", next, config);
         }
+    }
+
+    /**
+     * Skips live streams, premieres and Shorts, like the old most_popular chart, and videos
+     * written in a script nobody in this region reads: the chart of the most viewed videos of a
+     * week is a worldwide one, so without this the feed fills up with videos in languages the
+     * phone was never set to.
+     */
+    private static boolean isPopularCandidate(Video video, String region) {
+        return isPopularCandidate(video) && fitsRegion(region, video.title);
+    }
+
+    /** Scripts of the regions whose own videos are not written in the Latin alphabet. */
+    private static final java.util.Map<String, String> REGION_SCRIPTS = regionScripts();
+
+    private static java.util.Map<String, String> regionScripts() {
+        java.util.Map<String, String> scripts = new java.util.HashMap<String, String>();
+        for (String region : "SA AE EG MA DZ IQ JO KW LB LY OM QA SY TN YE BH PS SD".split(" ")) {
+            scripts.put(region, "arabic");
+        }
+        for (String region : "RU UA BY BG RS MK KZ KG MN".split(" ")) {
+            scripts.put(region, "cyrillic");
+        }
+        for (String region : "JP CN TW HK MO KR SG".split(" ")) scripts.put(region, "cjk");
+        for (String region : "IN PK BD LK NP".split(" ")) scripts.put(region, "indic");
+        scripts.put("TH", "thai");
+        scripts.put("IL", "hebrew");
+        scripts.put("GR", "greek");
+        scripts.put("CY", "greek");
+        return scripts;
+    }
+
+    /** Below this share of letters in a foreign script a title still counts as readable. */
+    private static final int FOREIGN_LETTERS_PERCENT = 25;
+
+    /**
+     * Whether a title can be read in {@code region}: its own script and the Latin alphabet, which
+     * titles everywhere borrow from, are allowed; a title mostly in a third script is not.
+     */
+    static boolean fitsRegion(String region, String title) {
+        if (title == null || title.isEmpty()) return true;
+        String own = region == null ? "latin"
+                : REGION_SCRIPTS.get(region.toUpperCase(Locale.US));
+        if (own == null) own = "latin";
+        int letters = 0;
+        int foreign = 0;
+        for (int i = 0; i < title.length(); i++) {
+            char letter = title.charAt(i);
+            if (!Character.isLetter(letter)) continue;
+            letters++;
+            String script = scriptOf(letter);
+            if (!script.equals(own) && !script.equals("latin")) foreign++;
+        }
+        // A title of two words says too little to judge; emoji and numbers say nothing at all.
+        if (letters < 4) return true;
+        return foreign * 100 / letters < FOREIGN_LETTERS_PERCENT;
+    }
+
+    /** Which alphabet a letter belongs to; everything not listed counts as Latin. */
+    private static String scriptOf(char letter) {
+        if (letter >= 0x0600 && letter <= 0x06FF) return "arabic";
+        if (letter >= 0x0750 && letter <= 0x077F) return "arabic";
+        if (letter >= 0xFB50 && letter <= 0xFDFF) return "arabic";
+        if (letter >= 0xFE70 && letter <= 0xFEFF) return "arabic";
+        if (letter >= 0x0590 && letter <= 0x05FF) return "hebrew";
+        if (letter >= 0x0900 && letter <= 0x0DFF) return "indic";
+        if (letter >= 0x0E00 && letter <= 0x0E7F) return "thai";
+        if (letter >= 0x0400 && letter <= 0x052F) return "cyrillic";
+        if (letter >= 0x0370 && letter <= 0x03FF) return "greek";
+        if (letter >= 0x3040 && letter <= 0x30FF) return "cjk";
+        if (letter >= 0x3400 && letter <= 0x9FFF) return "cjk";
+        if (letter >= 0xAC00 && letter <= 0xD7AF) return "cjk";
+        return "latin";
     }
 
     /** Skips live streams, premieres and Shorts, like the old most_popular chart. */
@@ -362,7 +435,7 @@ public class InnertubeEndpoint implements Endpoint {
             new java.util.LinkedHashMap<String, LoadedSearch>(16, 0.75f, true) {
                 @Override
                 protected boolean removeEldestEntry(java.util.Map.Entry<String, LoadedSearch> eldest) {
-                    return size() > 16;
+                    return size() > MemoryBudget.entries(16);
                 }
             };
 
@@ -845,7 +918,7 @@ public class InnertubeEndpoint implements Endpoint {
             new java.util.LinkedHashMap<String, LoadedRelated>(16, 0.75f, true) {
                 @Override
                 protected boolean removeEldestEntry(java.util.Map.Entry<String, LoadedRelated> eldest) {
-                    return size() > 16;
+                    return size() > MemoryBudget.entries(16);
                 }
             };
 
@@ -1032,14 +1105,97 @@ public class InnertubeEndpoint implements Endpoint {
     }
 
     /** The comments of a video, for the protobuf API of the 2015-2017 apps. */
-    static List<Comment> comments(String videoId, int limit, Config config) throws Exception {
-        List<Comment> out = new ArrayList<Comment>();
-        for (JSONObject thread : loadCommentThreads(videoId, limit, config)) {
-            Comment comment = parseComment(thread);
-            if (!comment.text.isEmpty() || !comment.author.isEmpty()) out.add(comment);
-        }
-        return out;
+    private static final class LoadedComments {
+        final List<Comment> comments = new ArrayList<Comment>();
+        /** YouTube's token for the comments after the ones loaded; empty when there are none. */
+        String continuation = "";
+        boolean started;
+        long loadedAt;
     }
+
+    private static final long COMMENTS_MAX_AGE_MS = 15L * 60 * 1000;
+    private static final java.util.Map<String, LoadedComments> COMMENTS =
+            new java.util.LinkedHashMap<String, LoadedComments>(8, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(java.util.Map.Entry<String, LoadedComments> eldest) {
+                    return size() > MemoryBudget.entries(8);
+                }
+            };
+
+    private static LoadedComments commentsEntry(String videoId) {
+        synchronized (COMMENTS) {
+            LoadedComments loaded = COMMENTS.get(videoId);
+            if (loaded == null || System.currentTimeMillis() - loaded.loadedAt > COMMENTS_MAX_AGE_MS) {
+                loaded = new LoadedComments();
+                COMMENTS.put(videoId, loaded);
+            }
+            return loaded;
+        }
+    }
+
+    /** How many pages of comments one request may ask YouTube for before answering. */
+    private static final int COMMENT_REQUESTS = 3;
+
+    /**
+     * The comments of a video, for the protobuf API of the 2015-2017 apps. What has been read is
+     * kept with YouTube's token for the comments after it, so the next page of the endless list
+     * is one request instead of reading every page from the first one again - which is what made
+     * the phone stutter the moment the list reached the comments.
+     */
+    static List<Comment> comments(String videoId, int limit, Config config) throws Exception {
+        LoadedComments loaded = commentsEntry(videoId);
+        synchronized (loaded) {
+            JSONObject requestContext = commentRequestContext(config, videoId).getJSONObject("context");
+            for (int request = 0; request < COMMENT_REQUESTS && loaded.comments.size() < limit; request++) {
+                if (loaded.started && loaded.continuation.isEmpty()) break;
+                String token = loaded.started ? loaded.continuation : initialCommentsContinuation(videoId);
+                JSONObject response = post("next", new JSONObject()
+                        .put("context", requestContext).put("continuation", token), config);
+                loaded.started = true;
+                loaded.loadedAt = System.currentTimeMillis();
+                int before = loaded.comments.size();
+                addComments(response, loaded, limit + COMMENT_PAGE);
+                String next = findCommentsContinuation(response);
+                // A page that brings nothing new, or points at itself, is the end of the list.
+                loaded.continuation = next.equals(token) || loaded.comments.size() == before ? "" : next;
+            }
+            List<Comment> out = new ArrayList<Comment>();
+            for (int i = 0; i < loaded.comments.size() && i < limit; i++) out.add(loaded.comments.get(i));
+            return out;
+        }
+    }
+
+    /** Whether YouTube has more comments than the ones already read. */
+    static boolean hasMoreComments(String videoId, int shown) {
+        LoadedComments loaded = commentsEntry(videoId);
+        synchronized (loaded) {
+            return loaded.comments.size() > shown || !loaded.continuation.isEmpty();
+        }
+    }
+
+    /** One page's worth of threads, in whichever of the three shapes YouTube answered with. */
+    private static void addComments(JSONObject response, LoadedComments loaded, int limit)
+            throws JSONException {
+        List<JSONObject> threads = new ArrayList<JSONObject>();
+        collectCommentEntities(response, threads, limit);
+        if (threads.isEmpty()) collectObjects(response, "commentThreadRenderer", threads, limit);
+        if (threads.isEmpty()) collectObjects(response, "commentViewModel", threads, limit);
+        for (JSONObject thread : threads) {
+            Comment comment = parseComment(thread);
+            if (comment.text.isEmpty() && comment.author.isEmpty()) continue;
+            boolean known = false;
+            for (Comment seen : loaded.comments) {
+                if (!comment.id.isEmpty() && comment.id.equals(seen.id)) {
+                    known = true;
+                    break;
+                }
+            }
+            if (!known) loaded.comments.add(comment);
+        }
+    }
+
+    /** Comments YouTube answers with on one page. */
+    private static final int COMMENT_PAGE = 20;
 
     private String commentsFeed(String videoId, NanoHTTPD.IHTTPSession session,
                                 Config config, Context context) throws Exception {
@@ -1309,17 +1465,8 @@ public class InnertubeEndpoint implements Endpoint {
      * the caches, so the next request for the same videos is answered with full data at once
      * (the same idea as yt2009's video cache).
      */
-    private static final ExecutorService ENRICH_POOL = Executors.newFixedThreadPool(10,
-            new java.util.concurrent.ThreadFactory() {
-                private int count;
-                @Override
-                public synchronized Thread newThread(Runnable task) {
-                    Thread thread = new Thread(task, "metadata-" + (++count));
-                    thread.setDaemon(true);
-                    thread.setPriority(Thread.NORM_PRIORITY - 1);
-                    return thread;
-                }
-            });
+    private static final ExecutorService ENRICH_POOL =
+            MemoryBudget.pool("metadata", 10, Thread.NORM_PRIORITY - 1, 128);
 
     /**
      * Fills in metadata within {@link #ENRICH_BUDGET_MS}.
@@ -1519,7 +1666,7 @@ public class InnertubeEndpoint implements Endpoint {
             java.util.Collections.synchronizedMap(new java.util.LinkedHashMap<String, String>(64, 0.75f, true) {
                 @Override
                 protected boolean removeEldestEntry(java.util.Map.Entry<String, String> eldest) {
-                    return size() > 512;
+                    return size() > MemoryBudget.entries(512);
                 }
             });
 
@@ -1593,6 +1740,9 @@ public class InnertubeEndpoint implements Endpoint {
         }
         synchronized (RELATED) {
             RELATED.clear();
+        }
+        synchronized (COMMENTS) {
+            COMMENTS.clear();
         }
         MUSIC_CHARTS.clear();
         RYD_MEMORY.clear();

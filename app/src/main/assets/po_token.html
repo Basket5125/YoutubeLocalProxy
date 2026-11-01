@@ -1,0 +1,174 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>token</title></head>
+<body>
+<script>
+/*
+ * Mints a proof-of-origin token. YouTube asks a program of its own ("BotGuard") to vouch for
+ * the client: the page fetches that program, runs it, hands what it answers back to YouTube for
+ * an integrity token, and that token mints the proof for one identifier - the visitor id for a
+ * session, the video id for a stream. The page is loaded with www.youtube.com as its address,
+ * so these requests are same-origin and carry what the server expects.
+ *
+ * The steps follow the public bgutils-js implementation of the protocol.
+ */
+(function () {
+  var REQUEST_KEY = "O43z0dpjhgX20SCx4KAo";
+  var API_KEY = "AIzaSyDyT5W0Jh49F30Pqqtyfdf7pDLFKLJoAnw";
+  var ENDPOINT = "https://www.youtube.com/api/jnn/v1/";
+
+  function post(path, body) {
+    return fetch(ENDPOINT + path, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json+protobuf",
+        "x-goog-api-key": API_KEY,
+        "x-user-agent": "grpc-web-javascript/0.1"
+      },
+      body: JSON.stringify(body)
+    }).then(function (response) {
+      if (!response.ok) throw new Error(path + " answered " + response.status);
+      return response.json();
+    });
+  }
+
+  function base64ToBytes(value) {
+    var plain = value.replace(/-/g, "+").replace(/_/g, "/");
+    while (plain.length % 4 !== 0) plain += "=";
+    var binary = atob(plain);
+    var bytes = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  }
+
+  /** The challenge is sent with every byte moved along by 97. */
+  function descramble(bytes) {
+    var out = new Uint8Array(bytes.length);
+    for (var i = 0; i < bytes.length; i++) out[i] = (bytes[i] + 97) & 0xff;
+    return new TextDecoder().decode(out);
+  }
+
+  function bytesToBase64Url(bytes) {
+    var binary = "";
+    for (var i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+
+  /** Waits until the program has handed over its functions, or gives up. */
+  function waitFor(test, timeout) {
+    return new Promise(function (resolve, reject) {
+      var waited = 0;
+      (function again() {
+        if (test()) {
+          resolve();
+          return;
+        }
+        waited += 50;
+        if (waited >= timeout) {
+          reject(new Error("the program offered no snapshot"));
+          return;
+        }
+        setTimeout(again, 50);
+      })();
+    });
+  }
+
+  /**
+   * Runs the program and gives back what it says about this client. Which of these the program
+   * does depends on its version: it may answer where it was called, through the callback it is
+   * given, or with a promise, so all three are allowed for.
+   */
+  function runProgram(program, globalName) {
+    var vm = window[globalName];
+    if (!vm || typeof vm.a !== "function") {
+      throw new Error("the program did not register itself as " + globalName);
+    }
+    var functions = {};
+    var signals = [];
+    return Promise.resolve().then(function () {
+      return vm.a(program, function (snapshot, shutdown, passEvent, checkCamera) {
+        functions.snapshot = snapshot;
+        functions.shutdown = shutdown;
+      }, true, undefined, function () { });
+    }).then(function () {
+      return waitFor(function () { return typeof functions.snapshot === "function"; }, 15000);
+    }).then(function () {
+      return new Promise(function (resolve, reject) {
+        var answered = false;
+        var failed = setTimeout(function () {
+          if (!answered) reject(new Error("the program did not answer"));
+        }, 20000);
+        function done(response) {
+          if (answered) return;
+          answered = true;
+          clearTimeout(failed);
+          resolve({ response: response, signals: signals });
+        }
+        var result;
+        try {
+          result = functions.snapshot(done, [undefined, undefined, signals, undefined]);
+        } catch (error) {
+          clearTimeout(failed);
+          reject(error);
+          return;
+        }
+        if (result && typeof result.then === "function") {
+          result.then(done, function (error) {
+            clearTimeout(failed);
+            reject(error);
+          });
+        }
+      });
+    });
+  }
+
+  window.mintPoToken = function (identifier, callbackId) {
+    var signals = null;
+    post("Create", [REQUEST_KEY]).then(function (created) {
+      // The answer is [null, "<scrambled>"]; every byte of it is shifted by 97, and what comes
+      // out is [ messageId, script, url, hash, program, globalName, ..., state ].
+      var scrambled = created[1];
+      if (!scrambled) throw new Error("the answer carried no challenge");
+      var challenge = JSON.parse(descramble(base64ToBytes(scrambled)));
+      var script = challenge[1];
+      var program = challenge[4];
+      var globalName = challenge[5];
+      var code = null;
+      if (script && script.length) {
+        for (var i = 0; i < script.length; i++) {
+          if (typeof script[i] === "string" && script[i].length > 0) code = script[i];
+        }
+      }
+      if (!code) throw new Error("the answer carried no program");
+      // The program registers itself on the page when it is run.
+      (0, eval)(code);
+      return runProgram(program, globalName);
+    }).then(function (result) {
+      signals = result.signals;
+      return post("GenerateIT", [REQUEST_KEY, result.response]);
+    }).then(function (integrity) {
+      var token = integrity && integrity.length ? integrity[0] : null;
+      if (!token) throw new Error("no integrity token in " + JSON.stringify(integrity).slice(0, 80));
+      var getMinter = signals && signals.length ? signals[0] : null;
+      if (typeof getMinter !== "function") {
+        throw new Error("the program left " + (signals ? signals.length : 0)
+          + " signals, none of them a way to mint");
+      }
+      return Promise.resolve(getMinter(base64ToBytes(token)));
+    }).then(function (mint) {
+      if (typeof mint !== "function") {
+        throw new Error("minting gave back a " + typeof mint + " instead of a function");
+      }
+      return Promise.resolve(mint(new TextEncoder().encode(identifier)));
+    }).then(function (minted) {
+      PoTokenBridge.onToken(callbackId, bytesToBase64Url(new Uint8Array(minted)));
+    }).catch(function (error) {
+      PoTokenBridge.onError(callbackId, String(error && error.message ? error.message : error));
+    });
+  };
+
+  PoTokenBridge.onReady();
+})();
+</script>
+</body>
+</html>

@@ -116,7 +116,7 @@ final class InvidiousLookup {
             if (progressive != null) streams.progressive = progressive;
             JSONArray adaptive = answer.optJSONArray("adaptiveFormats");
             streams.adaptive = adaptive;
-            JSONObject audio = pickAdaptive(adaptive, "audio/mp4", "mp4a", 0);
+            JSONObject audio = pickAudio(adaptive, config.getString("audio_quality", "high"));
             if (audio != null) {
                 streams.audio = toPlayerFormat(audio);
                 streams.audioUrl = audio.optString("url", "");
@@ -189,6 +189,40 @@ final class InvidiousLookup {
             int height = heightOf(format);
             if (maxHeight > 0 && (height <= 0 || height > maxHeight)) continue;
             int score = maxHeight > 0 ? height : audioScore(format);
+            if (score > bestScore) {
+                bestScore = score;
+                best = format;
+            }
+        }
+        return best;
+    }
+
+    /**
+     * The audio stream to serve, at the quality the settings ask for. The original (non-dubbed,
+     * non-loudness-normalised) track always wins; among the originals, "high" takes the highest
+     * bitrate (itag 140, ~128 kbps), "normal" the one nearest 128 kbps, "low" the smallest
+     * (itag 139, ~48 kbps) to save data.
+     */
+    private static JSONObject pickAudio(JSONArray formats, String quality) {
+        if (formats == null) return null;
+        JSONObject best = null;
+        long bestScore = Long.MIN_VALUE;
+        for (int i = 0; i < formats.length(); i++) {
+            JSONObject format = formats.optJSONObject(i);
+            if (format == null) continue;
+            String type = format.optString("type", "");
+            if (!type.startsWith("audio/mp4") || !type.contains("mp4a")) continue;
+            if (format.optString("url", "").isEmpty()) continue;
+            if (format.optString("init", "").isEmpty() || format.optString("index", "").isEmpty()) continue;
+            String tags = tagsOf(format.optString("url", ""));
+            long score = 0;
+            if (tags.contains("acont=original")) score += 1000000000L;
+            else if (tags.contains("acont=dubbed")) score -= 1000000000L;
+            if (tags.contains("drc=1")) score -= 1000000L;
+            int kbps = parseInt(format.optString("bitrate", ""), 0) / 1000;
+            if ("low".equals(quality)) score += 1000 - kbps;
+            else if ("normal".equals(quality)) score += 1000 - Math.abs(kbps - 128);
+            else score += kbps;
             if (score > bestScore) {
                 bestScore = score;
                 best = format;

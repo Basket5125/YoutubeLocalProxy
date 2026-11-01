@@ -16,6 +16,18 @@ public class ProxyServer extends NanoHTTPD {
     private final Config config;
     private final List<Route> routes = new ArrayList<Route>();
 
+    /** Named, because the dexer of this build fails on an anonymous class that captures. */
+    private static final class RequestThreads implements java.util.concurrent.ThreadFactory {
+        private int count;
+
+        @Override
+        public synchronized Thread newThread(Runnable task) {
+            Thread thread = new Thread(task, "proxy-request-" + (++count));
+            thread.setDaemon(true);
+            return thread;
+        }
+    }
+
     private static class Route {
         final String[] pattern;
         final Endpoint endpoint;
@@ -30,7 +42,38 @@ public class ProxyServer extends NanoHTTPD {
         super(port);
         this.context = context;
         this.config = config;
+        // One thread per request is what NanoHTTPD does on its own, and the apps make a lot of
+        // them; the threads are kept and reused here instead of being created and thrown away.
+        setAsyncRunner(new PooledRunner());
         registerRoutes();
+    }
+
+    /**
+     * Runs the connections on threads that are kept between them. The pool cannot be bounded:
+     * a kept-alive connection holds its thread until the app closes it, so a limit would leave
+     * the next request waiting for a connection that is only idle.
+     */
+    private static final class PooledRunner implements AsyncRunner {
+        private final java.util.concurrent.ExecutorService threads =
+                java.util.concurrent.Executors.newCachedThreadPool(new RequestThreads());
+        private final java.util.List<ClientHandler> running =
+                java.util.Collections.synchronizedList(new ArrayList<ClientHandler>());
+
+        @Override
+        public void closeAll() {
+            for (ClientHandler handler : new ArrayList<ClientHandler>(running)) handler.close();
+        }
+
+        @Override
+        public void closed(ClientHandler handler) {
+            running.remove(handler);
+        }
+
+        @Override
+        public void exec(ClientHandler handler) {
+            running.add(handler);
+            threads.execute(handler);
+        }
     }
 
     public void register(String path, Endpoint endpoint) {
@@ -39,6 +82,10 @@ public class ProxyServer extends NanoHTTPD {
 
     private void registerRoutes() {
         // --- priorytet: appka musi z tym wystartować ---
+        // Google Play Music (the old skyjam API and its audio stream), backed by YouTube Music.
+        register("/sj/**", new GpmEndpoint());
+        register("/music/**", new GpmEndpoint());
+        register("/art/**", new GpmEndpoint());
         register("/youtube/accounts/registerDevice", new RegisterDeviceEndpoint());
         register("/proxy/ytbt", new RegisterDeviceEndpoint());
         register("/feeds/api/standardfeeds/*/most_popular", new MostPopularEndpoint());
@@ -53,6 +100,10 @@ public class ProxyServer extends NanoHTTPD {
         register("/feeds/api/videos", new InnertubeEndpoint("search"));
         register("/complete/search", new InnertubeEndpoint("suggestions"));
         register("/feeds/api/videos/*/comments", new InnertubeEndpoint("comments"));
+        // Subtitles: the list of tracks of a video and the tracks themselves.
+        register("/api/timedtext", new CaptionsEndpoint());
+        register("/timedtext", new CaptionsEndpoint());
+        register("/feeds/api/videos/*/captions", new CaptionsEndpoint("gdata"));
         register("/feeds/api/videos/*/related", new InnertubeEndpoint("related"));
         register("/feeds/api/users/*/uploads", new ChannelEndpoint("uploads"));
         register("/feeds/api/users/*/playlists", new ChannelEndpoint("playlists"));
@@ -147,16 +198,28 @@ public class ProxyServer extends NanoHTTPD {
     }
 
     private String[] match(String[] pattern, String[] segments) {
-        if (pattern.length != segments.length) {
+        // A trailing "**" matches the rest of the path, however deep: it is captured as one
+        // joined segment, so a single endpoint can own a whole subtree (the Play Music API).
+        boolean rest = pattern.length > 0 && pattern[pattern.length - 1].equals("**");
+        if (rest ? segments.length < pattern.length - 1 : pattern.length != segments.length) {
             return null;
         }
         List<String> captured = new ArrayList<String>();
-        for (int i = 0; i < pattern.length; i++) {
+        int fixed = rest ? pattern.length - 1 : pattern.length;
+        for (int i = 0; i < fixed; i++) {
             if (pattern[i].equals("*")) {
                 captured.add(segments[i]);
             } else if (!pattern[i].equals(segments[i])) {
                 return null;
             }
+        }
+        if (rest) {
+            StringBuilder tail = new StringBuilder();
+            for (int i = fixed; i < segments.length; i++) {
+                if (tail.length() > 0) tail.append('/');
+                tail.append(segments[i]);
+            }
+            captured.add(tail.toString());
         }
         return captured.toArray(new String[0]);
     }

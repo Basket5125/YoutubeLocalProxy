@@ -13,6 +13,8 @@ public class ChannelEndpoint implements Endpoint {
 
     private static final String UPLOADS_TAB_PARAMS = "EgZ2aWRlb3PyBgQKAjoA";
     private static final String PLAYLISTS_TAB_PARAMS = "EglwbGF5bGlzdHPyBgQKAkIA";
+    /** The Posts (Community) tab, as the browse request selects it today. */
+    private static final String POSTS_TAB_PARAMS = "EgVwb3N0c_IGBAoCSgA=";
     private final String mode;
 
     public ChannelEndpoint(String mode) {
@@ -114,6 +116,10 @@ public class ChannelEndpoint implements Endpoint {
 
     /** Forgets the channel profiles kept in memory (the Clear cache button). */
     static void clearMemory() {
+        synchronized (COMMUNITY) {
+            COMMUNITY.clear();
+            COMMUNITY_AGE.clear();
+        }
         synchronized (CHANNEL_INFO) {
             CHANNEL_INFO.clear();
         }
@@ -299,7 +305,7 @@ public class ChannelEndpoint implements Endpoint {
             new java.util.LinkedHashMap<String, Object[]>(16, 0.75f, true) {
                 @Override
                 protected boolean removeEldestEntry(java.util.Map.Entry<String, Object[]> eldest) {
-                    return size() > 32;
+                    return size() > MemoryBudget.entries(32);
                 }
             };
 
@@ -528,6 +534,187 @@ public class ChannelEndpoint implements Endpoint {
         }
     }
 
+    /** One entry of a channel's Community tab. */
+    static final class Post {
+        String id = "";
+        String author = "";
+        String authorId = "";
+        String avatar = "";
+        String text = "";
+        /** YouTube's own label, "1 month ago". */
+        String published = "";
+        String likes = "";
+        /** The picture that goes with the post, when it has one. */
+        String image = "";
+    }
+
+    /**
+     * The posts of a channel's Community tab. They come as backstagePostThreadRenderer, each
+     * holding a backstagePostRenderer with the text, who wrote it, when, and what is attached.
+     */
+    /** The posts of a channel, with YouTube's token for the ones after them. */
+    static final class Posts {
+        final List<Post> posts = new ArrayList<Post>();
+        String continuation = "";
+    }
+
+    private static final long POSTS_MAX_AGE_MS = 15L * 60 * 1000;
+    private static final java.util.Map<String, Posts> COMMUNITY =
+            new java.util.LinkedHashMap<String, Posts>(8, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(java.util.Map.Entry<String, Posts> eldest) {
+                    return size() > MemoryBudget.entries(8);
+                }
+            };
+    private static final java.util.Map<String, Long> COMMUNITY_AGE =
+            new java.util.HashMap<String, Long>();
+
+    static List<Post> loadCommunity(String channelId, int limit, Config config) throws Exception {
+        return communityPage(channelId, limit, config).posts;
+    }
+
+    /**
+     * At least {@code limit} posts of a channel, following YouTube's continuations. What has
+     * been read is kept, so the next page of the endless list is one request.
+     */
+    static Posts communityPage(String channelId, int limit, Config config) throws Exception {
+        Posts loaded;
+        synchronized (COMMUNITY) {
+            Long age = COMMUNITY_AGE.get(channelId);
+            loaded = COMMUNITY.get(channelId);
+            if (loaded == null || age == null
+                    || System.currentTimeMillis() - age.longValue() > POSTS_MAX_AGE_MS) {
+                loaded = new Posts();
+                COMMUNITY.put(channelId, loaded);
+                COMMUNITY_AGE.put(channelId, Long.valueOf(System.currentTimeMillis()));
+            }
+        }
+        synchronized (loaded) {
+            boolean first = loaded.posts.isEmpty() && loaded.continuation.isEmpty();
+            for (int request = 0; request < 5 && loaded.posts.size() < limit; request++) {
+                if (!first && loaded.continuation.isEmpty()) break;
+                JSONObject payload = first
+                        ? InnertubeEndpoint.context(config).put("browseId", channelId)
+                                .put("params", POSTS_TAB_PARAMS)
+                        : InnertubeEndpoint.context(config).put("continuation", loaded.continuation);
+                JSONObject page = InnertubeEndpoint.request("browse", payload, config);
+                first = false;
+                int before = loaded.posts.size();
+                List<JSONObject> threads = new ArrayList<JSONObject>();
+                collectRenderers(page, new String[]{"backstagePostRenderer"}, threads,
+                        limit + POSTS_PER_PAGE);
+                for (JSONObject renderer : threads) {
+                    Post post = parsePost(renderer);
+                    if (post.text.isEmpty() && post.image.isEmpty()) continue;
+                    if (containsPost(loaded.posts, post.id)) continue;
+                    loaded.posts.add(post);
+                }
+                loaded.continuation = findUploadContinuation(page);
+                if (loaded.posts.size() == before) {
+                    loaded.continuation = "";
+                    break;
+                }
+            }
+            return loaded;
+        }
+    }
+
+    /** Posts asked for at a time. */
+    static final int POSTS_PER_PAGE = 10;
+
+    private static boolean containsPost(List<Post> posts, String id) {
+        if (id.isEmpty()) return false;
+        for (Post post : posts) {
+            if (id.equals(post.id)) return true;
+        }
+        return false;
+    }
+
+    private static Post parsePost(JSONObject renderer) {
+        Post post = new Post();
+        post.id = renderer.optString("postId", "");
+        post.author = textOf(renderer.optJSONObject("authorText"));
+        post.authorId = findText(renderer.optJSONObject("authorEndpoint"), "browseId");
+        post.avatar = InnertubeEndpoint.absoluteUrl(firstThumbnail(renderer.optJSONObject("authorThumbnail")));
+        post.text = textOf(renderer.optJSONObject("contentText"));
+        post.published = textOf(renderer.optJSONObject("publishedTimeText"));
+        if (post.published.isEmpty()) {
+            post.published = textOf(renderer.optJSONObject("publishedTime"));
+        }
+        if (post.published.isEmpty()) {
+            // The newer answers write it inside the line that also carries the author.
+            post.published = findText(renderer.optJSONObject("publishedTimeText"), "simpleText");
+        }
+        post.likes = textOf(renderer.optJSONObject("voteCount"));
+        JSONObject attachment = renderer.optJSONObject("backstageAttachment");
+        JSONObject image = attachment == null ? null : attachment.optJSONObject("backstageImageRenderer");
+        if (image != null) {
+            // Not the largest copy: the apps draw a post at the width of the screen, and the
+            // biggest one of these is a few thousand pixels wide for nothing.
+            post.image = InnertubeEndpoint.absoluteUrl(
+                    thumbnailAbout(image.optJSONObject("image"), 480));
+        }
+        return post;
+    }
+
+    /** "runs" or "simpleText", whichever the answer used. */
+    private static String textOf(JSONObject value) {
+        if (value == null) return "";
+        JSONArray runs = value.optJSONArray("runs");
+        if (runs == null) return value.optString("simpleText", "");
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < runs.length(); i++) {
+            JSONObject run = runs.optJSONObject(i);
+            if (run != null) text.append(run.optString("text", ""));
+        }
+        return text.toString();
+    }
+
+    private static String firstThumbnail(JSONObject holder) {
+        JSONArray thumbs = holder == null ? null : holder.optJSONArray("thumbnails");
+        JSONObject first = thumbs == null || thumbs.length() == 0 ? null : thumbs.optJSONObject(0);
+        return first == null ? "" : first.optString("url", "");
+    }
+
+    /** The copy of a picture closest to {@code wanted} pixels wide. */
+    private static String thumbnailAbout(JSONObject holder, int wanted) {
+        JSONArray thumbs = holder == null ? null : holder.optJSONArray("thumbnails");
+        if (thumbs == null || thumbs.length() == 0) return "";
+        JSONObject best = null;
+        int bestDistance = Integer.MAX_VALUE;
+        for (int i = 0; i < thumbs.length(); i++) {
+            JSONObject thumb = thumbs.optJSONObject(i);
+            if (thumb == null) continue;
+            int width = thumb.optInt("width", 0);
+            int distance = width <= 0 ? wanted : Math.abs(width - wanted);
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                best = thumb;
+            }
+        }
+        return best == null ? "" : best.optString("url", "");
+    }
+
+
+    private static String findText(Object node, String key) {
+        if (node instanceof JSONObject) {
+            JSONObject object = (JSONObject) node;
+            if (object.has(key)) return object.optString(key, "");
+            JSONArray names = object.names();
+            if (names != null) for (int i = 0; i < names.length(); i++) {
+                String found = findText(object.opt(names.optString(i)), key);
+                if (!found.isEmpty()) return found;
+            }
+        } else if (node instanceof JSONArray) {
+            JSONArray array = (JSONArray) node;
+            for (int i = 0; i < array.length(); i++) {
+                String found = findText(array.opt(i), key);
+                if (!found.isEmpty()) return found;
+            }
+        }
+        return "";
+    }
+
     static final class ChannelPlaylists {
         final List<PlaylistSummary> playlists = new ArrayList<PlaylistSummary>();
         String channelName = "";
@@ -535,6 +722,8 @@ public class ChannelEndpoint implements Endpoint {
     }
 
     /** At least {@code limit} playlists of the channel's Playlists tab (when it has that many). */
+    static final int PLAYLISTS_PER_PAGE = 20;
+
     static ChannelPlaylists loadPlaylists(String channelId, int limit, Config config) throws Exception {
         ChannelPlaylists loaded = new ChannelPlaylists();
         JSONObject page = fetchBrowse(channelId, "playlists", config);
