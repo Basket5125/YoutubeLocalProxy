@@ -53,20 +53,27 @@ public class SettingsActivity extends Activity {
     private static final class InstanceWatcher implements TextWatcher {
         private final RadioButton select;
         private final RadioGroup modes;
+        private final EditText instanceField;
+        private final EditText listField;
         private final CheckBox token;
 
-        InstanceWatcher(RadioButton select, RadioGroup modes, CheckBox token) {
+        InstanceWatcher(RadioButton select, RadioGroup modes, EditText instanceField,
+                        EditText listField, CheckBox token) {
             this.select = select;
             this.modes = modes;
+            this.instanceField = instanceField;
+            this.listField = listField;
             this.token = token;
         }
 
-        boolean possible(String instance) {
-            return instance.trim().length() > 0;
+        boolean possible() {
+            return instanceField.getText().toString().trim().length() > 0
+                    || listField.getText().toString().trim().length() > 0
+                    || token.isChecked();
         }
 
-        void update(String instance) {
-            boolean possible = possible(instance);
+        void update() {
+            boolean possible = possible();
             select.setEnabled(possible);
             if (!possible && select.isChecked()) modes.check(MODE_360P);
         }
@@ -79,7 +86,7 @@ public class SettingsActivity extends Activity {
 
         @Override
         public void afterTextChanged(Editable text) {
-            update(text.toString());
+            update();
         }
     }
 
@@ -87,16 +94,14 @@ public class SettingsActivity extends Activity {
     private static final class TokenWatcher
             implements android.widget.CompoundButton.OnCheckedChangeListener {
         private final InstanceWatcher watcher;
-        private final EditText instance;
 
-        TokenWatcher(InstanceWatcher watcher, EditText instance) {
+        TokenWatcher(InstanceWatcher watcher) {
             this.watcher = watcher;
-            this.instance = instance;
         }
 
         @Override
         public void onCheckedChanged(android.widget.CompoundButton button, boolean checked) {
-            watcher.update(instance.getText().toString());
+            watcher.update();
         }
     }
 
@@ -194,6 +199,7 @@ public class SettingsActivity extends Activity {
     private String category;
     private EditText apiKey;
     private EditText invidious;
+    private EditText invidiousList;
     private RadioGroup playbackModes;
     private RadioGroup audioQuality;
     private CheckBox comments;
@@ -328,11 +334,20 @@ public class SettingsActivity extends Activity {
         invidious.setHint("https://instance.example (optional)");
         invidious.setText(config.getString("invidious_instance", ""));
         option(screen, "Invidious instance", invidious,
-                "With an instance set, the playback links come from it, which is what makes 720p "
-                        + "with sound in one file possible. Its links also keep working past the "
-                        + "first minute, which YouTube's own no longer do. Public instances often "
-                        + "refuse requests from outside their network, so one of your own is the "
-                        + "reliable choice. Empty means YouTube directly.");
+                "An instance to try before the list below. With one set, the playback links come "
+                        + "from it, which is what makes 720p with sound in one file possible, and "
+                        + "its links keep working past the first minute, which YouTube's own no "
+                        + "longer do. Leave it empty to use only the list.");
+
+        invidiousList = new EditText(this);
+        invidiousList.setSingleLine(true);
+        invidiousList.setHint("https://host/list.json");
+        invidiousList.setText(config.getString("invidious_list_url", InvidiousLookup.DEFAULT_LIST_URL));
+        option(screen, "Invidious instance list", invidiousList,
+                "A link to a JSON list of Invidious instances (its \"invidious\" field). The proxy "
+                        + "fetches it and, for playback, muxing and audio, tries the instances one "
+                        + "after another until one answers - so a dead instance is skipped by "
+                        + "itself. Empty means the manual instance above only.");
 
         boolean canMint = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M;
         poToken = new CheckBox(this);
@@ -352,10 +367,12 @@ public class SettingsActivity extends Activity {
         String mode = config.getString("playback_mode", "360p");
         // Choosing in the app needs a source for the qualities above 360p: an instance, or the
         // token, with which YouTube's own streams can be read to the end again.
-        InstanceWatcher watcher = new InstanceWatcher(select, playbackModes, poToken);
-        select.setEnabled(watcher.possible(invidious.getText().toString()));
+        InstanceWatcher watcher = new InstanceWatcher(select, playbackModes, invidious,
+                invidiousList, poToken);
+        select.setEnabled(watcher.possible());
         invidious.addTextChangedListener(watcher);
-        poToken.setOnCheckedChangeListener(new TokenWatcher(watcher, invidious));
+        invidiousList.addTextChangedListener(watcher);
+        poToken.setOnCheckedChangeListener(new TokenWatcher(watcher));
         playbackModes.check(idOfMode(mode));
 
         audioQuality = new RadioGroup(this);
@@ -440,10 +457,13 @@ public class SettingsActivity extends Activity {
             config.setBool("po_token", poToken.isChecked());
             String instance = invidious.getText().toString().trim();
             config.setString("invidious_instance", instance);
+            String listUrl = invidiousList.getText().toString().trim();
+            config.setString("invidious_list_url", listUrl);
             String mode = modeOfId(playbackModes.getCheckedRadioButtonId());
-            // Choosing in the app needs an instance or the token; without either there is
+            // Choosing in the app needs an instance, the list or the token; without any there is
             // nothing to play the qualities above 360p from.
-            if (instance.isEmpty() && !poToken.isChecked() && "select".equals(mode)) {
+            if (instance.isEmpty() && listUrl.isEmpty() && !poToken.isChecked()
+                    && "select".equals(mode)) {
                 mode = "360p";
                 playbackModes.check(MODE_360P);
             }

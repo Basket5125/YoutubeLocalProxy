@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.41 - 2026-11-02
+
+- **A list of Invidious instances** can be set in Settings -> Playback: a link to a JSON list (its
+  `invidious` field), with `http://144.31.189.129/notPipe.json` filled in by default. For playback,
+  muxing and audio the proxy tries the instances one after another - the one that last worked first,
+  then the manually entered one, then the list - and skips any that does not answer in time or
+  returns an error, so a dead instance no longer stops a video or a song from playing. Links an
+  instance gives relative to itself are made absolute so they open.
+
 ## 0.4 - 2026-11-01
 
 - **The old Google Play Music app plays again**, backed by YouTube Music. A separate **Play Music

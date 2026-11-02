@@ -176,7 +176,7 @@ public class VideoRedirectEndpoint implements Endpoint {
         // The other formats are muxed from the streams of the Invidious instance, whose links
         // keep working past the first minute.
         if ((wanted > 360 || (wanted == 0 && !"360p".equals(mode)))
-                && !InvidiousLookup.instance(config).isEmpty()) {
+                && InvidiousLookup.hasInstance(config)) {
             try {
                 return muxed(session, videoId, config, wanted > 0 ? wanted : 720);
             } catch (Exception e) {

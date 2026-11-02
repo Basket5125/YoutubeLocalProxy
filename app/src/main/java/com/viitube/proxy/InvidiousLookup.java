@@ -3,7 +3,9 @@ package com.viitube.proxy;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -20,17 +22,93 @@ final class InvidiousLookup {
     /** Progressive formats, best first: 720p, 360p, 240p, 144p. */
     private static final int[] WANTED_ITAGS = {22, 18, 59, 133};
 
+    /** The list of instances is fetched from here by default; a different URL can be set. */
+    static final String DEFAULT_LIST_URL = "http://144.31.189.129/notPipe.json";
+    private static final long LIST_MAX_AGE_MS = 60L * 60 * 1000;
+    /** Short per-instance timeouts, so a dead instance is given up on quickly and the next tried. */
+    private static final int CONNECT_TIMEOUT_MS = 3000;
+    private static final int READ_TIMEOUT_MS = 7000;
+
+    /** The instance that last answered, tried first next time so the dead ones are not re-probed. */
+    private static volatile String lastGood = "";
+    /** {url, List<String> instances, timestamp} - the parsed instance list, cached. */
+    private static Object[] listCache;
+
     private InvidiousLookup() { }
 
-    /** The configured instance as "https://host", or "" when none is set. */
-    static String instance(Config config) {
-        String instance = config.getString("invidious_instance", "").trim();
-        if (instance.isEmpty()) return "";
-        if (!instance.startsWith("http://") && !instance.startsWith("https://")) {
-            instance = "https://" + instance;
+    /** A host as "scheme://host" with no trailing slash; "https" is assumed when none is given. */
+    private static String normalize(String host) {
+        String value = host == null ? "" : host.trim();
+        if (value.isEmpty()) return "";
+        if (!value.startsWith("http://") && !value.startsWith("https://")) {
+            value = "https://" + value;
         }
-        while (instance.endsWith("/")) instance = instance.substring(0, instance.length() - 1);
-        return instance;
+        while (value.endsWith("/")) value = value.substring(0, value.length() - 1);
+        return value;
+    }
+
+    /** The first instance to try, or "" when none is configured or listed. */
+    static String instance(Config config) {
+        List<String> all = instances(config);
+        return all.isEmpty() ? "" : all.get(0);
+    }
+
+    /** True when there is somewhere to get streams from: a manual instance or a list URL. */
+    static boolean hasInstance(Config config) {
+        return !config.getString("invidious_instance", "").trim().isEmpty()
+                || !config.getString("invidious_list_url", DEFAULT_LIST_URL).trim().isEmpty();
+    }
+
+    /**
+     * The instances to try, in order: the one that last worked, then the manually entered one,
+     * then the fetched list. Duplicates are dropped, the order kept.
+     */
+    static List<String> instances(Config config) {
+        java.util.LinkedHashSet<String> set = new java.util.LinkedHashSet<String>();
+        String good = lastGood;
+        if (!good.isEmpty()) set.add(good);
+        String manual = normalize(config.getString("invidious_instance", ""));
+        if (!manual.isEmpty()) set.add(manual);
+        for (String url : fetchList(config)) {
+            String n = normalize(url);
+            if (!n.isEmpty()) set.add(n);
+        }
+        return new ArrayList<String>(set);
+    }
+
+    /** The instance list at the configured URL (key "invidious"), cached for an hour. */
+    @SuppressWarnings("unchecked")
+    private static List<String> fetchList(Config config) {
+        String url = config.getString("invidious_list_url", DEFAULT_LIST_URL).trim();
+        if (url.isEmpty()) return java.util.Collections.emptyList();
+        synchronized (InvidiousLookup.class) {
+            if (listCache != null && url.equals(listCache[0])
+                    && System.currentTimeMillis() - (Long) listCache[2] < LIST_MAX_AGE_MS) {
+                return (List<String>) listCache[1];
+            }
+        }
+        List<String> list = new ArrayList<String>();
+        try {
+            String userAgent = config.getString("user_agent",
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:102.0) Gecko/20100101 Firefox/102.0");
+            JSONObject root = new JSONObject(HttpClient.getUrl(url, userAgent,
+                    CONNECT_TIMEOUT_MS, READ_TIMEOUT_MS));
+            JSONArray array = root.optJSONArray("invidious");
+            if (array != null) {
+                for (int i = 0; i < array.length(); i++) {
+                    String host = array.optString(i, "").trim();
+                    if (!host.isEmpty()) list.add(host);
+                }
+            }
+        } catch (Exception e) {
+            android.util.Log.w(TAG, "instance list " + url + " failed: " + e);
+        }
+        if (!list.isEmpty()) {
+            synchronized (InvidiousLookup.class) {
+                listCache = new Object[]{url, list, System.currentTimeMillis()};
+            }
+        }
+        return list;
     }
 
     /**
@@ -97,57 +175,112 @@ final class InvidiousLookup {
      * adaptive links do without a PO token, which is what makes 720p work here at all.
      */
     static Streams streams(String videoId, Config config) {
-        String instance = instance(config);
-        if (instance.isEmpty() || !InnertubeEndpoint.isValidVideoId(videoId)) return null;
-        String key = instance + "|" + videoId;
+        if (!InnertubeEndpoint.isValidVideoId(videoId)) return null;
         synchronized (STREAMS) {
-            Object[] cached = STREAMS.get(key);
+            Object[] cached = STREAMS.get(videoId);
             if (cached != null && System.currentTimeMillis() - (Long) cached[1] < MAX_AGE_MS) {
                 return (Streams) cached[0];
             }
         }
+        // Try the instances one after another until one answers in time with usable streams. A
+        // dead one - no connection, a timeout, an error, or an empty answer - is skipped, and the
+        // one that works is remembered so it is tried first next time.
+        for (String instance : instances(config)) {
+            Streams streams;
+            try {
+                streams = fetchFrom(instance, videoId, config);
+            } catch (Exception e) {
+                android.util.Log.i(TAG, "Streams of " + videoId + " at " + instance + " failed: " + e);
+                continue;
+            }
+            if (streams == null) continue;
+            lastGood = instance;
+            synchronized (STREAMS) {
+                STREAMS.put(videoId, new Object[]{streams, System.currentTimeMillis()});
+            }
+            return streams;
+        }
+        return null;
+    }
+
+    /**
+     * One instance's answer for a video, or null when it has nothing playable (so the caller moves
+     * on to the next). Throws on a network error or a timeout, which the caller also treats as a
+     * reason to try the next instance.
+     */
+    private static Streams fetchFrom(String instance, String videoId, Config config) throws Exception {
+        String userAgent = config.getString("user_agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:102.0) Gecko/20100101 Firefox/102.0");
+        JSONObject answer = new JSONObject(HttpClient.getUrl(
+                instance + "/api/v1/videos/" + videoId + "?local=true", userAgent,
+                CONNECT_TIMEOUT_MS, READ_TIMEOUT_MS));
         Streams streams = new Streams();
-        try {
-            String userAgent = config.getString("user_agent",
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:102.0) Gecko/20100101 Firefox/102.0");
-            JSONObject answer = new JSONObject(HttpClient.getUrl(
-                    instance + "/api/v1/videos/" + videoId + "?local=true", userAgent));
-            String progressive = bestFormat(answer.optJSONArray("formatStreams"));
-            if (progressive != null) streams.progressive = progressive;
-            JSONArray adaptive = answer.optJSONArray("adaptiveFormats");
-            streams.adaptive = adaptive;
-            JSONObject audio = pickAudio(adaptive, config.getString("audio_quality", "high"));
-            if (audio != null) {
-                streams.audio = toPlayerFormat(audio);
-                streams.audioUrl = audio.optString("url", "");
-            }
-            // Which qualities the instance has, so the apps can offer them.
-            if (adaptive != null) {
-                for (int i = 0; i < adaptive.length(); i++) {
-                    JSONObject format = adaptive.optJSONObject(i);
-                    if (format == null) continue;
-                    String type = format.optString("type", "");
-                    if (!type.startsWith("video/mp4") || !type.contains("avc1")) continue;
-                    if (format.optString("url", "").isEmpty()
-                            || format.optString("init", "").isEmpty()
-                            || format.optString("index", "").isEmpty()) {
-                        continue;
-                    }
-                    Integer height = Integer.valueOf(heightOf(format));
-                    if (height.intValue() > 0 && !streams.heights.contains(height)) {
-                        streams.heights.add(height);
-                    }
+        JSONArray adaptive = answer.optJSONArray("adaptiveFormats");
+        // Some instances return the stream links relative to their own host (e.g. "/latest_version"
+        // or "/videoplayback..."); make every link absolute so it can be opened and muxed.
+        absolutize(answer.optJSONArray("formatStreams"), instance);
+        absolutize(adaptive, instance);
+        String progressive = bestFormat(answer.optJSONArray("formatStreams"));
+        if (progressive != null) streams.progressive = progressive;
+        streams.adaptive = adaptive;
+        JSONObject audio = pickAudio(adaptive, config.getString("audio_quality", "high"));
+        if (audio != null) {
+            streams.audio = toPlayerFormat(audio);
+            streams.audioUrl = audio.optString("url", "");
+        }
+        // Which qualities the instance has, so the apps can offer them.
+        if (adaptive != null) {
+            for (int i = 0; i < adaptive.length(); i++) {
+                JSONObject format = adaptive.optJSONObject(i);
+                if (format == null) continue;
+                String type = format.optString("type", "");
+                if (!type.startsWith("video/mp4") || !type.contains("avc1")) continue;
+                if (format.optString("url", "").isEmpty()
+                        || format.optString("init", "").isEmpty()
+                        || format.optString("index", "").isEmpty()) {
+                    continue;
                 }
-                java.util.Collections.sort(streams.heights, java.util.Collections.reverseOrder());
+                Integer height = Integer.valueOf(heightOf(format));
+                if (height.intValue() > 0 && !streams.heights.contains(height)) {
+                    streams.heights.add(height);
+                }
             }
-        } catch (Exception e) {
-            android.util.Log.w(TAG, "Streams of " + videoId + " at " + instance + " failed: " + e);
+            java.util.Collections.sort(streams.heights, java.util.Collections.reverseOrder());
+        }
+        // Nothing here to play or mux - treat the instance as a miss.
+        if (streams.progressive.isEmpty() && streams.audioUrl.isEmpty() && streams.heights.isEmpty()) {
             return null;
         }
-        synchronized (STREAMS) {
-            STREAMS.put(key, new Object[]{streams, System.currentTimeMillis()});
-        }
         return streams;
+    }
+
+    /** Rewrites each format's "url" so a link the instance gave relative to itself becomes absolute. */
+    private static void absolutize(JSONArray formats, String instance) {
+        if (formats == null) return;
+        for (int i = 0; i < formats.length(); i++) {
+            JSONObject format = formats.optJSONObject(i);
+            if (format == null) continue;
+            String url = format.optString("url", "");
+            if (url.isEmpty()) continue;
+            String fixed = absolute(instance, url);
+            if (!fixed.equals(url)) {
+                try {
+                    format.put("url", fixed);
+                } catch (Exception ignored) {
+                }
+            }
+        }
+    }
+
+    /** A link made absolute against the instance host; an already absolute one is left as is. */
+    private static String absolute(String instance, String url) {
+        if (url == null || url.isEmpty()) return url;
+        if (url.startsWith("http://") || url.startsWith("https://")) return url;
+        if (url.startsWith("//")) {
+            int scheme = instance.indexOf("://");
+            return (scheme < 0 ? "http:" : instance.substring(0, scheme) + ":") + url;
+        }
+        return url.startsWith("/") ? instance + url : instance + "/" + url;
     }
 
     /** The single file with sound, best first: 720p, 360p, then whatever the instance has. */
