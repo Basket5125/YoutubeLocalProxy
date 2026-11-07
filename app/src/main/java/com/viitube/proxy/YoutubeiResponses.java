@@ -666,10 +666,9 @@ final class YoutubeiResponses {
         if (clientMajorVersion >= COMMUNITY_TAB_VERSION && (!info.description.isEmpty()
                 || !info.views.isEmpty() || !info.links.isEmpty())) {
             // The About view (hkn) reads field 1 (description), 6 (the line under it: country),
-            // 4 and 5 (the stats block: joined, views) and 2 (links). Links are text only: the
-            // app wants a navigation endpoint in a link's field 1 and has no plain URL one here.
+            // 4 and 5 (the stats block: joined, views) and 2 (links, each opening its address).
             VideoListProto.AboutRenderer about = new VideoListProto.AboutRenderer()
-                    .addChannelDescription(browseRuns(info.description));
+                    .addChannelDescription(linkedBrowseRuns(info.description));
             if (!info.country.isEmpty()) about.addJoinDate(browseRuns(info.country));
             if (!info.joined.isEmpty()) about.setStatsLine(browseRuns(info.joined));
             StringBuilder counts = new StringBuilder(info.views);
@@ -681,7 +680,9 @@ final class YoutubeiResponses {
             if (counts.length() > 0) about.addTotalViews(browseRuns(counts.toString()));
             for (String[] link : info.links) {
                 String label = link[0].isEmpty() ? link[1] : link[0] + ": " + link[1];
-                about.addSite(new VideoListProto.AboutRenderer.ExternalSite().addName(browseRuns(label)));
+                String url = link[1].toLowerCase(Locale.US).startsWith("http") ? link[1] : "https://" + link[1];
+                about.addSite(new VideoListProto.AboutRenderer.ExternalSite().addName(browseRuns(label))
+                        .setEndpoint(new AndroidFullNextProto.NavigationData().setUrl(url)));
             }
             VideoListProto.ItemSectionRenderer section = new VideoListProto.ItemSectionRenderer();
             section.addIcsContent(new VideoListProto.ItemSectionRenderer.IcsContents().addAbout(about));
@@ -937,6 +938,58 @@ final class YoutubeiResponses {
 
     // ------------------------------------------------------------------ next (android_full_next)
 
+    /** Addresses in a description: full links, "www." ones and bare "site.tld/path" ones. */
+    private static final java.util.regex.Pattern LINK = java.util.regex.Pattern.compile(
+            "(?i)\\b(?:https?://|www\\.)[^\\s<>\"]+|\\b[a-z0-9][a-z0-9.-]*\\.[a-z]{2,6}/[^\\s<>\"]*");
+
+    /** A text cut into {piece, address} pairs; the address is null for plain text. */
+    private static List<String[]> linkPieces(String text) {
+        List<String[]> pieces = new java.util.ArrayList<String[]>();
+        if (text == null) return pieces;
+        java.util.regex.Matcher matcher = LINK.matcher(text);
+        int last = 0;
+        while (matcher.find()) {
+            String link = matcher.group();
+            // A sentence's full stop or a closing bracket after an address is not part of it.
+            int end = link.length();
+            while (end > 0 && ".,;:!?)]}'\"".indexOf(link.charAt(end - 1)) >= 0) end--;
+            if (end == 0) continue;
+            link = link.substring(0, end);
+            int start = matcher.start();
+            if (start > last) pieces.add(new String[]{text.substring(last, start), null});
+            String url = link.toLowerCase(Locale.US).startsWith("http") ? link : "https://" + link;
+            pieces.add(new String[]{link, url});
+            last = start + link.length();
+        }
+        if (last < text.length() || pieces.isEmpty()) pieces.add(new String[]{text.substring(last), null});
+        return pieces;
+    }
+
+    /**
+     * A description as runs, with every address in it a run that opens the address when tapped
+     * (urlEndpoint), the way YouTube's own descriptions are clickable.
+     */
+    private static AndroidFullNextProto.TextRuns linkedRuns(String text) {
+        AndroidFullNextProto.TextRuns runs = new AndroidFullNextProto.TextRuns();
+        for (String[] piece : linkPieces(text)) {
+            AndroidFullNextProto.TextRuns.TextRun run = new AndroidFullNextProto.TextRuns.TextRun().setText(piece[0]);
+            if (piece[1] != null) run.setNavigation(new AndroidFullNextProto.NavigationData().setUrl(piece[1]));
+            runs.addRun(run);
+        }
+        return runs;
+    }
+
+    /** The same for the browse answers (a channel's About description). */
+    private static VideoListProto.TextRuns linkedBrowseRuns(String text) {
+        VideoListProto.TextRuns runs = new VideoListProto.TextRuns();
+        for (String[] piece : linkPieces(text)) {
+            VideoListProto.TextRuns.TextRun run = new VideoListProto.TextRuns.TextRun().setText(piece[0]);
+            if (piece[1] != null) run.setNavigation(new AndroidFullNextProto.NavigationData().setUrl(piece[1]));
+            runs.addRun(run);
+        }
+        return runs;
+    }
+
     private static AndroidFullNextProto.TextRuns nextRunsBold(String text) {
         return new AndroidFullNextProto.TextRuns().addRun(
                 new AndroidFullNextProto.TextRuns.TextRun().setText(text).setBold(1));
@@ -1155,7 +1208,7 @@ final class YoutubeiResponses {
         AndroidFullNextProto.VideoMetadataRenderer metadata = new AndroidFullNextProto.VideoMetadataRenderer()
                 .setTitle(nextRuns(video.title))
                 .setViewCount(nextRuns(fullCount(views, "view", "views")))
-                .setDescription(nextRuns(video.description))
+                .setDescription(linkedRuns(video.description))
                 .setPublishDate(nextRuns(publishedOn(video.published, page.dateText)))
                 .setVideoId(video.id)
                 .setShortViewCount(nextRuns(shortCount(views, "views")))
@@ -1480,7 +1533,7 @@ final class YoutubeiResponses {
                         .setCollapsedSubtitle(nextRuns(shortCount(views, "views")))
                         .setExpandedSubtitle(nextRuns(expanded))
                         .setVideoId(video.id);
-        if (!video.description.isEmpty()) slim.setDescription(nextRuns(video.description));
+        if (!video.description.isEmpty()) slim.setDescription(linkedRuns(video.description));
         long dislikes = parseCount(video.dislikes);
         slim.addButtons(slimButton(ICON_LIKE, likes > 0 ? shortNumber(likes) : tr("Like")));
         slim.addButtons(slimButton(ICON_DISLIKE, dislikes > 0 ? shortNumber(dislikes) : tr("Dislike")));

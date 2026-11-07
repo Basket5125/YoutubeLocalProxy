@@ -104,6 +104,9 @@ public final class VideoListProto {
             public TextRun setText(String value) { mText = value == null ? "" : value; return this; }
             public String getText() { return mText; }
             public TextRun setBold(int value) { mBold = value; hasBold = true; return this; }
+            /** Field 5: where tapping this run goes (a link in a description). */
+            private ProtoMessage mNavigation;
+            public TextRun setNavigation(ProtoMessage value) { mNavigation = value; return this; }
             public int getBold() { return mBold; }
             public boolean hasBold() { return hasBold; }
 
@@ -111,6 +114,7 @@ public final class VideoListProto {
             public void writeTo(ProtoWriter writer) {
                 if (mText.length() > 0) writer.writeString(1, mText);
                 if (hasBold) writer.writeInt32(2, mBold);
+                if (mNavigation != null) writer.writeMessage(5, mNavigation);
             }
 
             @Override
@@ -1092,6 +1096,8 @@ public final class VideoListProto {
 
         /** proto: browse_proto.aboutRenderer.externalSite */
         public static final class ExternalSite extends ProtoMessage {
+            private ProtoMessage mEndpoint;
+            public ExternalSite setEndpoint(ProtoMessage value) { mEndpoint = value; return this; }
             private final java.util.List<VideoListProto.TextRuns> mLink = new java.util.ArrayList<VideoListProto.TextRuns>();
             private final java.util.List<VideoListProto.TextRuns> mName = new java.util.ArrayList<VideoListProto.TextRuns>();
             public ExternalSite addLink(VideoListProto.TextRuns value) {
@@ -1113,7 +1119,8 @@ public final class VideoListProto {
 
             @Override
             public void writeTo(ProtoWriter writer) {
-                for (int i = 0; i < mLink.size(); i++) writer.writeMessage(1, mLink.get(i));
+                // Field 1 is the link's navigation endpoint (abkj); a text there broke it.
+                if (mEndpoint != null) writer.writeMessage(1, mEndpoint);
                 for (int i = 0; i < mName.size(); i++) writer.writeMessage(3, mName.get(i));
             }
 

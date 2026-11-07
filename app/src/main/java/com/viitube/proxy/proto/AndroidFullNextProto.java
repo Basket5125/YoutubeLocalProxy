@@ -6,6 +6,18 @@ public final class AndroidFullNextProto {
     private AndroidFullNextProto() { }
 
     /** proto: android_full_next.navigationData */
+    /** urlEndpoint: the address a link opens. */
+    static final class UrlEndpoint extends ProtoMessage {
+        private final String mUrl;
+        UrlEndpoint(String url) { mUrl = url; }
+        @Override
+        public void writeTo(ProtoWriter writer) { writer.writeString(1, mUrl); }
+        @Override
+        public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+            while (reader.hasMore()) reader.skip(reader.readTag());
+        }
+    }
+
     public static final class NavigationData extends ProtoMessage {
 
         /** proto: android_full_next.navigationData.navData */
@@ -41,6 +53,9 @@ public final class AndroidFullNextProto {
             }
         }
         private AndroidFullNextProto.NavigationData.NavData mNavProperties;
+        /** urlEndpoint (49679253): its field 1 is the address the app opens in the browser. */
+        private String mUrl = "";
+        public NavigationData setUrl(String value) { mUrl = value == null ? "" : value; return this; }
         public NavigationData setNavProperties(AndroidFullNextProto.NavigationData.NavData value) { mNavProperties = value; return this; }
         public AndroidFullNextProto.NavigationData.NavData getNavProperties() { return mNavProperties; }
         public boolean hasNavProperties() { return mNavProperties != null; }
@@ -48,6 +63,7 @@ public final class AndroidFullNextProto {
         @Override
         public void writeTo(ProtoWriter writer) {
             if (mNavProperties != null) writer.writeMessage(48687757, mNavProperties);
+            if (mUrl.length() > 0) writer.writeMessage(49679253, new UrlEndpoint(mUrl));
         }
 
         @Override
@@ -466,6 +482,9 @@ public final class AndroidFullNextProto {
             public TextRun setText(String value) { mText = value == null ? "" : value; return this; }
             public String getText() { return mText; }
             public TextRun setBold(int value) { mBold = value; hasBold = true; return this; }
+            /** Field 5: where tapping this run goes (a link in a description). */
+            private AndroidFullNextProto.NavigationData mNavigation;
+            public TextRun setNavigation(AndroidFullNextProto.NavigationData value) { mNavigation = value; return this; }
             public int getBold() { return mBold; }
             public boolean hasBold() { return hasBold; }
 
@@ -473,6 +492,7 @@ public final class AndroidFullNextProto {
             public void writeTo(ProtoWriter writer) {
                 if (mText.length() > 0) writer.writeString(1, mText);
                 if (hasBold) writer.writeInt32(2, mBold);
+                if (mNavigation != null) writer.writeMessage(5, mNavigation);
             }
 
             @Override
