@@ -2484,7 +2484,9 @@ public final class VideoListProto {
             if (mContent != null) writer.writeMessage(4, mContent);
             if (mPostId.length() > 0) writer.writeString(9, mPostId);
             if (mBackstageAttachment != null) writer.writeMessage(24, mBackstageAttachment);
-            if (mPublishedTime != null) writer.writeMessage(28, mPublishedTime);
+            // Field 28 is not drawn by the comment view the apps use for posts; 5 is the line
+            // under the author, so the time and counts go there.
+            if (mPublishedTime != null) writer.writeMessage(5, mPublishedTime);
         }
 
         @Override
