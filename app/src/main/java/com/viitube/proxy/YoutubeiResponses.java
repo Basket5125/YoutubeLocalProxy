@@ -79,6 +79,9 @@ final class YoutubeiResponses {
         if ("Download".equals(english)) return "Pobierz";
         if ("likes".equals(english)) return "polubień";
         if ("replies".equals(english)) return "odpowiedzi";
+        if ("About".equals(english)) return "Informacje";
+        if ("dislikes".equals(english)) return "nie lubi\u0119";
+        if ("comments".equals(english)) return "komentarzy";
         return english;
     }
 
@@ -660,6 +663,34 @@ final class YoutubeiResponses {
             tabs.addTab(tab("Community", "Community", false, 0, content, communityToken));
         }
 
+        if (clientMajorVersion >= COMMUNITY_TAB_VERSION && (!info.description.isEmpty()
+                || !info.views.isEmpty() || !info.links.isEmpty())) {
+            // The About view (hkn) reads field 1 (description), 6 (the line under it: country),
+            // 4 and 5 (the stats block: joined, views) and 2 (links). Links are text only: the
+            // app wants a navigation endpoint in a link's field 1 and has no plain URL one here.
+            VideoListProto.AboutRenderer about = new VideoListProto.AboutRenderer()
+                    .addChannelDescription(browseRuns(info.description));
+            if (!info.country.isEmpty()) about.addJoinDate(browseRuns(info.country));
+            if (!info.joined.isEmpty()) about.setStatsLine(browseRuns(info.joined));
+            StringBuilder counts = new StringBuilder(info.views);
+            for (String part : new String[]{info.subscribers, info.uploads}) {
+                if (part.isEmpty()) continue;
+                if (counts.length() > 0) counts.append(" · ");
+                counts.append(part);
+            }
+            if (counts.length() > 0) about.addTotalViews(browseRuns(counts.toString()));
+            for (String[] link : info.links) {
+                String label = link[0].isEmpty() ? link[1] : link[0] + ": " + link[1];
+                about.addSite(new VideoListProto.AboutRenderer.ExternalSite().addName(browseRuns(label)));
+            }
+            VideoListProto.ItemSectionRenderer section = new VideoListProto.ItemSectionRenderer();
+            section.addIcsContent(new VideoListProto.ItemSectionRenderer.IcsContents().addAbout(about));
+            VideoListProto.Root.ResponseBody.SingleColumnBrowseResultsRenderer.Tabs.TabRenderer
+                    .ContentEntry.ContentData.ContentActualData content = tabContent();
+            content.addSection(section);
+            tabs.addTab(tab("About", tr("About"), false, 0, content));
+        }
+
         if (!playlists.isEmpty()) {
             VideoListProto.ItemSectionRenderer section = new VideoListProto.ItemSectionRenderer();
             for (ChannelEndpoint.PlaylistSummary playlist : playlists) {
@@ -691,9 +722,13 @@ final class YoutubeiResponses {
         }
         StringBuilder line = new StringBuilder();
         if (!post.published.isEmpty()) line.append(post.published);
-        if (!post.likes.isEmpty()) {
-            if (line.length() > 0) line.append(" \u00b7 ");
-            line.append(post.likes).append(" likes");
+        // Likes, dislikes and comments, the counts the post's line showed. YouTube no longer
+        // publishes dislikes and Return YouTube Dislike only knows videos, so that one is 0.
+        if (line.length() > 0) line.append(" \u00b7 ");
+        line.append(post.likes.isEmpty() ? "0" : post.likes).append(' ').append(tr("likes"));
+        line.append(" \u00b7 0 ").append(tr("dislikes"));
+        if (!post.comments.isEmpty()) {
+            line.append(" \u00b7 ").append(post.comments).append(' ').append(tr("comments"));
         }
         if (line.length() > 0) renderer.setPublishedTime(browseRuns(line.toString()));
         if (!post.image.isEmpty()) {
@@ -1210,8 +1245,43 @@ final class YoutubeiResponses {
                 .setNavigationEndpoint(new AndroidFullNextProto.NavigationData().setNavProperties(
                         new AndroidFullNextProto.NavigationData.NavData().setNavId(video.id)))
                 .setPoverlays(new AndroidFullNextProto.Root.PlayerOverlays().setOverlay(
-                        new AndroidFullNextProto.Root.PlayerOverlays.PlayerOverlaysRenderer()))
+                        playerOverlay(video, page.related, now)))
                 .toByteArray();
+    }
+
+    /**
+     * What the player draws over the video: the title and channel in fullscreen, and the list of
+     * videos that comes up when fullscreen is swiped up and when the video ends.
+     */
+    private static AndroidFullNextProto.Root.PlayerOverlays.PlayerOverlaysRenderer playerOverlay(
+            InnertubeEndpoint.Video video, List<InnertubeEndpoint.Video> related, long now) {
+        AndroidFullNextProto.OverlayVideoDetails details = new AndroidFullNextProto.OverlayVideoDetails()
+                .setTitle(nextRuns(video.title));
+        if (!video.channel.isEmpty()) details.setSubtitle(nextRuns(video.channel));
+        AndroidFullNextProto.Root.PlayerOverlays.PlayerOverlaysRenderer overlay =
+                new AndroidFullNextProto.Root.PlayerOverlays.PlayerOverlaysRenderer()
+                        .setDetails(new AndroidFullNextProto.OverlayDetailsSlot().setDetails(details));
+        if (related != null && !related.isEmpty()) {
+            AndroidFullNextProto.EndScreen endScreen = new AndroidFullNextProto.EndScreen()
+                    .setTitle(nextRuns(tr("Up next")));
+            for (int i = 0; i < related.size() && i < 12; i++) {
+                InnertubeEndpoint.Video item = related.get(i);
+                long views = parseCount(item.views);
+                AndroidFullNextProto.EndScreenVideo entry = new AndroidFullNextProto.EndScreenVideo()
+                        .setVideoId(item.id)
+                        .setThumbnail(nextThumbnails(hqThumbnail(item.id), 480, 360))
+                        .setTitle(nextRuns(item.title))
+                        .setByline(nextRuns(item.channel))
+                        .setLength(nextRuns(lengthText(item.duration)))
+                        .setViews(nextRuns(shortCount(views, "views")))
+                        .setLengthSeconds(InnertubeEndpoint.durationSecondsPublic(item.duration))
+                        .setNavigation(new AndroidFullNextProto.NavigationData().setNavProperties(
+                                new AndroidFullNextProto.NavigationData.NavData().setNavId(item.id)));
+                endScreen.addResult(new AndroidFullNextProto.EndScreenItem().setVideo(entry));
+            }
+            overlay.setEndScreen(new AndroidFullNextProto.EndScreenSlot().setEndScreen(endScreen));
+        }
+        return overlay;
     }
 
     /** One entry of the section list, which holds exactly one renderer. */
@@ -1250,19 +1320,9 @@ final class YoutubeiResponses {
             renderer.setAuthorEndpoint(nextChannelNavigation(comment.authorId));
         }
         // The subtitle line under the author is field 5 (field 28 is not drawn by these apps, which
-        // is why the time used to be missing). Put the time there with the like and reply counts.
-        StringBuilder meta = new StringBuilder();
+        // is why the time used to be missing). Keep the time there; the counts go on the buttons.
         String age = relativeTime(comment.published, now);
-        if (!age.isEmpty()) meta.append(age);
-        if (!comment.likeCount.isEmpty()) {
-            if (meta.length() > 0) meta.append(" · ");
-            meta.append(comment.likeCount).append(' ').append(tr("likes"));
-        }
-        if (!comment.replyCount.isEmpty()) {
-            if (meta.length() > 0) meta.append(" · ");
-            meta.append(comment.replyCount).append(' ').append(tr("replies"));
-        }
-        if (meta.length() > 0) renderer.setSecondary(nextRuns(meta.toString()));
+        if (!age.isEmpty()) renderer.setSecondary(nextRuns(age));
         return new AndroidFullNextProto.CommentThreadRenderer().setComment(
                 new AndroidFullNextProto.CommentThreadRenderer.CommentWrapper().setComment(renderer));
     }

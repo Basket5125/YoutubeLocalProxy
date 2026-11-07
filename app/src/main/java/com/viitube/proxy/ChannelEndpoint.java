@@ -284,6 +284,14 @@ public class ChannelEndpoint implements Endpoint {
         String banner = "";
         String subscribers = "";
         String uploads = "";
+        /** From the channel's About panel; empty when YouTube did not give them. */
+        String country = "";
+        String views = "";
+        String joined = "";
+        /** Links of the About panel as {title, address}. */
+        final List<String[]> links = new ArrayList<String[]>();
+        /** YouTube's token for the About panel, read from the header's description. */
+        String aboutToken = "";
     }
 
     /** Channel details from the channel's browse page (cached for an hour, like the profile). */
@@ -295,6 +303,7 @@ public class ChannelEndpoint implements Endpoint {
             }
         }
         ChannelInfo info = readChannelInfo(fetchBrowse(channelId, "channel", config), channelId);
+        loadAbout(info, config);
         synchronized (CHANNEL_INFO) {
             CHANNEL_INFO.put(channelId, new Object[]{info, System.currentTimeMillis()});
         }
@@ -372,7 +381,49 @@ public class ChannelEndpoint implements Endpoint {
         info.banner = InnertubeEndpoint.absoluteUrl(findBanner(root));
         info.subscribers = subscriberCount;
         info.uploads = uploadsCount;
+        // The "...more" of the header's description opens the About panel; its token loads it.
+        if (headerViewModel != null) {
+            info.aboutToken = findText(headerViewModel.optJSONObject("description"), "token");
+        }
         return info;
+    }
+
+    /**
+     * Fills in what the About panel has beyond the header: the full description, the country,
+     * the view count, the date the channel was made and its links. One request, cached with the
+     * rest of the channel's details; a failure leaves the header's data as it was.
+     */
+    private static void loadAbout(ChannelInfo info, Config config) {
+        if (info.aboutToken.isEmpty()) return;
+        try {
+            JSONObject response = InnertubeEndpoint.requestFast("browse",
+                    InnertubeEndpoint.context(config).put("continuation", info.aboutToken), config);
+            JSONObject about = findObject(response, "aboutChannelViewModel");
+            if (about == null) return;
+            String description = about.optString("description", "");
+            if (description.length() > info.description.length()) info.description = description;
+            info.country = about.optString("country", "");
+            info.views = about.optString("viewCountText", "");
+            JSONObject joined = about.optJSONObject("joinedDateText");
+            info.joined = joined == null ? "" : joined.optString("content", "");
+            if (info.subscribers.isEmpty()) info.subscribers = about.optString("subscriberCountText", "");
+            if (info.uploads.isEmpty()) info.uploads = about.optString("videoCountText", "");
+            JSONArray links = about.optJSONArray("links");
+            if (links != null) {
+                for (int i = 0; i < links.length(); i++) {
+                    JSONObject model = links.optJSONObject(i);
+                    model = model == null ? null : model.optJSONObject("channelExternalLinkViewModel");
+                    if (model == null) continue;
+                    JSONObject title = model.optJSONObject("title");
+                    JSONObject link = model.optJSONObject("link");
+                    String address = link == null ? "" : link.optString("content", "");
+                    if (address.isEmpty()) continue;
+                    info.links.add(new String[]{title == null ? "" : title.optString("content", ""), address});
+                }
+            }
+        } catch (Exception e) {
+            android.util.Log.i("Channel", "about of " + info.id + " failed: " + e);
+        }
     }
 
     /** Largest banner image (view-model header or the older c4TabbedHeaderRenderer). */
@@ -544,6 +595,8 @@ public class ChannelEndpoint implements Endpoint {
         /** YouTube's own label, "1 month ago". */
         String published = "";
         String likes = "";
+        /** How many comments the post has, as YouTube wrote it; empty when none. */
+        String comments = "";
         /** The picture that goes with the post, when it has one. */
         String image = "";
     }
@@ -646,6 +699,9 @@ public class ChannelEndpoint implements Endpoint {
             post.published = findText(renderer.optJSONObject("publishedTimeText"), "simpleText");
         }
         post.likes = textOf(renderer.optJSONObject("voteCount"));
+        JSONObject reply = findObject(renderer.optJSONObject("actionButtons"), "replyButton");
+        JSONObject replyButton = reply == null ? null : reply.optJSONObject("buttonRenderer");
+        post.comments = replyButton == null ? "" : textOf(replyButton.optJSONObject("text"));
         JSONObject attachment = renderer.optJSONObject("backstageAttachment");
         JSONObject image = attachment == null ? null : attachment.optJSONObject("backstageImageRenderer");
         if (image != null) {

@@ -1145,6 +1145,9 @@ public final class VideoListProto {
         private final java.util.List<VideoListProto.TextRuns> mChannelDescription = new java.util.ArrayList<VideoListProto.TextRuns>();
         private final java.util.List<VideoListProto.AboutRenderer.ExternalSite> mSite = new java.util.ArrayList<VideoListProto.AboutRenderer.ExternalSite>();
         private final java.util.List<VideoListProto.TextRuns> mTotalViews = new java.util.ArrayList<VideoListProto.TextRuns>();
+        /** Field 4: the first line of the stats block (when the channel was made). */
+        private VideoListProto.TextRuns mStatsLine;
+        public AboutRenderer setStatsLine(VideoListProto.TextRuns value) { mStatsLine = value; return this; }
         private final java.util.List<VideoListProto.TextRuns> mJoinDate = new java.util.ArrayList<VideoListProto.TextRuns>();
         private String mWebUrl = "";
         private int mInt15 = 0;
@@ -1223,6 +1226,7 @@ public final class VideoListProto {
         public void writeTo(ProtoWriter writer) {
             for (int i = 0; i < mChannelDescription.size(); i++) writer.writeMessage(1, mChannelDescription.get(i));
             for (int i = 0; i < mSite.size(); i++) writer.writeMessage(2, mSite.get(i));
+            if (mStatsLine != null) writer.writeMessage(4, mStatsLine);
             for (int i = 0; i < mTotalViews.size(); i++) writer.writeMessage(5, mTotalViews.get(i));
             for (int i = 0; i < mJoinDate.size(); i++) writer.writeMessage(6, mJoinDate.get(i));
             if (mWebUrl.length() > 0) writer.writeString(13, mWebUrl);

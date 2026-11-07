@@ -13,3 +13,4 @@ local.properties
 *.keystore
 __pycache__/
 *.pyc
+screenshot.png

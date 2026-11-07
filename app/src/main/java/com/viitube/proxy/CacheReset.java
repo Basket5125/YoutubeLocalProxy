@@ -40,6 +40,8 @@ final class CacheReset {
         PlayerLookup.clearMetadataCache();
         InvidiousLookup.clearMemory();
         AudioWarmup.clearMemory();
+        GpmStream.trimMemory();
+        MusicSearch.clearMemory();
     }
 
     static Result clear(Context context) {

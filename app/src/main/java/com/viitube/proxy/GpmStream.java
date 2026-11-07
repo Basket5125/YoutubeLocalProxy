@@ -17,12 +17,23 @@ import fi.iki.elonen.NanoHTTPD;
  */
 final class GpmStream {
 
+    /**
+     * How many built songs are kept. Each holds the whole audio file in memory (4-6 MB for a
+     * song), so an old phone with a small heap keeps two: the one playing and the next one.
+     */
+    private static final int MAX_PLANS = MemoryBudget.SMALL_HEAP ? 2 : 4;
+
+    /** The song the player is reading now; its file is never let go while it plays. */
+    private static volatile String playing = "";
+
     /** Built files kept so the app's repeated range requests for one song reuse one remux. */
     private static final Map<String, Mp4Mux.Plan> PLANS =
             new LinkedHashMap<String, Mp4Mux.Plan>(8, 0.75f, true) {
                 @Override
                 protected boolean removeEldestEntry(Map.Entry<String, Mp4Mux.Plan> eldest) {
-                    boolean evict = size() > MemoryBudget.entries(6);
+                    // The stream reads the buffer piece by piece, so dropping the one that plays
+                    // would cut the song off ("buffer gone"); keep it a little longer instead.
+                    boolean evict = size() > MAX_PLANS && !eldest.getKey().equals(playing);
                     if (evict) Mp4Mux.dropBuffer(eldest.getKey());
                     return evict;
                 }
@@ -151,6 +162,7 @@ final class GpmStream {
             android.util.Log.i("Gpm", "stream id not a YouTube id: " + songId);
             return text(NanoHTTPD.Response.Status.NOT_FOUND, "track not available");
         }
+        playing = songId;
         cancelWarmExcept(songId);
         try {
             Mp4Mux.Plan plan = build(songId, config);
@@ -231,6 +243,19 @@ final class GpmStream {
             return Long.parseLong(s.trim());
         } catch (NumberFormatException e) {
             return 0;
+        }
+    }
+
+    /** When Android is short of memory: let go of every built song except the one playing. */
+    static void trimMemory() {
+        synchronized (PLANS) {
+            java.util.Iterator<String> ids = PLANS.keySet().iterator();
+            while (ids.hasNext()) {
+                String id = ids.next();
+                if (id.equals(playing)) continue;
+                Mp4Mux.dropBuffer(id);
+                ids.remove();
+            }
         }
     }
 

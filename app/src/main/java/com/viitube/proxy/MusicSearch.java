@@ -301,4 +301,10 @@ final class MusicSearch {
         }
         return seconds;
     }
+
+    static void clearMemory() {
+        synchronized (CACHE) {
+            CACHE.clear();
+        }
+    }
 }

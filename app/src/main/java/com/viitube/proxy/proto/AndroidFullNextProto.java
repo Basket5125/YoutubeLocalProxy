@@ -2846,6 +2846,111 @@ public final class AndroidFullNextProto {
     }
 
     /** proto: android_full_next.commentRenderer */
+    /** Fullscreen title and the line under it (playerOverlayVideoDetailsRenderer, aerj). */
+    public static final class OverlayVideoDetails extends ProtoMessage {
+        private AndroidFullNextProto.TextRuns mTitle;
+        public OverlayVideoDetails setTitle(AndroidFullNextProto.TextRuns v) { mTitle = v; return this; }
+        private AndroidFullNextProto.TextRuns mSubtitle;
+        public OverlayVideoDetails setSubtitle(AndroidFullNextProto.TextRuns v) { mSubtitle = v; return this; }
+        @Override
+        public void writeTo(ProtoWriter writer) {
+            if (mTitle != null) writer.writeMessage(1, mTitle);
+            if (mSubtitle != null) writer.writeMessage(2, mSubtitle);
+        }
+        @Override
+        public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+            while (reader.hasMore()) reader.skip(reader.readTag());
+        }
+    }
+    /** The union (aerk) that holds the fullscreen details under 128392103. */
+    public static final class OverlayDetailsSlot extends ProtoMessage {
+        private AndroidFullNextProto.OverlayVideoDetails mDetails;
+        public OverlayDetailsSlot setDetails(AndroidFullNextProto.OverlayVideoDetails v) { mDetails = v; return this; }
+        @Override
+        public void writeTo(ProtoWriter writer) {
+            if (mDetails != null) writer.writeMessage(128392103, mDetails);
+        }
+        @Override
+        public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+            while (reader.hasMore()) reader.skip(reader.readTag());
+        }
+    }
+    /** One video of the end screen / fullscreen list (endScreenVideoRenderer, aczu). */
+    public static final class EndScreenVideo extends ProtoMessage {
+        private String mVideoId = "";
+        public EndScreenVideo setVideoId(String v) { mVideoId = v == null ? "" : v; return this; }
+        private AndroidFullNextProto.Thumbnails mThumbnail;
+        public EndScreenVideo setThumbnail(AndroidFullNextProto.Thumbnails v) { mThumbnail = v; return this; }
+        private AndroidFullNextProto.TextRuns mTitle;
+        public EndScreenVideo setTitle(AndroidFullNextProto.TextRuns v) { mTitle = v; return this; }
+        private AndroidFullNextProto.TextRuns mByline;
+        public EndScreenVideo setByline(AndroidFullNextProto.TextRuns v) { mByline = v; return this; }
+        private AndroidFullNextProto.TextRuns mLength;
+        public EndScreenVideo setLength(AndroidFullNextProto.TextRuns v) { mLength = v; return this; }
+        private AndroidFullNextProto.TextRuns mViews;
+        public EndScreenVideo setViews(AndroidFullNextProto.TextRuns v) { mViews = v; return this; }
+        private int mLengthSeconds;
+        public EndScreenVideo setLengthSeconds(int v) { mLengthSeconds = v; return this; }
+        private AndroidFullNextProto.NavigationData mNavigation;
+        public EndScreenVideo setNavigation(AndroidFullNextProto.NavigationData v) { mNavigation = v; return this; }
+        @Override
+        public void writeTo(ProtoWriter writer) {
+            if (mVideoId.length() > 0) writer.writeString(1, mVideoId);
+            if (mThumbnail != null) writer.writeMessage(2, mThumbnail);
+            if (mTitle != null) writer.writeMessage(3, mTitle);
+            if (mByline != null) writer.writeMessage(4, mByline);
+            if (mLength != null) writer.writeMessage(5, mLength);
+            if (mViews != null) writer.writeMessage(6, mViews);
+            if (mLengthSeconds != 0) writer.writeInt32(8, mLengthSeconds);
+            if (mNavigation != null) writer.writeMessage(10, mNavigation);
+        }
+        @Override
+        public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+            while (reader.hasMore()) reader.skip(reader.readTag());
+        }
+    }
+    /** The union (agbe) one end screen entry sits in; a video is 57153017. */
+    public static final class EndScreenItem extends ProtoMessage {
+        private AndroidFullNextProto.EndScreenVideo mVideo;
+        public EndScreenItem setVideo(AndroidFullNextProto.EndScreenVideo v) { mVideo = v; return this; }
+        @Override
+        public void writeTo(ProtoWriter writer) {
+            if (mVideo != null) writer.writeMessage(57153017, mVideo);
+        }
+        @Override
+        public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+            while (reader.hasMore()) reader.skip(reader.readTag());
+        }
+    }
+    /** The list of videos offered over the player (watchNextEndScreenRenderer, agbd). */
+    public static final class EndScreen extends ProtoMessage {
+        private final java.util.List<AndroidFullNextProto.EndScreenItem> mResult = new java.util.ArrayList<AndroidFullNextProto.EndScreenItem>();
+        public EndScreen addResult(AndroidFullNextProto.EndScreenItem v) { mResult.add(v); return this; }
+        private AndroidFullNextProto.TextRuns mTitle;
+        public EndScreen setTitle(AndroidFullNextProto.TextRuns v) { mTitle = v; return this; }
+        @Override
+        public void writeTo(ProtoWriter writer) {
+            for (int i = 0; i < mResult.size(); i++) writer.writeMessage(1, mResult.get(i));
+            if (mTitle != null) writer.writeMessage(2, mTitle);
+        }
+        @Override
+        public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+            while (reader.hasMore()) reader.skip(reader.readTag());
+        }
+    }
+    /** The union (aere) that holds the end screen under 57158578. */
+    public static final class EndScreenSlot extends ProtoMessage {
+        private AndroidFullNextProto.EndScreen mEndScreen;
+        public EndScreenSlot setEndScreen(AndroidFullNextProto.EndScreen v) { mEndScreen = v; return this; }
+        @Override
+        public void writeTo(ProtoWriter writer) {
+            if (mEndScreen != null) writer.writeMessage(57158578, mEndScreen);
+        }
+        @Override
+        public void mergeFrom(ProtoReader reader) throws java.io.IOException {
+            while (reader.hasMore()) reader.skip(reader.readTag());
+        }
+    }
     public static final class CommentRenderer extends ProtoMessage {
         private AndroidFullNextProto.TextRuns mAuthor;
         private AndroidFullNextProto.Thumbnails mAuthorThumbnail;
@@ -4072,9 +4177,16 @@ public final class AndroidFullNextProto {
 
             /** proto: android_full_next.root.playerOverlays.playerOverlaysRenderer */
             public static final class PlayerOverlaysRenderer extends ProtoMessage {
+                /** Field 3: the videos offered over the player; field 8: the fullscreen title. */
+                private AndroidFullNextProto.EndScreenSlot mEndScreen;
+                private AndroidFullNextProto.OverlayDetailsSlot mDetails;
+                public PlayerOverlaysRenderer setEndScreen(AndroidFullNextProto.EndScreenSlot v) { mEndScreen = v; return this; }
+                public PlayerOverlaysRenderer setDetails(AndroidFullNextProto.OverlayDetailsSlot v) { mDetails = v; return this; }
 
                 @Override
                 public void writeTo(ProtoWriter writer) {
+                    if (mEndScreen != null) writer.writeMessage(3, mEndScreen);
+                    if (mDetails != null) writer.writeMessage(8, mDetails);
                 }
 
                 @Override
