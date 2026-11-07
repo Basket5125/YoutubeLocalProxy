@@ -291,6 +291,8 @@ public final class AndroidFullNextProto {
                         return message;
                     }
                 }
+                private int mCollapsedItemCount;
+                public ShelfContents setCollapsedItemCount(int v) { mCollapsedItemCount = v; return this; }
                 private final java.util.List<AndroidFullNextProto.ShelfRenderer.Contents.ShelfContents.Items> mItem = new java.util.ArrayList<AndroidFullNextProto.ShelfRenderer.Contents.ShelfContents.Items>();
                 public ShelfContents addItem(AndroidFullNextProto.ShelfRenderer.Contents.ShelfContents.Items value) {
                     if (value == null) throw new NullPointerException("item");
@@ -304,6 +306,8 @@ public final class AndroidFullNextProto {
                 @Override
                 public void writeTo(ProtoWriter writer) {
                     for (int i = 0; i < mItem.size(); i++) writer.writeMessage(1, mItem.get(i));
+                    // Field 2 is collapsedItemCount; 0 makes the app fold the list to 3 behind a chevron.
+                    if (mCollapsedItemCount > 0) writer.writeInt32(2, mCollapsedItemCount);
                 }
 
                 @Override
@@ -4182,11 +4186,21 @@ public final class AndroidFullNextProto {
                 private AndroidFullNextProto.OverlayDetailsSlot mDetails;
                 public PlayerOverlaysRenderer setEndScreen(AndroidFullNextProto.EndScreenSlot v) { mEndScreen = v; return this; }
                 public PlayerOverlaysRenderer setDetails(AndroidFullNextProto.OverlayDetailsSlot v) { mDetails = v; return this; }
+                /** Field 5: the share button of the top bar (the button union, 65153809). */
+                private AndroidFullNextProto.SlimMetadataButton.SlimMetadataButtonRenderer.ButtonContainer mShareButton;
+                public PlayerOverlaysRenderer setShareButton(AndroidFullNextProto.SlimMetadataButton.SlimMetadataButtonRenderer.ButtonContainer v) { mShareButton = v; return this; }
+                /** Fields 9-12: the switches the top bar's share and add-to controllers read. */
+                private boolean mFlags;
+                public PlayerOverlaysRenderer setShowButtons(boolean v) { mFlags = v; return this; }
 
                 @Override
                 public void writeTo(ProtoWriter writer) {
                     if (mEndScreen != null) writer.writeMessage(3, mEndScreen);
+                    if (mShareButton != null) writer.writeMessage(5, mShareButton);
                     if (mDetails != null) writer.writeMessage(8, mDetails);
+                    if (mFlags) {
+                        for (int field = 9; field <= 12; field++) writer.writeBool(field, true);
+                    }
                 }
 
                 @Override

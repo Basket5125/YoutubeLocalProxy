@@ -1130,7 +1130,8 @@ final class YoutubeiResponses {
         }
         return new AndroidFullNextProto.ShelfRenderer()
                 .setTitle(nextRuns(tr("Up next")))
-                .setContent(new AndroidFullNextProto.ShelfRenderer.Contents().setShelfContent(items))
+                .setContent(new AndroidFullNextProto.ShelfRenderer.Contents().setShelfContent(
+                        items.setCollapsedItemCount(related.size())))
                 .setAutoplayToggle(new AndroidFullNextProto.ShelfRenderer.Toggle().addButton(
                         new AndroidFullNextProto.ToggleButtonRenderer()
                                 .setDefaultText(nextRuns(tr("Autoplay")))
@@ -1260,7 +1261,15 @@ final class YoutubeiResponses {
         if (!video.channel.isEmpty()) details.setSubtitle(nextRuns(video.channel));
         AndroidFullNextProto.Root.PlayerOverlays.PlayerOverlaysRenderer overlay =
                 new AndroidFullNextProto.Root.PlayerOverlays.PlayerOverlaysRenderer()
-                        .setDetails(new AndroidFullNextProto.OverlayDetailsSlot().setDetails(details));
+                        .setDetails(new AndroidFullNextProto.OverlayDetailsSlot().setDetails(details))
+                        .setShowButtons(true);
+        // The share arrow of the top bar: the same button and share sheet as under the video.
+        AndroidFullNextProto.ButtonEndpoint share = shareEndpoint(video.id, video.title);
+        overlay.setShareButton(new AndroidFullNextProto.SlimMetadataButton.SlimMetadataButtonRenderer
+                .ButtonContainer().setButton(new AndroidFullNextProto.ButtonRenderer()
+                        .setText(nextRuns(tr("Share")))
+                        .setIcon(new AndroidFullNextProto.IconContainer().setIconType(ICON_SHARE))
+                        .setServiceEndpoint(share).setNavigationEndpoint(share)));
         if (related != null && !related.isEmpty()) {
             AndroidFullNextProto.EndScreen endScreen = new AndroidFullNextProto.EndScreen()
                     .setTitle(nextRuns(tr("Up next")));
