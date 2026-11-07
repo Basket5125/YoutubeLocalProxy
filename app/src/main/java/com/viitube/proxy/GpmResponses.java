@@ -55,6 +55,9 @@ final class GpmResponses {
         if (tracks.isEmpty()) {
             return "{\"kind\":\"sj#searchresults\",\"entries\":[]}";
         }
+        java.util.List<String> covers = new java.util.ArrayList<String>();
+        for (MusicSearch.Track song : tracks) covers.add(song.videoId);
+        // Register the covers' addresses first (track() does), then fetch them in the background.
         // Build the top result's audio ahead of the tap, so the first play does not wait. Only the
         // top one: the phone's bandwidth to Invidious is the limit, so warming more would slow the
         // track the user actually taps.
@@ -66,6 +69,7 @@ final class GpmResponses {
             entries.append("{\"kind\":\"sj#searchResult\",\"type\":\"1\",\"score\":1.0,\"track\":")
                     .append(track(song)).append('}');
         }
+        GpmEndpoint.prefetchArt(covers);
         return "{\"kind\":\"sj#searchresults\",\"clusterOrder\":[\"1\"],\"entries\":["
                 + entries + "]}";
     }
@@ -114,11 +118,14 @@ final class GpmResponses {
 
     private static String tab(String type, String title, String query, Config config, Context context) {
         StringBuilder entities = new StringBuilder();
+        java.util.List<String> covers = new java.util.ArrayList<String>();
         for (MusicSearch.Track song : MusicSearch.songs(query, 15, config)) {
             if (song.videoId.isEmpty()) continue;
             if (entities.length() > 0) entities.append(',');
             entities.append("{\"track\":").append(track(song)).append('}');
+            covers.add(song.videoId);
         }
+        GpmEndpoint.prefetchArt(covers);
         String group = "{\"title\":\"" + title + "\",\"description\":\"\",\"entities\":["
                 + entities + "]}";
         return "{\"tab_type\":\"" + type + "\",\"data_status\":\"OK\",\"groups\":["
@@ -199,6 +206,9 @@ final class GpmResponses {
                 tracks.put(new JSONObject(track(song)));
             }
         }
+        java.util.List<String> covers = new java.util.ArrayList<String>();
+        for (int i = 0; i < tracks.length(); i++) covers.add(tracks.getJSONObject(i).optString("storeId"));
+        GpmEndpoint.prefetchArt(covers);
         JSONObject station = new JSONObject()
                 .put("kind", "sj#radioStation")
                 .put("id", "rd" + videoId)

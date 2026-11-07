@@ -36,7 +36,7 @@ public class GpmEndpoint implements Endpoint {
      * Covers already served, kept in memory so scrolling back through a list does not fetch them
      * again over the slow link: bounded in bytes (a cover is 40-70 KB), not in entries.
      */
-    private static final long ART_BYTES_MAX = MemoryBudget.SMALL_HEAP ? 1500L * 1024 : 4L * 1024 * 1024;
+    private static final long ART_BYTES_MAX = MemoryBudget.SMALL_HEAP ? 3L * 1024 * 1024 : 8L * 1024 * 1024;
     private static long artBytes;
     private static final java.util.LinkedHashMap<String, Object[]> ART_CACHE =
             new java.util.LinkedHashMap<String, Object[]>(32, 0.75f, true);
@@ -111,47 +111,102 @@ public class GpmEndpoint implements Endpoint {
         if (slash >= 0) videoId = videoId.substring(0, slash);
         int q = videoId.indexOf('?');
         if (q >= 0) videoId = videoId.substring(0, q);
-        if (!InnertubeEndpoint.isValidVideoId(videoId)) {
+        Object[] art = InnertubeEndpoint.isValidVideoId(videoId) ? loadArt(videoId) : null;
+        if (art == null) {
             return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.NOT_FOUND,
                     "text/plain", "no art");
         }
-        Object[] kept = cachedArt(videoId);
-        if (kept != null) return artResponse((byte[]) kept[0], (String) kept[1]);
-        // The square album art the search found, then the video frame as a fallback.
-        java.util.List<String> urls = new java.util.ArrayList<String>();
-        String remembered = rememberedArt(videoId);
-        if (remembered != null && !remembered.isEmpty()) urls.add(remembered);
-        for (String name : new String[]{"hqdefault.jpg", "mqdefault.jpg", "default.jpg"}) {
-            urls.add("https://i.ytimg.com/vi/" + videoId + "/" + name);
+        return artResponse((byte[]) art[0], (String) art[1]);
+    }
+
+    /** One lock per cover, so a prefetch and the app's own request do not fetch it twice. */
+    private static final java.util.concurrent.ConcurrentHashMap<String, Object> ART_LOCKS =
+            new java.util.concurrent.ConcurrentHashMap<String, Object>();
+
+    /** Fetches covers in the background, one at a time and at low priority. */
+    private static final java.util.concurrent.ThreadPoolExecutor ART_PREFETCH =
+            new java.util.concurrent.ThreadPoolExecutor(MemoryBudget.SMALL_HEAP ? 1 : 2,
+                    MemoryBudget.SMALL_HEAP ? 1 : 2, 20, java.util.concurrent.TimeUnit.SECONDS,
+                    new java.util.concurrent.LinkedBlockingQueue<Runnable>(64),
+                    new java.util.concurrent.ThreadPoolExecutor.DiscardOldestPolicy());
+    static {
+        ART_PREFETCH.allowCoreThreadTimeOut(true);
+    }
+
+    /**
+     * Fetches the covers of a list the app is about to show. The app gives up on a cover that is
+     * slow to come (many at once over the phone's link) and then marks it missing for good, so
+     * the covers are made ready here before it asks.
+     */
+    static void prefetchArt(final java.util.List<String> videoIds) {
+        for (final String id : videoIds) {
+            if (!InnertubeEndpoint.isValidVideoId(id) || cachedArt(id) != null) continue;
+            ART_PREFETCH.execute(new ArtTask(id));
         }
-        for (String imageUrl : urls) {
+    }
+
+    private static final class ArtTask implements Runnable {
+        private final String videoId;
+
+        ArtTask(String videoId) {
+            this.videoId = videoId;
+        }
+
+        @Override
+        public void run() {
+            loadArt(videoId);
+        }
+    }
+
+    /** {image bytes, content type} of a cover, from memory or fetched once; null when none. */
+    private static Object[] loadArt(String videoId) {
+        Object[] kept = cachedArt(videoId);
+        if (kept != null) return kept;
+        Object created = new Object();
+        Object existing = ART_LOCKS.putIfAbsent(videoId, created);
+        Object lock = existing != null ? existing : created;
+        synchronized (lock) {
             try {
-                java.net.HttpURLConnection conn = (java.net.HttpURLConnection)
-                        new java.net.URL(imageUrl).openConnection();
-                conn.setConnectTimeout(10000);
-                conn.setReadTimeout(15000);
-                conn.setRequestProperty("User-Agent", "Mozilla/5.0");
-                if (conn.getResponseCode() != 200) {
-                    conn.disconnect();
-                    continue;
+                kept = cachedArt(videoId);
+                if (kept != null) return kept;
+                // The square album art the search found, then the video frame as a fallback.
+                java.util.List<String> urls = new java.util.ArrayList<String>();
+                String remembered = rememberedArt(videoId);
+                if (remembered != null && !remembered.isEmpty()) urls.add(remembered);
+                for (String name : new String[]{"hqdefault.jpg", "mqdefault.jpg", "default.jpg"}) {
+                    urls.add("https://i.ytimg.com/vi/" + videoId + "/" + name);
                 }
-                java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
-                java.io.InputStream in = conn.getInputStream();
-                byte[] buffer = new byte[8192];
-                int n;
-                while ((n = in.read(buffer)) > 0) out.write(buffer, 0, n);
-                in.close();
-                byte[] image = out.toByteArray();
-                String type = conn.getContentType();
-                if (type == null || !type.startsWith("image/")) type = "image/jpeg";
-                keepArt(videoId, image, type);
-                return artResponse(image, type);
-            } catch (Exception e) {
-                android.util.Log.i(TAG, "art " + imageUrl + " failed: " + e);
+                for (String imageUrl : urls) {
+                    try {
+                        java.net.HttpURLConnection conn = (java.net.HttpURLConnection)
+                                new java.net.URL(imageUrl).openConnection();
+                        conn.setConnectTimeout(8000);
+                        conn.setReadTimeout(12000);
+                        conn.setRequestProperty("User-Agent", "Mozilla/5.0");
+                        if (conn.getResponseCode() != 200) {
+                            conn.disconnect();
+                            continue;
+                        }
+                        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream(64 * 1024);
+                        java.io.InputStream in = conn.getInputStream();
+                        byte[] buffer = new byte[8192];
+                        int n;
+                        while ((n = in.read(buffer)) > 0) out.write(buffer, 0, n);
+                        in.close();
+                        byte[] image = out.toByteArray();
+                        String type = conn.getContentType();
+                        if (type == null || !type.startsWith("image/")) type = "image/jpeg";
+                        keepArt(videoId, image, type);
+                        return new Object[]{image, type};
+                    } catch (Exception e) {
+                        android.util.Log.i(TAG, "art " + imageUrl + " failed: " + e);
+                    }
+                }
+                return null;
+            } finally {
+                ART_LOCKS.remove(videoId);
             }
         }
-        return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.NOT_FOUND,
-                "text/plain", "no art");
     }
 
     private static NanoHTTPD.Response artResponse(byte[] image, String type) {
