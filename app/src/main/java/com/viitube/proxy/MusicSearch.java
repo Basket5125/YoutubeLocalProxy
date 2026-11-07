@@ -87,35 +87,119 @@ final class MusicSearch {
     }
 
     private static List<Track> fetch(String query, Config config) throws Exception {
-        String language = config.getString("music_language", "pl");
-        String region = config.getString("music_region", "PL");
-        JSONObject payload = new JSONObject()
-                .put("context", new JSONObject().put("client", new JSONObject()
-                        .put("clientName", "WEB_REMIX")
-                        .put("clientVersion", CLIENT_VERSION)
-                        .put("hl", language)
-                        .put("gl", region)))
+        JSONObject response = post("search", new JSONObject()
+                .put("context", context(config))
                 .put("query", query)
-                .put("params", FILTER_SONG);
-
-        java.util.Map<String, String> headers = new java.util.HashMap<String, String>();
-        headers.put("Origin", "https://music.youtube.com");
-        headers.put("Referer", "https://music.youtube.com/");
-        headers.put("X-Origin", "https://music.youtube.com");
-        headers.put("X-YouTube-Client-Name", "67");
-        headers.put("X-YouTube-Client-Version", CLIENT_VERSION);
-
-        String url = "https://music.youtube.com/youtubei/v1/search?alt=json&prettyPrint=false&key="
-                + API_KEY;
-        JSONObject response = new JSONObject(HttpClient.postJson(
-                url, payload.toString(), DEFAULT_USER_AGENT, headers, 6000, 10000));
-
+                .put("params", FILTER_SONG));
         List<Track> tracks = new ArrayList<Track>();
         for (JSONObject item : collectListItems(response)) {
             Track track = toTrack(item);
             if (track != null) tracks.add(track);
         }
         return tracks;
+    }
+
+    private static JSONObject context(Config config) throws Exception {
+        return new JSONObject().put("client", new JSONObject()
+                .put("clientName", "WEB_REMIX")
+                .put("clientVersion", CLIENT_VERSION)
+                .put("hl", config.getString("music_language", "pl"))
+                .put("gl", config.getString("music_region", "PL")));
+    }
+
+    /** One call to YouTube Music's Innertube API (search, next...). */
+    private static JSONObject post(String endpoint, JSONObject payload) throws Exception {
+        java.util.Map<String, String> headers = new java.util.HashMap<String, String>();
+        headers.put("Origin", "https://music.youtube.com");
+        headers.put("Referer", "https://music.youtube.com/");
+        headers.put("X-Origin", "https://music.youtube.com");
+        headers.put("X-YouTube-Client-Name", "67");
+        headers.put("X-YouTube-Client-Version", CLIENT_VERSION);
+        String url = "https://music.youtube.com/youtubei/v1/" + endpoint
+                + "?alt=json&prettyPrint=false&key=" + API_KEY;
+        return new JSONObject(HttpClient.postJson(
+                url, payload.toString(), DEFAULT_USER_AGENT, headers, 6000, 10000));
+    }
+
+    /**
+     * The radio of a song: YouTube Music's own mix for it (the "RDAMVM" playlist next to the
+     * song), as songs with their artist, album and art. Cached for 30 minutes like a search.
+     */
+    static List<Track> radio(String videoId, Config config) {
+        String key = "radio:" + videoId;
+        synchronized (CACHE) {
+            Cached cached = CACHE.get(key);
+            if (cached != null && System.currentTimeMillis() - cached.at < CACHE_MAX_AGE_MS) {
+                return new ArrayList<Track>(cached.tracks);
+            }
+        }
+        List<Track> tracks = new ArrayList<Track>();
+        try {
+            JSONObject response = post("next", new JSONObject()
+                    .put("context", context(config))
+                    .put("videoId", videoId)
+                    .put("playlistId", "RDAMVM" + videoId)
+                    .put("isAudioOnly", true));
+            List<JSONObject> items = new ArrayList<JSONObject>();
+            collectByKey(response, "playlistPanelVideoRenderer", items);
+            for (JSONObject item : items) {
+                Track track = toRadioTrack(item);
+                if (track != null) tracks.add(track);
+            }
+        } catch (Exception e) {
+            android.util.Log.w(TAG, "radio of " + videoId + " failed: " + e);
+            return tracks;
+        }
+        synchronized (CACHE) {
+            CACHE.put(key, new Cached(tracks));
+        }
+        return new ArrayList<Track>(tracks);
+    }
+
+    private static void collectByKey(Object node, String key, List<JSONObject> out) {
+        if (node instanceof JSONObject) {
+            JSONObject object = (JSONObject) node;
+            JSONObject item = object.optJSONObject(key);
+            if (item != null) {
+                out.add(item);
+                return;
+            }
+            JSONArray names = object.names();
+            if (names != null) {
+                for (int i = 0; i < names.length(); i++) collectByKey(object.opt(names.optString(i)), key, out);
+            }
+        } else if (node instanceof JSONArray) {
+            JSONArray array = (JSONArray) node;
+            for (int i = 0; i < array.length(); i++) collectByKey(array.opt(i), key, out);
+        }
+    }
+
+    /** A song of a radio: the title, then "Artists • Album • Year" in its long byline. */
+    private static Track toRadioTrack(JSONObject renderer) {
+        Track track = new Track();
+        track.videoId = renderer.optString("videoId", "");
+        if (track.videoId.isEmpty()) return null;
+        JSONObject title = renderer.optJSONObject("title");
+        JSONArray titleRuns = title == null ? null : title.optJSONArray("runs");
+        StringBuilder name = new StringBuilder();
+        if (titleRuns != null) for (int i = 0; i < titleRuns.length(); i++) name.append(text(titleRuns.optJSONObject(i)));
+        track.title = name.toString();
+        if (track.title.isEmpty()) return null;
+        JSONObject byline = renderer.optJSONObject("longBylineText");
+        List<List<JSONObject>> groups = splitBySeparator(byline == null ? new JSONArray()
+                : byline.optJSONArray("runs") == null ? new JSONArray() : byline.optJSONArray("runs"));
+        if (!groups.isEmpty()) track.artist = joinNames(groups.get(0));
+        if (groups.size() >= 2 && !groups.get(1).isEmpty()) track.album = text(groups.get(1).get(0));
+        JSONObject length = renderer.optJSONObject("lengthText");
+        JSONArray lengthRuns = length == null ? null : length.optJSONArray("runs");
+        if (lengthRuns != null && lengthRuns.length() > 0) track.durationSeconds = parseTime(text(lengthRuns.optJSONObject(0)));
+        JSONObject thumbnail = renderer.optJSONObject("thumbnail");
+        JSONArray thumbnails = thumbnail == null ? null : thumbnail.optJSONArray("thumbnails");
+        if (thumbnails != null && thumbnails.length() > 0) {
+            JSONObject best = thumbnails.optJSONObject(thumbnails.length() - 1);
+            track.thumbnailUrl = upscale(best == null ? "" : best.optString("url", ""));
+        }
+        return track;
     }
 
     private static final String DEFAULT_USER_AGENT =

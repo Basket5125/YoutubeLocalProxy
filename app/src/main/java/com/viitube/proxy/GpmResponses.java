@@ -25,6 +25,8 @@ final class GpmResponses {
         if ("query".equals(method)) return search(session, config, context);
         if ("tabs".equals(method)) return exploreTabs(config, context);
         if ("genres".equals(method)) return genres();
+        if ("editstation".equals(method)) return editStation(body, config);
+        if ("stationfeed".equals(method)) return stationFeed(body, config);
         return null;
     }
 
@@ -121,6 +123,101 @@ final class GpmResponses {
                 + entities + "]}";
         return "{\"tab_type\":\"" + type + "\",\"data_status\":\"OK\",\"groups\":["
                 + group + "]}";
+    }
+
+    /**
+     * "Start radio" on a song: the app creates a station seeded with the track and asks for its
+     * first songs in the same call. The songs are YouTube Music's radio of that song.
+     */
+    private static String editStation(String body, Config config) {
+        JSONArray responses = new JSONArray();
+        try {
+            JSONArray mutations = new JSONObject(body).optJSONArray("mutations");
+            for (int i = 0; mutations != null && i < mutations.length(); i++) {
+                JSONObject mutation = mutations.optJSONObject(i);
+                JSONObject station = mutation == null ? null : mutation.optJSONObject("createOrGet");
+                if (station == null) continue;
+                JSONObject seed = station.optJSONObject("seed");
+                String videoId = seedVideoId(seed, "");
+                int count = mutation.optInt("numEntries", 25);
+                JSONObject out = station(videoId, seed, station.optString("name", ""), count,
+                        new java.util.HashSet<String>(), config);
+                out.put("clientId", station.optString("clientId", ""));
+                JSONObject response = new JSONObject()
+                        .put("id", out.optString("id"))
+                        .put("client_id", station.optString("clientId", ""))
+                        .put("response_code", videoId.isEmpty() ? "NOT_FOUND" : "OK");
+                if (mutation.optBoolean("includeFeed", true)) response.put("station", out);
+                responses.put(response);
+            }
+        } catch (Exception e) {
+            android.util.Log.w("Gpm", "editstation failed: " + e);
+        }
+        return "{\"mutate_response\":" + responses + "}";
+    }
+
+    /** More songs of a station, leaving out the ones played lately. */
+    private static String stationFeed(String body, Config config) {
+        JSONArray stations = new JSONArray();
+        try {
+            JSONArray asked = new JSONObject(body).optJSONArray("stations");
+            for (int i = 0; asked != null && i < asked.length(); i++) {
+                JSONObject request = asked.optJSONObject(i);
+                if (request == null) continue;
+                String radioId = request.optString("radioId", "");
+                JSONObject seed = request.optJSONObject("seed");
+                String videoId = seedVideoId(seed, radioId);
+                java.util.Set<String> played = new java.util.HashSet<String>();
+                JSONArray recent = request.optJSONArray("recentlyPlayed");
+                for (int j = 0; recent != null && j < recent.length(); j++) {
+                    JSONObject item = recent.optJSONObject(j);
+                    if (item != null) played.add(stripT(item.optString("id", "")));
+                }
+                stations.put(station(videoId, seed, "", request.optInt("numEntries", 25), played, config));
+            }
+        } catch (Exception e) {
+            android.util.Log.w("Gpm", "stationfeed failed: " + e);
+        }
+        return "{\"kind\":\"sj#radioFeed\",\"data\":{\"stations\":" + stations + "}}";
+    }
+
+    private static JSONObject station(String videoId, JSONObject seed, String name, int count,
+                                      java.util.Set<String> played, Config config) throws Exception {
+        JSONArray tracks = new JSONArray();
+        String title = name;
+        if (!videoId.isEmpty()) {
+            List<MusicSearch.Track> songs = MusicSearch.radio(videoId, config);
+            for (MusicSearch.Track song : songs) {
+                if (title.isEmpty() && song.videoId.equals(videoId)) title = song.title;
+                if (played.contains(song.videoId)) continue;
+                if (tracks.length() >= Math.max(1, Math.min(count, 50))) break;
+                tracks.put(new JSONObject(track(song)));
+            }
+        }
+        JSONObject station = new JSONObject()
+                .put("kind", "sj#radioStation")
+                .put("id", "rd" + videoId)
+                .put("name", title.isEmpty() ? "Radio" : title)
+                .put("deleted", false)
+                .put("tracks", tracks);
+        if (seed != null) station.put("seed", seed);
+        return station;
+    }
+
+    /** The YouTube video a station grows from: its seed track, or the id this proxy gave it. */
+    private static String seedVideoId(JSONObject seed, String radioId) {
+        String id = "";
+        if (seed != null) {
+            id = seed.optString("trackId", "");
+            if (id.isEmpty()) id = seed.optString("trackLockerId", "");
+        }
+        if (id.isEmpty() && radioId.startsWith("rd")) id = radioId.substring(2);
+        id = stripT(id);
+        return InnertubeEndpoint.isValidVideoId(id) ? id : "";
+    }
+
+    private static String stripT(String id) {
+        return id != null && id.length() == 12 && id.charAt(0) == 'T' ? id.substring(1) : id == null ? "" : id;
     }
 
     /** A small static genre list, so the Genres tab is not empty. */
