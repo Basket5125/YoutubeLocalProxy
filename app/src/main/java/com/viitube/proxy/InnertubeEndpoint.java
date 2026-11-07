@@ -38,12 +38,24 @@ public class InnertubeEndpoint implements Endpoint {
         this.mode = mode;
     }
 
+    /**
+     * The language for the requests sent to YouTube: the one set in the settings, or, when none is
+     * set, the phone's own language (the proxy runs on the phone). This is why, with the proxy on,
+     * the feeds and the data no longer come back in English on a non-English phone.
+     */
+    static String hl(Config config) {
+        String configured = config.getString("hl", "").trim();
+        if (!configured.isEmpty()) return configured;
+        String device = java.util.Locale.getDefault().getLanguage();
+        return device == null || device.isEmpty() ? "en" : device;
+    }
+
     public static JSONObject context(Config config) throws JSONException {
         String userAgent = configuredUserAgent(config);
         JSONObject client = new JSONObject()
                 .put("clientName", "WEB")
                 .put("clientVersion", YT2009_CLIENT_VERSION)
-                .put("hl", "en")
+                .put("hl", hl(config))
                 .put("gl", config.getString("gl", "PL"))
                 .put("visitorData", config.getString("visitor_data", YT2009_VISITOR_DATA))
                 .put("osName", "Windows")
@@ -345,7 +357,7 @@ public class InnertubeEndpoint implements Endpoint {
                 .put("context", new JSONObject().put("client", new JSONObject()
                         .put("clientName", "WEB_REMIX")
                         .put("clientVersion", "1.20260720.01.00")
-                        .put("hl", "en")
+                        .put("hl", hl(config))
                         .put("gl", gl)))
                 .put("browseId", "FEmusic_charts")
                 .put("formData", new JSONObject().put("selectedValues", new JSONArray().put(gl)));
@@ -587,7 +599,7 @@ public class InnertubeEndpoint implements Endpoint {
             for (Video video : next) {
                 if (!isValidVideoId(video.id)) continue;
                 ENRICH_POOL.submit(new MetadataTask(video, config, context));
-                if (config.getYouTubeApiKey().isEmpty()) ENRICH_POOL.submit(new LikesTask(video, context));
+                if (config.getYouTubeApiKey().isEmpty()) ENRICH_POOL.submit(new LikesTask(video, context, config.getBool("ryd_enabled", false)));
             }
         }
     }
@@ -837,7 +849,7 @@ public class InnertubeEndpoint implements Endpoint {
         page.video.id = videoId;
         Future<Runnable> metadata = ENRICH_POOL.submit(new MetadataTask(page.video, config, context));
         Future<Runnable> likes = config.getYouTubeApiKey().isEmpty()
-                ? ENRICH_POOL.submit(new LikesTask(page.video, context)) : null;
+                ? ENRICH_POOL.submit(new LikesTask(page.video, context, config.getBool("ryd_enabled", false))) : null;
 
         JSONObject response = post("next", watchNextPayload(videoId, config), config);
 
@@ -1016,6 +1028,10 @@ public class InnertubeEndpoint implements Endpoint {
         String text = "";
         /** The time as an Atom date, which the feeds print and the apps turn into "3 days ago". */
         String published = "";
+        /** The like count as YouTube wrote it ("1.2K"), empty when none. */
+        String likeCount = "";
+        /** The number of replies as YouTube wrote it, empty when none. */
+        String replyCount = "";
     }
 
     /** The comment threads YouTube answers with, newest first. */
@@ -1100,6 +1116,18 @@ public class InnertubeEndpoint implements Endpoint {
         }
         if (comment.avatar.isEmpty()) {
             comment.avatar = absoluteUrl(thumbnailUrl(renderer.optJSONObject("authorThumbnail")));
+        }
+        // Like and reply counts: from the normalized entity fields, or the classic renderer's own.
+        comment.likeCount = renderer.optString("likeCount", "");
+        if (comment.likeCount.isEmpty()) comment.likeCount = runs(renderer.optJSONObject("voteCount"));
+        comment.replyCount = renderer.optString("replyCount", "");
+        if (comment.replyCount.isEmpty()) {
+            JSONObject replies = thread.optJSONObject("replies");
+            JSONObject repliesRenderer = replies == null ? null
+                    : replies.optJSONObject("commentRepliesRenderer");
+            if (repliesRenderer != null) {
+                comment.replyCount = runs(repliesRenderer.optJSONObject("moreText"));
+            }
         }
         return comment;
     }
@@ -1493,7 +1521,7 @@ public class InnertubeEndpoint implements Endpoint {
                 submitted++;
             }
             if (fetchFullMetadata) {
-                futures.add(completion.submit(new LikesTask(video, context)));
+                futures.add(completion.submit(new LikesTask(video, context, config.getBool("ryd_enabled", false))));
                 submitted++;
             }
         }
@@ -1635,30 +1663,38 @@ public class InnertubeEndpoint implements Endpoint {
     private static final class LikesTask implements Callable<Runnable> {
         private final Video video;
         private final Context context;
+        private final boolean ryd;
 
-        LikesTask(Video video, Context context) {
+        LikesTask(Video video, Context context, boolean ryd) {
             this.video = video;
             this.context = context;
+            this.ryd = ryd;
         }
 
         @Override
         public Runnable call() throws Exception {
-            return new ApplyLikes(video, fetchRydLikes(video.id, context));
+            return new ApplyLikes(video, fetchRydLikes(video.id, context), ryd);
         }
     }
 
     private static final class ApplyLikes implements Runnable {
         private final Video video;
-        private final String likes;
+        private final String counts;
+        private final boolean ryd;
 
-        ApplyLikes(Video video, String likes) {
+        ApplyLikes(Video video, String counts, boolean ryd) {
             this.video = video;
-            this.likes = likes;
+            this.counts = counts;
+            this.ryd = ryd;
         }
 
         @Override
         public void run() {
-            if (!likes.isEmpty()) video.likes = likes;
+            if (counts.isEmpty()) return;
+            String[] parts = counts.split("\t", -1);
+            if (!parts[0].isEmpty()) video.likes = parts[0];
+            // Dislikes only when the Return YouTube Dislike option is on; off means zero.
+            if (ryd && parts.length > 1 && !parts[1].isEmpty()) video.dislikes = parts[1];
         }
     }
 
@@ -1670,19 +1706,20 @@ public class InnertubeEndpoint implements Endpoint {
                 }
             });
 
+    /** The like and dislike counts from Return YouTube Dislike, as "likes\tdislikes". */
     private static String fetchRydLikes(String videoId, Context context) throws Exception {
         String remembered = RYD_MEMORY.get(videoId);
         if (remembered != null) return remembered;
-        String likes = fetchRydLikesUncached(videoId, context);
-        RYD_MEMORY.put(videoId, likes);
-        return likes;
+        String counts = fetchRydLikesUncached(videoId, context);
+        RYD_MEMORY.put(videoId, counts);
+        return counts;
     }
 
     private static String fetchRydLikesUncached(String videoId, Context context) throws Exception {
         java.io.File cache = HttpClient.cacheFile(context.getCacheDir(), "ryd_likes_v1", videoId);
         if (HttpClient.isFresh(cache, TimeUnit.HOURS.toMillis(24))) {
             JSONObject cached = new JSONObject(HttpClient.readFile(cache));
-            return cached.optString("likes", "");
+            return cached.optString("likes", "") + "\t" + cached.optString("dislikes", "");
         }
         String url = "https://returnyoutubedislikeapi.com/votes?videoId="
                 + URLEncoder.encode(videoId, "UTF-8");
@@ -1690,8 +1727,10 @@ public class InnertubeEndpoint implements Endpoint {
                 1000, 1500));
         if (!response.has("likes") || response.isNull("likes")) return "";
         String likes = response.optString("likes", "");
-        HttpClient.writeFile(cache, new JSONObject().put("likes", likes).toString());
-        return likes;
+        String dislikes = response.isNull("dislikes") ? "" : response.optString("dislikes", "");
+        HttpClient.writeFile(cache, new JSONObject().put("likes", likes)
+                .put("dislikes", dislikes).toString());
+        return likes + "\t" + dislikes;
     }
 
     private static boolean isTruncated(String text) {
@@ -1961,7 +2000,9 @@ public class InnertubeEndpoint implements Endpoint {
                                     content == null ? "" : content.optString("content", "")))
                             .put("publishedAt", properties.optString("publishedTime", ""))
                             .put("author", author == null ? new JSONObject() : author)
-                            .put("likeCountA11y", toolbar == null ? "" : toolbar.optString("likeCountA11y", ""));
+                            .put("likeCountA11y", toolbar == null ? "" : toolbar.optString("likeCountA11y", ""))
+                            .put("likeCount", toolbar == null ? "" : toolbar.optString("likeCountNotliked", ""))
+                            .put("replyCount", toolbar == null ? "" : toolbar.optString("replyCount", ""));
                     result.add(normalized);
                 }
             }
@@ -2335,6 +2376,7 @@ public class InnertubeEndpoint implements Endpoint {
         String channelId = "";
         String views = "0";
         String likes = "0";
+        String dislikes = "0";
         String duration = "";
         String published = "";
         String thumbnail = "";
@@ -2352,6 +2394,7 @@ public class InnertubeEndpoint implements Endpoint {
             copy.views = views;
             copy.channelAvatar = channelAvatar;
             copy.likes = likes;
+            copy.dislikes = dislikes;
             copy.duration = duration;
             copy.published = published;
             copy.thumbnail = thumbnail;

@@ -50,8 +50,41 @@ final class YoutubeiResponses {
 
     // ------------------------------------------------------------------ text formatting
 
+    /**
+     * The language of the response being built, set once per request from the phone's language, so
+     * the labels the proxy writes itself (not the data YouTube sends) match the rest of the app.
+     */
+    private static final ThreadLocal<String> LANGUAGE = new ThreadLocal<String>();
+
+    static void setLanguage(String hl) {
+        LANGUAGE.set(hl == null ? "" : hl.toLowerCase(Locale.US));
+    }
+
+    private static boolean isPolish() {
+        String language = LANGUAGE.get();
+        return language != null && language.startsWith("pl");
+    }
+
+    /** One of the fixed labels the proxy writes, in the request's language (English otherwise). */
+    static String tr(String english) {
+        if (!isPolish()) return english;
+        if ("views".equals(english)) return "wyświetleń";
+        if ("view".equals(english)) return "wyświetlenie";
+        if ("Up next".equals(english)) return "Następny";
+        if ("Comments".equals(english)) return "Komentarze";
+        if ("Autoplay".equals(english)) return "Autoodtwarzanie";
+        if ("Like".equals(english)) return "Lubię";
+        if ("Dislike".equals(english)) return "Nie lubię";
+        if ("Share".equals(english)) return "Udostępnij";
+        if ("Download".equals(english)) return "Pobierz";
+        if ("likes".equals(english)) return "polubień";
+        if ("replies".equals(english)) return "odpowiedzi";
+        return english;
+    }
+
     /** "1.2M views", like formatViewCount() in the reference server. */
     static String shortCount(long count, String unit) {
+        unit = tr(unit);
         if (count >= 1_000_000_000L) return oneDecimal(count / 1_000_000_000d) + "B " + unit;
         if (count >= 1_000_000L) return oneDecimal(count / 1_000_000d) + "M " + unit;
         if (count >= 1_000L) return oneDecimal(count / 1_000d) + "K " + unit;
@@ -70,7 +103,7 @@ final class YoutubeiResponses {
 
     /** "1,234,567 views" / "1 view", the long form YouTube showed under videos. */
     static String fullCount(long count, String singular, String plural) {
-        return String.format(Locale.US, "%,d", count) + " " + (count == 1 ? singular : plural);
+        return String.format(Locale.US, "%,d", count) + " " + tr(count == 1 ? singular : plural);
     }
 
     static long parseCount(String value) {
@@ -102,21 +135,32 @@ final class YoutubeiResponses {
         long time = parseAtomDate(InnertubeEndpoint.toAtomDate(text));
         if (time <= 0) return "";
         long minutes = Math.max(0, (now - time) / 60_000L);
-        if (minutes < 60) return plural(Math.max(1, minutes), "minute") + " ago";
+        if (minutes < 60) return ago(Math.max(1, minutes), "minute");
         long hours = minutes / 60;
-        if (hours < 24) return plural(hours, "hour") + " ago";
+        if (hours < 24) return ago(hours, "hour");
         long days = hours / 24;
-        if (days < 7) return plural(days, "day") + " ago";
-        if (days < 30) return plural(days / 7, "week") + " ago";
-        if (days < 365) return plural(days / 30, "month") + " ago";
-        return plural(days / 365, "year") + " ago";
+        if (days < 7) return ago(days, "day");
+        if (days < 30) return ago(days / 7, "week");
+        if (days < 365) return ago(days / 30, "month");
+        return ago(days / 365, "year");
     }
 
     private static final java.util.regex.Pattern COMPACT_AGE =
             java.util.regex.Pattern.compile("\\d+\\s*(?:s|m|h|d|w|mo|y) ago");
 
-    private static String plural(long amount, String unit) {
-        return amount + " " + unit + (amount == 1 ? "" : "s");
+    /** "3 days ago" / "3 dni temu": the number, the unit, and the "ago" word, in the app's language. */
+    private static String ago(long amount, String unit) {
+        if (isPolish()) {
+            String pl;
+            if ("minute".equals(unit)) pl = "min";
+            else if ("hour".equals(unit)) pl = "godz.";
+            else if ("day".equals(unit)) pl = amount == 1 ? "dzień" : "dni";
+            else if ("week".equals(unit)) pl = "tyg.";
+            else if ("month".equals(unit)) pl = "mies.";
+            else pl = "lat";
+            return amount + " " + pl + " temu";
+        }
+        return amount + " " + unit + (amount == 1 ? "" : "s") + " ago";
     }
 
     /** "Published on Oct 3, 2024" from an ISO date, or from YouTube's own date label. */
@@ -972,11 +1016,12 @@ final class YoutubeiResponses {
      */
     private static AndroidFullNextProto.Root.Contents.SingleColumnWatchNextResults.Autoplay
             autoplaySet(String videoId) {
-        // Only what plays by itself. The next and previous endpoints are left out on purpose:
-        // the app draws the buttons that step through a list beside the play button as soon as
-        // it has them, and a video that is not part of a list has nothing to step to.
+        // The next button steps to the video that would autoplay (the first related one), so the
+        // forward arrow beside play is there on every video, not only inside a list - which is how
+        // YouTube drew it. There is nothing before a video outside a list, so no previous button.
         AndroidFullNextProto.WatchNavigation target = watchNavigation(videoId, "", 0);
-        return autoplay(newSet().setAutoplayVideo(target).setAutonavVideo(autonav(target)));
+        return autoplay(newSet().setAutoplayVideo(target)
+                .setNextButtonVideo(target).setAutonavVideo(autonav(target)));
     }
 
     /** The playlist being played: what comes next, and the buttons that step through it. */
@@ -1037,7 +1082,7 @@ final class YoutubeiResponses {
                 .Header().addSectionHeader(new AndroidFullNextProto.Root.Contents
                         .SingleColumnWatchNextResults.SingleColumnWatchNextResultsContents.Results
                         .ResultsContents.ItemSectionRenderer.Header.ItemSectionHeaderRenderer()
-                                .setTitle(nextRuns("Comments")));
+                                .setTitle(nextRuns(tr("Comments"))));
     }
 
     private static AndroidFullNextProto.ShelfRenderer relatedShelf(
@@ -1049,12 +1094,12 @@ final class YoutubeiResponses {
                     .addVideo(nextVideo(video, now)));
         }
         return new AndroidFullNextProto.ShelfRenderer()
-                .setTitle(nextRuns("Up next"))
+                .setTitle(nextRuns(tr("Up next")))
                 .setContent(new AndroidFullNextProto.ShelfRenderer.Contents().setShelfContent(items))
                 .setAutoplayToggle(new AndroidFullNextProto.ShelfRenderer.Toggle().addButton(
                         new AndroidFullNextProto.ToggleButtonRenderer()
-                                .setDefaultText(nextRuns("Autoplay"))
-                                .setToggledText(nextRuns("Autoplay"))));
+                                .setDefaultText(nextRuns(tr("Autoplay")))
+                                .setToggledText(nextRuns(tr("Autoplay")))));
     }
 
     /**
@@ -1201,11 +1246,23 @@ final class YoutubeiResponses {
                 .setAuthor(nextRuns(comment.author))
                 .setContent(nextRuns(comment.text))
                 .setAuthorThumbnail(nextThumbnails(avatarOrDefault(comment.avatar), 48, 48));
-        String age = relativeTime(comment.published, now);
-        if (!age.isEmpty()) renderer.setPublishedTime(nextRuns(age));
         if (!comment.authorId.isEmpty()) {
             renderer.setAuthorEndpoint(nextChannelNavigation(comment.authorId));
         }
+        // The subtitle line under the author is field 5 (field 28 is not drawn by these apps, which
+        // is why the time used to be missing). Put the time there with the like and reply counts.
+        StringBuilder meta = new StringBuilder();
+        String age = relativeTime(comment.published, now);
+        if (!age.isEmpty()) meta.append(age);
+        if (!comment.likeCount.isEmpty()) {
+            if (meta.length() > 0) meta.append(" · ");
+            meta.append(comment.likeCount).append(' ').append(tr("likes"));
+        }
+        if (!comment.replyCount.isEmpty()) {
+            if (meta.length() > 0) meta.append(" · ");
+            meta.append(comment.replyCount).append(' ').append(tr("replies"));
+        }
+        if (meta.length() > 0) renderer.setSecondary(nextRuns(meta.toString()));
         return new AndroidFullNextProto.CommentThreadRenderer().setComment(
                 new AndroidFullNextProto.CommentThreadRenderer.CommentWrapper().setComment(renderer));
     }
@@ -1297,7 +1354,7 @@ final class YoutubeiResponses {
         AndroidFullNextProto.ButtonEndpoint.ShareIntent share =
                 new AndroidFullNextProto.ButtonEndpoint.ShareIntent()
                         .setType("text/plain")
-                        .setChooserTitle("Share")
+                        .setChooserTitle(tr("Share"))
                         .addExtras(new AndroidFullNextProto.ButtonEndpoint.ShareIntent.Extra()
                                 .setKey("android.intent.extra.TEXT")
                                 .setValue("https://youtu.be/" + videoId))
@@ -1355,11 +1412,12 @@ final class YoutubeiResponses {
                         .setExpandedSubtitle(nextRuns(expanded))
                         .setVideoId(video.id);
         if (!video.description.isEmpty()) slim.setDescription(nextRuns(video.description));
-        slim.addButtons(slimButton(ICON_LIKE, likes > 0 ? shortNumber(likes) : "Like"));
-        slim.addButtons(slimButton(ICON_DISLIKE, "Dislike"));
-        slim.addButtons(slimButton(ICON_SHARE, "Share", shareEndpoint(video.id, video.title)));
+        long dislikes = parseCount(video.dislikes);
+        slim.addButtons(slimButton(ICON_LIKE, likes > 0 ? shortNumber(likes) : tr("Like")));
+        slim.addButtons(slimButton(ICON_DISLIKE, dislikes > 0 ? shortNumber(dislikes) : tr("Dislike")));
+        slim.addButtons(slimButton(ICON_SHARE, tr("Share"), shareEndpoint(video.id, video.title)));
         if (clientMajorVersion >= DOWNLOAD_BUTTON_VERSION) {
-            slim.addButtons(slimButton(ICON_DOWNLOAD, "Download"));
+            slim.addButtons(slimButton(ICON_DOWNLOAD, tr("Download")));
         }
         slim.addButtons(slimButton(ICON_ADDTO, "Save"));
 

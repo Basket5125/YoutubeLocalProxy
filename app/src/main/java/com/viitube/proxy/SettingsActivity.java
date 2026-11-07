@@ -204,6 +204,7 @@ public class SettingsActivity extends Activity {
     private RadioGroup audioQuality;
     private CheckBox comments;
     private CheckBox captions;
+    private CheckBox ryd;
     private CheckBox poToken;
     private CheckBox preload;
 
@@ -404,6 +405,15 @@ public class SettingsActivity extends Activity {
                         + "proxy, so the apps can turn them on from the player. Off means the "
                         + "player is told the video has none.");
 
+        ryd = new CheckBox(this);
+        ryd.setText("Show dislikes (Return YouTube Dislike)");
+        ryd.setChecked(config.getBool("ryd_enabled", false));
+        option(screen, null, ryd,
+                "YouTube removed the public dislike count; this reads it back from the Return "
+                        + "YouTube Dislike service and shows it on the dislike button and in the "
+                        + "channel's posts. Off means the dislike count stays zero. The count is a "
+                        + "community estimate, not YouTube's own number.");
+
         preload = new CheckBox(this);
         preload.setText("Read ahead what comes next");
         preload.setChecked(config.getBool("preload", false));
@@ -451,6 +461,7 @@ public class SettingsActivity extends Activity {
         if (WATCH.equals(category)) {
             config.setBool("show_comments", comments.isChecked());
             config.setBool("show_captions", captions.isChecked());
+            config.setBool("ryd_enabled", ryd.isChecked());
             config.setBool("preload", preload.isChecked());
         }
         if (PLAYBACK.equals(category)) {

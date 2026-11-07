@@ -169,12 +169,12 @@ public class PlayerLookup {
     }
 
     public static JSONObject fetch(String videoId, Config config, Context context) throws Exception {
-        return fetch(videoId, config, context, "en");
+        return fetch(videoId, config, context, InnertubeEndpoint.hl(config));
     }
 
     public static JSONObject fetch(String videoId, Config config, Context context, String language)
             throws Exception {
-        final String requestedLanguage = language == null ? "en" : language;
+        final String requestedLanguage = language == null || language.isEmpty() ? InnertubeEndpoint.hl(config) : language;
         return cachedPlayer("player:" + videoId + ":" + requestedLanguage, new PlayerLoader() {
             @Override
             public JSONObject load() throws Exception {
@@ -356,7 +356,7 @@ public class PlayerLookup {
                 JSONObject client = new JSONObject()
                         .put("clientName", profile.name)
                         .put("clientVersion", profile.version)
-                        .put("hl", "en")
+                        .put("hl", InnertubeEndpoint.hl(config))
                     .put("gl", config.getString("gl", "US"));
                 if (!profile.platform.isEmpty()) client.put("platform", profile.platform);
                 if (!profile.osName.isEmpty()) client.put("osName", profile.osName);

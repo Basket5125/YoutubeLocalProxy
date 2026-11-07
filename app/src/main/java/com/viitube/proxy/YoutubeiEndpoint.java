@@ -45,6 +45,8 @@ public class YoutubeiEndpoint implements Endpoint {
     @Override
     public NanoHTTPD.Response handle(NanoHTTPD.IHTTPSession session, String[] params,
                                      Config config, Context context) throws Exception {
+        // The language the proxy writes its own labels in, for this request's thread.
+        YoutubeiResponses.setLanguage(InnertubeEndpoint.hl(config));
         // Always read the body: NanoHTTPD would take unread bytes for the next request on a
         // kept-alive connection.
         byte[] body = readBody(session);

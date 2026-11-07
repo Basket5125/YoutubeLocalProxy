@@ -2853,6 +2853,11 @@ public final class AndroidFullNextProto {
         private AndroidFullNextProto.TextRuns mContent;
         private String mCommentId = "";
         private AndroidFullNextProto.TextRuns mPublishedTime;
+        /** Field 5: the subtitle line under the author (time, and the like/reply counts). */
+        private AndroidFullNextProto.TextRuns mSecondary;
+        public CommentRenderer setSecondary(AndroidFullNextProto.TextRuns v) { mSecondary = v; return this; }
+        public AndroidFullNextProto.TextRuns getSecondary() { return mSecondary; }
+        public boolean hasSecondary() { return mSecondary != null; }
         public CommentRenderer setAuthor(AndroidFullNextProto.TextRuns value) { mAuthor = value; return this; }
         public AndroidFullNextProto.TextRuns getAuthor() { return mAuthor; }
         public boolean hasAuthor() { return mAuthor != null; }
@@ -2878,6 +2883,9 @@ public final class AndroidFullNextProto {
             if (mAuthorEndpoint != null) writer.writeMessage(3, mAuthorEndpoint);
             if (mContent != null) writer.writeMessage(4, mContent);
             if (mCommentId.length() > 0) writer.writeString(9, mCommentId);
+            // Fields 12 and 26 are text slots the 2017 comment view binds to its own TextViews;
+            // which one shows the like count vs the reply count is checked on the device.
+            if (mSecondary != null) writer.writeMessage(5, mSecondary);
             if (mPublishedTime != null) writer.writeMessage(28, mPublishedTime);
         }
 
@@ -2909,6 +2917,11 @@ public final class AndroidFullNextProto {
                     case 9:
                         if ((tag & 7) != 2) { reader.skip(tag); break; }
                         mCommentId = reader.readString();
+                        break;
+                    case 5:
+                        if ((tag & 7) != 2) { reader.skip(tag); break; }
+                        if (mSecondary == null) mSecondary = new AndroidFullNextProto.TextRuns();
+                        mSecondary.mergeFrom(reader.readMessage());
                         break;
                     case 28:
                         if ((tag & 7) != 2) { reader.skip(tag); break; }
