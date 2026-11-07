@@ -135,7 +135,11 @@ final class GpmResponses {
             JSONArray mutations = new JSONObject(body).optJSONArray("mutations");
             for (int i = 0; mutations != null && i < mutations.length(); i++) {
                 JSONObject mutation = mutations.optJSONObject(i);
-                JSONObject station = mutation == null ? null : mutation.optJSONObject("createOrGet");
+                // The app sends "create" for a new radio; "createOrGet" and "update" also carry it.
+                JSONObject station = null;
+                for (String kind : new String[]{"create", "createOrGet", "update"}) {
+                    if (station == null && mutation != null) station = mutation.optJSONObject(kind);
+                }
                 if (station == null) continue;
                 JSONObject seed = station.optJSONObject("seed");
                 String videoId = seedVideoId(seed, "");
