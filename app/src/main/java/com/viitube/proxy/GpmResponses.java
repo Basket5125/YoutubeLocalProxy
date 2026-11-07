@@ -191,6 +191,7 @@ final class GpmResponses {
                 if (title.isEmpty() && song.videoId.equals(videoId)) title = song.title;
                 if (played.contains(song.videoId)) continue;
                 if (tracks.length() >= Math.max(1, Math.min(count, 50))) break;
+                if (tracks.length() == 0) GpmStream.warm(song.videoId, config);
                 tracks.put(new JSONObject(track(song)));
             }
         }

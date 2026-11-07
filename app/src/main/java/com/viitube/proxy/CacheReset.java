@@ -42,6 +42,7 @@ final class CacheReset {
         AudioWarmup.clearMemory();
         GpmStream.trimMemory();
         MusicSearch.clearMemory();
+        GpmEndpoint.clearMemory();
     }
 
     static Result clear(Context context) {

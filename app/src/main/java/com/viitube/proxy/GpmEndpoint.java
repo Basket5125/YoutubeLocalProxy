@@ -32,6 +32,39 @@ public class GpmEndpoint implements Endpoint {
                 }
             };
 
+    /**
+     * Covers already served, kept in memory so scrolling back through a list does not fetch them
+     * again over the slow link: bounded in bytes (a cover is 40-70 KB), not in entries.
+     */
+    private static final long ART_BYTES_MAX = MemoryBudget.SMALL_HEAP ? 1500L * 1024 : 4L * 1024 * 1024;
+    private static long artBytes;
+    private static final java.util.LinkedHashMap<String, Object[]> ART_CACHE =
+            new java.util.LinkedHashMap<String, Object[]>(32, 0.75f, true);
+
+    private static Object[] cachedArt(String videoId) {
+        synchronized (ART_CACHE) {
+            return ART_CACHE.get(videoId);
+        }
+    }
+
+    private static void keepArt(String videoId, byte[] image, String type) {
+        synchronized (ART_CACHE) {
+            if (ART_CACHE.put(videoId, new Object[]{image, type}) == null) artBytes += image.length;
+            java.util.Iterator<java.util.Map.Entry<String, Object[]>> it = ART_CACHE.entrySet().iterator();
+            while (artBytes > ART_BYTES_MAX && it.hasNext()) {
+                artBytes -= ((byte[]) it.next().getValue()[0]).length;
+                it.remove();
+            }
+        }
+    }
+
+    static void clearMemory() {
+        synchronized (ART_CACHE) {
+            ART_CACHE.clear();
+            artBytes = 0;
+        }
+    }
+
     /** Remembers the album art URL a search found for a video, so {@link #art} can serve it. */
     static void rememberArt(String videoId, String url) {
         if (videoId == null || videoId.isEmpty() || url == null || url.isEmpty()) return;
@@ -58,7 +91,7 @@ public class GpmEndpoint implements Endpoint {
         String body = readBody(session);
         android.util.Log.i(TAG, session.getMethod() + " " + uri
                 + (query == null || query.isEmpty() ? "" : "?" + query)
-                + (body.isEmpty() ? "" : " body=" + body));
+                + (body.isEmpty() ? "" : " body=" + (body.length() > 300 ? body.substring(0, 300) + "..." : body)));
 
         if (uri.startsWith("/art/")) return art(uri.substring("/art/".length()));
         String method = lastSegment(uri);
@@ -82,6 +115,8 @@ public class GpmEndpoint implements Endpoint {
             return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.NOT_FOUND,
                     "text/plain", "no art");
         }
+        Object[] kept = cachedArt(videoId);
+        if (kept != null) return artResponse((byte[]) kept[0], (String) kept[1]);
         // The square album art the search found, then the video frame as a fallback.
         java.util.List<String> urls = new java.util.ArrayList<String>();
         String remembered = rememberedArt(videoId);
@@ -109,17 +144,21 @@ public class GpmEndpoint implements Endpoint {
                 byte[] image = out.toByteArray();
                 String type = conn.getContentType();
                 if (type == null || !type.startsWith("image/")) type = "image/jpeg";
-                NanoHTTPD.Response response = NanoHTTPD.newFixedLengthResponse(
-                        NanoHTTPD.Response.Status.OK, type,
-                        new java.io.ByteArrayInputStream(image), image.length);
-                response.addHeader("Cache-Control", "public, max-age=86400");
-                return response;
+                keepArt(videoId, image, type);
+                return artResponse(image, type);
             } catch (Exception e) {
                 android.util.Log.i(TAG, "art " + imageUrl + " failed: " + e);
             }
         }
         return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.NOT_FOUND,
                 "text/plain", "no art");
+    }
+
+    private static NanoHTTPD.Response artResponse(byte[] image, String type) {
+        NanoHTTPD.Response response = NanoHTTPD.newFixedLengthResponse(
+                NanoHTTPD.Response.Status.OK, type, new java.io.ByteArrayInputStream(image), image.length);
+        response.addHeader("Cache-Control", "public, max-age=86400");
+        return response;
     }
 
     private static NanoHTTPD.Response json(String body) {
@@ -137,13 +176,36 @@ public class GpmEndpoint implements Endpoint {
         return slash < 0 ? path : path.substring(slash + 1);
     }
 
+    /**
+     * The request body as text. Read as raw bytes - not through NanoHTTPD's parseBody, which
+     * turns it into a String - because the app gzips its JSON posts (the radio ones among them),
+     * and a gzipped body only survives as bytes.
+     */
     private static String readBody(NanoHTTPD.IHTTPSession session) {
         try {
-            Map<String, String> files = new java.util.HashMap<String, String>();
-            session.parseBody(files);
-            String data = files.get("postData");
-            return data == null ? "" : data;
+            String lengthHeader = session.getHeaders().get("content-length");
+            int length = lengthHeader == null ? 0 : Integer.parseInt(lengthHeader.trim());
+            if (length <= 0) return "";
+            byte[] data = new byte[length];
+            java.io.InputStream in = session.getInputStream();
+            int read = 0;
+            while (read < length) {
+                int n = in.read(data, read, length - read);
+                if (n < 0) break;
+                read += n;
+            }
+            java.io.InputStream text = new java.io.ByteArrayInputStream(data, 0, read);
+            String encoding = session.getHeaders().get("content-encoding");
+            boolean gzip = (encoding != null && encoding.toLowerCase(java.util.Locale.US).contains("gzip"))
+                    || (read > 1 && (data[0] & 0xff) == 0x1f && (data[1] & 0xff) == 0x8b);
+            if (gzip) text = new java.util.zip.GZIPInputStream(text);
+            java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream(Math.max(64, read * 4));
+            byte[] buffer = new byte[4096];
+            int n;
+            while ((n = text.read(buffer)) > 0) out.write(buffer, 0, n);
+            return out.toString("UTF-8");
         } catch (Exception e) {
+            android.util.Log.i(TAG, "body unreadable: " + e);
             return "";
         }
     }
