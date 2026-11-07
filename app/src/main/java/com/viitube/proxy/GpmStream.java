@@ -23,8 +23,12 @@ final class GpmStream {
      */
     private static final int MAX_PLANS = MemoryBudget.SMALL_HEAP ? 2 : 4;
 
-    /** The song the player is reading now; its file is never let go while it plays. */
+    /**
+     * The songs the player read last; their files are never let go. Two, because Play Music asks
+     * for the next song ahead of time while the current one still plays (and may be seeked).
+     */
     private static volatile String playing = "";
+    private static volatile String previous = "";
 
     /** Built files kept so the app's repeated range requests for one song reuse one remux. */
     private static final Map<String, Mp4Mux.Plan> PLANS =
@@ -33,7 +37,8 @@ final class GpmStream {
                 protected boolean removeEldestEntry(Map.Entry<String, Mp4Mux.Plan> eldest) {
                     // The stream reads the buffer piece by piece, so dropping the one that plays
                     // would cut the song off ("buffer gone"); keep it a little longer instead.
-                    boolean evict = size() > MAX_PLANS && !eldest.getKey().equals(playing);
+                    boolean evict = size() > MAX_PLANS && !eldest.getKey().equals(playing)
+                            && !eldest.getKey().equals(previous);
                     if (evict) Mp4Mux.dropBuffer(eldest.getKey());
                     return evict;
                 }
@@ -162,7 +167,10 @@ final class GpmStream {
             android.util.Log.i("Gpm", "stream id not a YouTube id: " + songId);
             return text(NanoHTTPD.Response.Status.NOT_FOUND, "track not available");
         }
-        playing = songId;
+        if (!songId.equals(playing)) {
+            previous = playing;
+            playing = songId;
+        }
         cancelWarmExcept(songId);
         try {
             Mp4Mux.Plan plan = build(songId, config);
@@ -252,7 +260,7 @@ final class GpmStream {
             java.util.Iterator<String> ids = PLANS.keySet().iterator();
             while (ids.hasNext()) {
                 String id = ids.next();
-                if (id.equals(playing)) continue;
+                if (id.equals(playing) || id.equals(previous)) continue;
                 Mp4Mux.dropBuffer(id);
                 ids.remove();
             }
